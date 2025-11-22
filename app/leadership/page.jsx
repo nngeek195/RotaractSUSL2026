@@ -64,9 +64,9 @@ export default function Leadership() {
             {/* Executive Board */}
             <section className="px-4 py-12">
                 <div className="max-w-[1200px] mx-auto">
-                    <div className="bg-white border-4 border-rotaract-pink rounded-[30px] p-8 md:p-12 relative">
+                    <div className="bg-white border-4 border-pink-600 rounded-[30px] p-8 md:p-12 relative">
                         {/* Header Badge */}
-                        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-rotaract-pink px-8 py-4 rounded-t-[17px]">
+                        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-pink-600 px-8 py-4 rounded-t-[17px]">
                             <h2 className="font-playfair font-medium text-3xl md:text-[47px] text-white whitespace-nowrap">
                                 Executive Board
                             </h2>
@@ -79,7 +79,7 @@ export default function Leadership() {
                                     <img
                                         src={member.photo}
                                         alt={member.name}
-                                        className="bg-rotaract-pink rounded-[32px] aspect-[230/247] mb-4 object-cover"
+                                        className="bg-pink-600 rounded-[32px] aspect-[230/247] mb-4 object-cover"
                                         onError={handleImageError}
                                     />
                                     <p className="font-playfair font-medium text-lg text-pink-600 text-center mb-1">{member.role}</p>
@@ -101,9 +101,9 @@ export default function Leadership() {
             {/* Board of Directors */}
             <section className="px-4 pb-12">
                 <div className="max-w-[1200px] mx-auto">
-                    <div className="bg-white border-4 border-rotaract-pink rounded-[30px] p-8 md:p-12 relative">
+                    <div className="bg-white border-4 border-pink-600 rounded-[30px] p-8 md:p-12 relative">
                         {/* Header Badge */}
-                        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-rotaract-pink px-8 py-4 rounded-t-[17px]">
+                        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-pink-600 px-8 py-4 rounded-t-[17px]">
                             <h2 className="font-playfair font-medium text-3xl md:text-[47px] text-white whitespace-nowrap">
                                 Board of Directors
                             </h2>
@@ -116,7 +116,7 @@ export default function Leadership() {
                                     <img
                                         src={member.photo}
                                         alt={member.name}
-                                        className="bg-rotaract-pink rounded-[32px] aspect-[230/247] mb-4 object-cover"
+                                        className="bg-pink-600 rounded-[32px] aspect-[230/247] mb-4 object-cover"
                                         onError={handleImageError}
                                     />
                                     <p className="font-playfair font-medium text-lg text-pink-600 text-center mb-1">{member.role}</p>
