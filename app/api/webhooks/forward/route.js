@@ -2,9 +2,11 @@ export const runtime = "nodejs";
 
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function POST(req) {
+  // ✅ FIX: Initialize Resend INSIDE the function.
+  // This prevents the "Missing API Key" error during 'npm run build'.
+  const resend = new Resend(process.env.RESEND_API_KEY);
+
   try {
     const arrayBuffer = await req.arrayBuffer();
     const payload = Buffer.from(arrayBuffer).toString();
@@ -15,6 +17,7 @@ export async function POST(req) {
       signature: req.headers.get("svix-signature"),
     };
 
+    // Verify the webhook using the secret
     const event = resend.webhooks.verify({
       payload,
       headers,
@@ -24,8 +27,10 @@ export async function POST(req) {
     if (event.type === "email.received") {
       const emailId = event.data.email_id;
 
+      // Fetch the full email content
       const { data: email } = await resend.emails.receiving.get(emailId);
 
+      // Forward the email
       await resend.emails.send({
         from: process.env.FROM_EMAIL,
         to: process.env.TO_EMAIL,
