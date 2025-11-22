@@ -93,7 +93,7 @@ export default function JoinUs() {
                     <p className="font-poppins text-gray-600 max-w-md">
                         Thank you for your interest. Your application has been sent to the Executive Committee for review. You will be notified once approved.
                     </p>
-                    <button onClick={() => router.push('/')} className="mt-8 bg-rotaract-pink text-white px-8 py-3 rounded-full font-poppins">
+                    <button onClick={() => router.push('/')} className="mt-8 bg-pink-600 text-white px-8 py-3 rounded-full font-poppins">
                         Back to Home
                     </button>
                 </div>
@@ -142,7 +142,7 @@ export default function JoinUs() {
                                 <input
                                     id="fullName" name="fullName" type="text" required
                                     value={formData.fullName} onChange={handleChange}
-                                    className="w-full h-[68px] border-2 border-rotaract-pink rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-rotaract-pink"
+                                    className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
                                 />
                             </div>
 
@@ -153,7 +153,7 @@ export default function JoinUs() {
                                     <input
                                         id="studentId" name="studentId" type="text" required
                                         value={formData.studentId} onChange={handleChange}
-                                        className="w-full h-[68px] border-2 border-rotaract-pink rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-rotaract-pink"
+                                        className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
                                     />
                                 </div>
                                 <div>
@@ -161,7 +161,7 @@ export default function JoinUs() {
                                     <select
                                         id="faculty" name="faculty" required
                                         value={formData.faculty} onChange={handleChange}
-                                        className="w-full h-[68px] border-2 border-rotaract-pink rounded-[16px] bg-white px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-rotaract-pink"
+                                        className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-white px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
                                     >
                                         <option value="" disabled hidden>Choose faculty</option>
                                         <option value="Computing">Faculty of Computing</option>
@@ -182,7 +182,7 @@ export default function JoinUs() {
                                 <input
                                     id="department" name="department" type="text" placeholder="e.g. Computing and Information System"
                                     value={formData.department} onChange={handleChange}
-                                    className="w-full h-[68px] border-2 border-rotaract-pink rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-rotaract-pink"
+                                    className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
                                 />
                             </div>
 
@@ -192,7 +192,7 @@ export default function JoinUs() {
                                 <input
                                     id="contact" name="contact" type="text" required
                                     value={formData.contact} onChange={handleChange}
-                                    className="w-full h-[68px] border-2 border-rotaract-pink rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-rotaract-pink"
+                                    className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
                                 />
                             </div>
 
@@ -202,7 +202,7 @@ export default function JoinUs() {
                                 <input
                                     id="email" name="email" type="email" required placeholder="It is compulsury to use your Student Email"
                                     value={formData.email} onChange={handleChange}
-                                    className="w-full h-[68px] border-2 border-rotaract-pink rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-rotaract-pink"
+                                    className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
                                 />
                             </div>
 
@@ -212,7 +212,7 @@ export default function JoinUs() {
                                 <input
                                     id="password" name="password" type="password" required minLength={6}
                                     value={formData.password} onChange={handleChange}
-                                    className="w-full h-[68px] border-2 border-rotaract-pink rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-rotaract-pink"
+                                    className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
                                 />
                             </div>
 
@@ -223,7 +223,7 @@ export default function JoinUs() {
                                     id="reason" name="reason" rows={5} required
                                     placeholder="Tell us about your passion for service..."
                                     value={formData.reason} onChange={handleChange}
-                                    className="w-full border-2 border-rotaract-pink rounded-[16px] bg-transparent p-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-rotaract-pink"
+                                    className="w-full border-2 border-pink-600 rounded-[16px] bg-transparent p-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
                                 />
                             </div>
 
@@ -232,7 +232,7 @@ export default function JoinUs() {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="w-full bg-rotaract-pink text-white h-[58px] rounded-[12px] font-poppins font-semibold text-sm hover:bg-[#b51b52] transition flex items-center justify-center gap-2 shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
+                                    className="w-full bg-pink-600 text-white h-[58px] rounded-[12px] font-poppins font-semibold text-sm hover:bg-[#b51b52] transition flex items-center justify-center gap-2 shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
                                 >
                                     {loading ? (
                                         <>
