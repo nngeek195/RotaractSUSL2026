@@ -5,8 +5,8 @@ import { AuthProvider } from "./contexts/AuthContext"; // Ensure this path match
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Rotaract Club Portal",
-  description: "Club management system",
+  title: "Rotaract SUSL",
+  description: "Serve. Grow. Lead.",
 };
 
 export default function RootLayout({ children }) {
