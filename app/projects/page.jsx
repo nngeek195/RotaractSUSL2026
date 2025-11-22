@@ -52,12 +52,12 @@ export default function ProjectsPage() {
     const rightColumnProjects = filteredProjects.filter((_, index) => index % 2 !== 0);
 
     return (
-        <>
+        <><div className="bg-gray-100">
             <NavBar activeLink="projects" />
             <br /><br />
 
             {/* Hero banner - Preserved your Exact CSS */}
-            <section className="px-4 pt-6 md:pt-10">
+            <section className="px-4 pt-6 md:pt-10 bg-gray-100" >
                 <div className="max-w-[1440px] mx-auto px-2 md:px-[54px]">
                     <div className="relative rounded-[43px] overflow-hidden h-[280px] md:h-[396px]">
                         <img src={images.imgRectangle44} alt="Hero projects" className="absolute inset-0 w-full h-full object-cover" />
@@ -80,13 +80,13 @@ export default function ProjectsPage() {
             </section>
 
             {/* Logic: View Toggle Buttons (Added to fit your style) */}
-            <section className="px-4 pt-8">
+            <section className="px-4 pt-8 bg-gray-100">
                 <div className="max-w-[1440px] mx-auto px-2 md:px-[54px] flex justify-center gap-4">
                     <button
                         onClick={() => setView('upcoming')}
                         className={`flex items-center gap-2 px-6 py-2 rounded-[26px] font-poppins font-medium transition-all
                             ${view === 'upcoming'
-                                ? 'bg-rotaract-pink text-white shadow-lg'
+                                ? 'bg-pink-600 text-white shadow-lg'
                                 : 'bg-white text-[#707070] border border-[#E0E0E0] hover:bg-gray-50'}`}
                     >
                         <Clock size={18} /> Upcoming
@@ -95,7 +95,7 @@ export default function ProjectsPage() {
                         onClick={() => setView('completed')}
                         className={`flex items-center gap-2 px-6 py-2 rounded-[26px] font-poppins font-medium transition-all
                             ${view === 'completed'
-                                ? 'bg-rotaract-pink text-white shadow-lg'
+                                ? 'bg-pink-600 text-white shadow-lg'
                                 : 'bg-white text-[#707070] border border-[#E0E0E0] hover:bg-gray-50'}`}
                     >
                         <CheckCircle size={18} /> Completed
@@ -104,7 +104,7 @@ export default function ProjectsPage() {
             </section>
 
             {/* Project Cards - Two Column Grid (Your Exact CSS) */}
-            <section className="px-4 py-8 md:py-12">
+            <section className="px-4 py-8 md:py-12 bg-gray-100">
                 <div className="max-w-[1440px] mx-auto px-2 md:px-[54px]">
 
                     {/* Loading State */}
@@ -163,7 +163,7 @@ export default function ProjectsPage() {
 
                                             {/* Button */}
                                             <div>
-                                                <button className="bg-rotaract-pink text-white px-5 py-2 rounded-[26px] font-poppins font-medium text-sm hover:bg-[#b51b52] transition">
+                                                <button className="bg-pink-600 text-white px-5 py-2 rounded-[26px] font-poppins font-medium text-sm hover:bg-[#b51b52] transition">
                                                     See More
                                                 </button>
                                             </div>
@@ -211,7 +211,7 @@ export default function ProjectsPage() {
 
                                             {/* Button */}
                                             <div>
-                                                <button className="bg-rotaract-pink text-white px-5 py-2 rounded-[26px] font-poppins font-medium text-sm hover:bg-[#b51b52] transition">
+                                                <button className="bg-pink-600 text-white px-5 py-2 rounded-[26px] font-poppins font-medium text-sm hover:bg-[#b51b52] transition">
                                                     See More
                                                 </button>
                                             </div>
@@ -223,7 +223,7 @@ export default function ProjectsPage() {
                     )}
                 </div>
             </section>
-
+        </div>
             <Footer />
         </>
     );
