@@ -460,14 +460,27 @@ export default function Home() {
       {/* Our Projects (COMPLETED PROJECTS CAROUSEL) */}
       <section id="projects" className="py-16 lg:py-24">
         <div className="max-w-7xl mx-auto px-4 lg:px-16">
-          <h2 className="font-playfair font-medium text-4xl lg:text-5xl text-black text-center mb-6">
+          <h2 className="font-playfair font-medium text-4xl lg:text-5xl text-black text-center mb-8">
             Our Projects
           </h2>
-          <p className="font-poppins font-medium text-base text-black text-center max-w-4xl mx-auto mb-12">
-            Our club is driven by impactful, student-led projects. We focus on
-            key areas like Community Development, Professional Growth, and
-            Environmental Sustainability. Explore our completed work below.
-          </p>
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 max-w-5xl mx-auto mb-12">
+            <p className="font-poppins font-medium text-sm lg:text-base text-black leading-relaxed text-center lg:text-left flex-1">
+              Our club is driven by impactful, student-led projects. We focus on
+              key areas like Community Development, Professional Growth, and
+              Environmental Sustainability right here in the Sabaragamuwa
+              region. Every initiative, from career workshops to green
+              campaigns, is carefully planned to create real, measurable change.
+              Explore our work to see our commitment in action!
+            </p>
+            <div className="text-center lg:text-right">
+              <a
+                href="/projects"
+                className="bg-pink-600 text-white px-6 py-3 rounded-full font-poppins font-medium text-sm hover:bg-opacity-90 inline-block"
+              >
+                See All Projects
+              </a>
+            </div>
+          </div>
 
           <div className="mb-12">
             {/* Passing dynamic completed projects here */}
@@ -476,15 +489,6 @@ export default function Home() {
             ) : (
               <ProjectCarousel projects={completedProjects as any} />
             )}
-          </div>
-
-          <div className="text-right">
-            <a
-              href="/projects"
-              className="bg-pink-600 text-white px-6 py-3 rounded-full font-poppins font-medium text-sm hover:bg-opacity-90 inline-block"
-            >
-              See All Projects
-            </a>
           </div>
         </div>
       </section>
