@@ -621,11 +621,11 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
             {/* Rotaractor of the Month */}
             <div className="bg-pink-600 rounded-[37px] shadow-lg p-8 relative flex flex-col">
-              <p className="font-poppins font-light text-[17px] text-white mb-1">
-                of the Month
-              </p>
-              <p className="font-playfair font-medium text-[32px] text-white mb-6">
+              <p className="font-playfair font-medium text-[32px] text-white mb-1">
                 Rotaractor
+              </p>
+              <p className="font-poppins font-light text-[17px] text-white mb-6">
+                of the Month
               </p>
               <div className="bg-white rounded-[32px] h-[320px] mb-6 flex-shrink-0"></div>
               <p className="font-playfair font-medium text-[28px] text-white mb-1">
@@ -642,18 +642,22 @@ export default function Home() {
 
             {/* Director of the Month */}
             <div className="bg-pink-600 rounded-[37px] shadow-lg p-8 relative flex flex-col">
-              <p className="font-poppins font-light text-[17px] text-white mb-1">
-                of the Month
-              </p>
-              <p className="font-playfair font-medium text-[32px] text-white mb-6">
+              <p className="font-playfair font-medium text-[32px] text-white mb-1">
                 Director
               </p>
-              <div className="bg-white rounded-[32px] h-[320px] mb-6 flex-shrink-0"></div>
+              <p className="font-poppins font-light text-[17px] text-white mb-6">
+                of the Month
+              </p>
+              <img
+                src={images.communityServiceSubasingha}
+                alt="Director of the Month"
+                className="bg-white rounded-[32px] h-[320px] mb-6 flex-shrink-0 w-full object-cover"
+              />
               <p className="font-playfair font-medium text-[28px] text-white mb-1">
-                Name
+                S.D.U.D. Subasingha
               </p>
               <p className="font-poppins text-[19px] text-[#d9d9d9] mb-6">
-                Faculty
+                Faculty of Agricultural Sciences
               </p>
               <p className="font-poppins font-medium italic text-[17px] text-white leading-relaxed">
                 "Service to others is the rent you pay for your room here on
