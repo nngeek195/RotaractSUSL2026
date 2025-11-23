@@ -11,26 +11,26 @@ const getImageUrl = (filename) => `/assets/leadership/${filename}`;
 
 export default function Leadership() {
     const executiveBoard = [
-        { name: 'M.D.K.K. Basnayake', role: 'President', faculty: 'Faculty of Agriculture Sciences', phone: '+94 78 2479942', photo: getImageUrl('basnayake.png') },
-        { name: 'D.M.H.S. Dewamiththa', role: 'Vice President', faculty: 'Faculty of Applied Science', phone: '+94 77 0813440', photo: getImageUrl('dewamitha.png') },
-        { name: 'W.H.A.A.T. Wickrama', role: 'Vice President', faculty: 'Faculty of Applied Science', phone: '+94 75 0727812', photo: getImageUrl('wickrama.png') },
-        { name: 'A.I. Ravihansa', role: 'Vice President', faculty: 'Faculty of Applied Science', phone: '+94 75 6570290', photo: getImageUrl('ravihansa.png') },
-        { name: 'S.N. Edirisooriya', role: 'Secretary', faculty: 'Faculty of Agriculture Sciences', phone: '+94 76 893844', photo: getImageUrl('edirisooriya.png') },
-        { name: 'A.A.O.I.S. Kulathilaka', role: 'Assistant Secretary', faculty: 'Faculty of Management Studies', phone: '+94 78 7337298', photo: getImageUrl('kulathilaka.png') },
-        { name: 'G.P.S. Kariyawasam', role: 'Editor', faculty: 'Faculty of Applied Sciences', phone: '+94 77 1281159', photo: getImageUrl('kariyawasam.png') },
-        { name: 'Nayomi Awanthika', role: 'Assistant Treasurer', faculty: 'Faculty of Management Studies', phone: '+94 76 6072719', photo: getImageUrl('awanthika.png') },
-        { name: 'J.M.D. Jayasundara', role: 'Sergeant at Arms', faculty: 'Faculty of Management Studies', phone: '+94 70 1127907', photo: getImageUrl('jayasundara.png') }
+        { name: 'M.D.K.K. Basnayake', role: 'President', faculty: 'Faculty of Agriculture Sciences', phone: '+94 78 2479942', photo: images.presidentPhoto },
+        { name: 'D.M.H.S. Dewamiththa', role: 'Vice President', faculty: 'Faculty of Applied Science', phone: '+94 77 0813440', photo: images.vicePresidentDewamiththa },
+        { name: 'W.H.A.A.T. Wickrama', role: 'Vice President', faculty: 'Faculty of Applied Science', phone: '+94 75 0727812', photo: images.vicePresidentWickrama },
+        { name: 'A.I. Ravihansa', role: 'Vice President', faculty: 'Faculty of Applied Science', phone: '+94 75 6570290', photo: images.vicePresidentRavihansa },
+        { name: 'S.N. Edirisooriya', role: 'Secretary', faculty: 'Faculty of Agriculture Sciences', phone: '+94 76 893844', photo: images.secretaryEdirisooriya },
+        { name: 'A.A.O.I.S. Kulathilaka', role: 'Assistant Secretary', faculty: 'Faculty of Management Studies', phone: '+94 78 7337298', photo: images.assistantSecretaryKulathilaka },
+        { name: 'G.P.S. Kariyawasam', role: 'Editor', faculty: 'Faculty of Applied Sciences', phone: '+94 77 1281159', photo: images.editorKariyawasam },
+        { name: 'Nayomi Awanthika', role: 'Assistant Treasurer', faculty: 'Faculty of Management Studies', phone: '+94 76 6072719', photo: images.assistantTreasurerAwanthika },
+        { name: 'J.M.D. Jayasundara', role: 'Sergeant at Arms', faculty: 'Faculty of Management Studies', phone: '+94 70 1127907', photo: images.sergeantAtArmsJayasundara }
     ];
 
     const boardOfDirectors = [
-        { name: 'R.M. Kithmi Geena', role: 'Club service', faculty: 'Faculty of Management Studies', phone: '+94 76 4455199', photo: getImageUrl('geena.png') },
-        { name: 'S.D.U.D. Subasingha', role: 'Community service', faculty: 'Faculty of Agricultural Sciences', phone: '+94 70 2524820', photo: getImageUrl('subasingha.png') },
-        { name: 'A. Randeniarachchi', role: 'International Service', faculty: 'Faculty of Social Science and Languages', phone: '+94 77 0074315', photo: getImageUrl('randeniarachchi.png') },
-        { name: 'S.M.D.S.N. Jayatilleke', role: 'Professional development', faculty: 'Faculty of Management Studies', phone: '+94 76 4454684', photo: getImageUrl('jayatilleke.png') },
-        { name: 'M.F.F. Farha', role: 'Finance', faculty: 'Faculty of Management Studies', phone: '+94 74 1993268', photo: getImageUrl('fazly.png') },
-        { name: 'K.D.A.S. Premathilaka', role: 'Membership Development', faculty: 'Faculty of Agricultural Sciences', phone: '+94 71 3503498', photo: getImageUrl('premathilaka.png') },
-        { name: 'Pasindu Denuwan', role: 'Public Relations', faculty: 'Faculty of Computing', phone: '+94 74 1129514', photo: getImageUrl('denuwan.png') },
-        { name: 'J.A.U. Jayakodi', role: 'Sports and Recreational Activities', faculty: 'Faculty of Applied Sciences', phone: '+94 78 6397512', photo: getImageUrl('jayakodi.png') }
+        { name: 'R.M. Kithmi Geena', role: 'Club service', faculty: 'Faculty of Management Studies', phone: '+94 76 4455199', photo: images.clubServiceGeena },
+        { name: 'S.D.U.D. Subasingha', role: 'Community service', faculty: 'Faculty of Agricultural Sciences', phone: '+94 70 2524820', photo: images.communityServiceSubasingha },
+        { name: 'A. Randeniarachchi', role: 'International Service', faculty: 'Faculty of Social Science and Languages', phone: '+94 77 0074315', photo: images.internationalServiceRandeniarachchi },
+        { name: 'S.M.D.S.N. Jayatilleke', role: 'Professional development', faculty: 'Faculty of Management Studies', phone: '+94 76 4454684', photo: images.professionalDevelopmentJayatilleke },
+        { name: 'M.F.F. Farha', role: 'Finance', faculty: 'Faculty of Management Studies', phone: '+94 74 1993268', photo: images.financeDirectorFazly },
+        { name: 'K.D.A.S. Premathilaka', role: 'Membership Development', faculty: 'Faculty of Agricultural Sciences', phone: '+94 71 3503498', photo: images.membershipDevelopmentPremathilaka },
+        { name: 'Pasindu Denuwan', role: 'Public Relations', faculty: 'Faculty of Computing', phone: '+94 74 1129514', photo: images.publicRelationsDenuwan },
+        { name: 'J.A.U. Jayakodi', role: 'Sports and Recreational Activities', faculty: 'Faculty of Applied Sciences', phone: '+94 78 6397512', photo: images.sportsRecreationalJayakodi }
     ];
 
     // Helper function to handle image errors safely
