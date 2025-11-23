@@ -487,7 +487,7 @@ export default function Profile() {
                                                 </button>
                                             </form>
 
-                                            <div id="qr-scanner" style={{ display: 'none', width: '100%', border: 'none', borderRadius: '16px', overflow: 'hidden' }} className="mt-4 shadow-inner bg-black"></div>
+                                            <div id="qr-scanner" style={{ display: 'none', width: '100%', border: 'none', borderRadius: '16px', overflow: 'hidden' }} className="mt-4 shadow-inner bg-white"></div>
                                         </div>
                                     )}
                                 </div>
