@@ -238,18 +238,18 @@ export default function Home() {
             {/* Bottom Right Image */}
             <div className="absolute bottom-0 right-0 w-[48%] h-[35%] rounded-[44px] shadow-lg overflow-hidden z-20">
               <img
-              src={images.decor1}
-              alt="Service"
-              className="w-full h-full object-cover"
+                src={images.decor1}
+                alt="Service"
+                className="w-full h-full object-cover"
               />
             </div>
 
             {/* Middle Right Image - Overlapping */}
             <div className="absolute top-[22%] right-[18%] w-[42%] h-[40%] rounded-[33px] shadow-lg overflow-hidden z-30">
               <img
-              src={images.decor2}
-              alt="Fellowship"
-              className="w-full h-full object-cover"
+                src={images.decor2}
+                alt="Fellowship"
+                className="w-full h-full object-cover"
               />
             </div>
 
@@ -381,7 +381,14 @@ export default function Home() {
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div className="absolute bottom-0 left-0 w-1/2 h-3/5 bg-pink-600 rounded-[46px]"></div>
+              {/* Replaced pink placeholder with rose image */}
+              <div className="absolute bottom-0 left-0 w-1/2 h-3/5 rounded-[46px] overflow-hidden shadow-lg">
+                <img
+                  src={images.imgRectangle16}
+                  alt="Rose Decoration"
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -632,7 +639,11 @@ export default function Home() {
               <p className="font-poppins font-light text-[17px] text-white mb-6">
                 of the Month
               </p>
-              <div className="bg-white rounded-[32px] h-[320px] mb-6 flex-shrink-0"></div>
+              <img
+                src={images.rotaracter1}
+                alt="Rotaractor of the Month"
+                className="bg-white rounded-[32px] h-[320px] mb-6 flex-shrink-0 w-full object-cover"
+              />
               <p className="font-playfair font-medium text-[28px] text-white mb-1">
                 Name
               </p>

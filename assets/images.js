@@ -23,7 +23,7 @@ export const images = {
   imgRotaractLogo2: "/assets/rotaract-logo.png",
   imgRectangle4: "/assets/rectangle4.png",
   imgRectangle5: "/assets/rectangle5.png",
-  imgRectangle14: "/assets/rectangle14.png",
+  imgRectangle14: "https://res.cloudinary.com/dvqoiqzxe/image/upload/v1763883810/fb_photo_1559705054_i7xehi.jpg",
   imgRectangle15: "/assets/rectangle15.png",
   imgIcons8UserAccount641: "/assets/user-icon.png",
   imgIcons8Leadership481: "/assets/leadership-icon.png",
@@ -38,6 +38,7 @@ export const images = {
   imgIcons8Tiktok501: "/assets/tiktok-icon.png",
   imgIcons8Youtube501: "/assets/youtube-icon.png",
   imgIcons8ExpandArrow481: "/assets/expand-arrow.png",
+  imgRectangle16: "https://res.cloudinary.com/dvqoiqzxe/image/upload/v1763883805/fb_photo_1405522068_syk3ix.jpg",
   // SVG decorative elements
   imgLine1: "/assets/line1.svg",
   imgEllipse1: "/assets/ellipse1.svg",
@@ -106,6 +107,12 @@ export const images = {
     "https://res.cloudinary.com/dvqoiqzxe/image/upload/v1763869337/Director_of_Sports_and_Recreational_Activities_-_RTR._J.A.Umesha_Jayakodi_beu9nj.jpg",
 
   //Homepage decorative images
-  decor1: "https://res.cloudinary.com/dvqoiqzxe/image/upload/v1763879644/fb_photo_722093276_e18j9v.jpg",
-  decor2: "https://res.cloudinary.com/dvqoiqzxe/image/upload/v1763879640/fb_photo_688997656_unkeeb.jpg",
+  decor1:
+    "https://res.cloudinary.com/dvqoiqzxe/image/upload/v1763879644/fb_photo_722093276_e18j9v.jpg",
+  decor2:
+    "https://res.cloudinary.com/dvqoiqzxe/image/upload/v1763879640/fb_photo_688997656_unkeeb.jpg",
+
+  //Rotaracter of the month images
+  rotaracter1:
+    "https://res.cloudinary.com/dvqoiqzxe/image/upload/v1763882525/WhatsApp_Image_2025-11-23_at_12.32.56_0fd3d41f_savmqs.jpg",
 };
