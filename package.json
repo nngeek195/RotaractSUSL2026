@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",
+    "cloudinary": "^2.8.0",
     "crypto-js": "^4.2.0",
     "firebase": "^12.6.0",
     "firebase-admin": "^13.6.0",

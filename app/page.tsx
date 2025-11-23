@@ -25,6 +25,8 @@ export default function Home() {
   };
   const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [galleryImages, setGalleryImages] = useState<any[]>([]);
+  const [galleryLoading, setGalleryLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
@@ -48,6 +50,26 @@ export default function Home() {
     );
 
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    // Fetch gallery images
+    const fetchGalleryImages = async () => {
+      try {
+        setGalleryLoading(true);
+        const response = await fetch("/api/gallery");
+        if (response.ok) {
+          const data = await response.json();
+          setGalleryImages(data.images?.slice(0, 8) || []); // Get first 8 images
+        }
+      } catch (error) {
+        console.error("Error fetching gallery:", error);
+      } finally {
+        setGalleryLoading(false);
+      }
+    };
+
+    fetchGalleryImages();
   }, []);
 
   // --- 2. Filtering Logic ---
@@ -543,10 +565,38 @@ export default function Home() {
       <section className="bg-white py-8">
         <div className="max-w-7xl mx-auto px-4">
           <div className="bg-[#d9d9d9] rounded-[43px] py-12 px-6">
+            {galleryLoading ? (
+              <div className="text-center py-10">
+                <p className="text-lg text-gray-600">Loading gallery...</p>
+              </div>
+            ) : galleryImages.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {galleryImages.map((img, index) => (
+                  <div
+                    key={index}
+                    className="rounded-[20px] overflow-hidden bg-gray-300 aspect-square"
+                  >
+                    <img
+                      src={img.url}
+                      alt={`Gallery ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-10">
+                <p className="text-lg text-gray-600">No gallery images yet</p>
+              </div>
+            )}
+
             <div className="text-center mt-8">
-              <button className="bg-pink-600 text-white px-6 py-3 rounded-full font-poppins font-medium text-sm hover:bg-opacity-90">
+              <a
+                href="/gallery"
+                className="bg-pink-600 text-white px-6 py-3 rounded-full font-poppins font-medium text-sm hover:bg-opacity-90 inline-block"
+              >
                 See More
-              </button>
+              </a>
             </div>
           </div>
         </div>
