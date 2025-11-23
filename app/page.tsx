@@ -645,10 +645,10 @@ export default function Home() {
                 className="bg-white rounded-[32px] h-[320px] mb-6 flex-shrink-0 w-full object-cover"
               />
               <p className="font-playfair font-medium text-[28px] text-white mb-1">
-                Name
+                Asmath Sahee
               </p>
               <p className="font-poppins text-[19px] text-[#d9d9d9] mb-6">
-                Faculty
+                Faculty of Computing
               </p>
               <p className="font-poppins font-medium italic text-[17px] text-white leading-relaxed">
                 "Service to others is the rent you pay for your room here on
