@@ -30,13 +30,7 @@ export default function About() {
             <section className="px-4 pb-24">
                 <div className="max-w-5xl mx-auto space-y-8 font-poppins text-[#343434] text-sm leading-relaxed">
                     <p>
-                        We believe service is more than activity—it is a mindset of empathy, responsibility, and sustainable action. Our initiatives are crafted to address real needs while empowering student leadership.
-                    </p>
-                    <p>
-                        Through strategic partnerships and cross-faculty collaboration, Rotaract SUSL cultivates growth opportunities: professional development workshops, environmental campaigns, health awareness drives, and mentorship networks.
-                    </p>
-                    <p>
-                        Each member is encouraged to explore their potential while contributing to the collective mission: Service Above Self. Our foundation is built on inclusivity, ethics, and innovation.
+                        The Rotaract Club of Sabaragamuwa University of Sri Lanka was established in 2024 as a platform for young leaders to create meaningful impact within the university and the wider community. Since its inception, the club has grown steadily, bringing together passionate undergraduates who are committed to service, leadership, and professional development. Today, the club continues to expand its initiatives through sustainable projects, volunteer programs, and youth empowerment activities, positioning itself as a vibrant and active force within the Rotaract movement at SUSL.
                     </p>
                 </div>
             </section>
