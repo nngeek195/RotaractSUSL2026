@@ -53,8 +53,8 @@ export default function Footer() {
                         </div>
                         <div className="flex items-center gap-3">
                             <img src={images.imgIcons8Mail481} alt="Email" className="w-6 h-6" />
-                            <a href="mailto:rotaract.sabaragamuwa@gmail.com" className="hover:text-pink-600">
-                                rotaract.sabaragamuwa@gmail.com
+                            <a href="mailto:info@rotaractsusl.org" className="hover:text-pink-600">
+                                info@rotaractsusl.org
                             </a>
                         </div>
                     </div>

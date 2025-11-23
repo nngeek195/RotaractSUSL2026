@@ -210,9 +210,12 @@ export default function Home() {
             </p>
 
             <div className="flex gap-4 pt-2">
-              <button className="bg-pink-600 text-white px-6 py-3 rounded-full font-poppins font-medium text-sm hover:bg-opacity-90">
+              <a
+                href="/about"
+                className="bg-pink-600 text-white px-6 py-3 rounded-full font-poppins font-medium text-sm hover:bg-opacity-90 text-center"
+              >
                 Learn More
-              </button>
+              </a>
               <a
                 href="/join"
                 className="border border-black text-black px-6 py-3 rounded-full font-poppins font-medium text-sm hover:bg-black hover:text-white transition text-center"
@@ -363,9 +366,12 @@ export default function Home() {
                 motto of "Service Above Self" while fostering lifelong
                 friendships and shaping ethical leaders for tomorrow.
               </p>
-              <button className="bg-pink-600 text-white px-6 py-3 rounded-full font-poppins font-medium text-sm hover:bg-opacity-90">
+              <a
+                href="/about"
+                className="bg-pink-600 text-white px-6 py-3 rounded-full font-poppins font-medium text-sm hover:bg-opacity-90 inline-block"
+              >
                 Learn More
-              </button>
+              </a>
             </div>
 
             <div className="relative h-[400px]">
@@ -739,7 +745,7 @@ export default function Home() {
             difference in the lives of those we serve.
           </p>
           <p className="font-poppins font-medium text-lg text-white">
-            Contact us at: rotaract.sabaragamuwa@gmail.com
+            Contact us at: info@rotaractsusl.org
           </p>
         </div>
       </section>
