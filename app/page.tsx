@@ -399,7 +399,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
             <div>
-              <p className="font-prata text-5xl text-text-pink-600 mb-2">10+</p>
+              <p className="font-prata text-5xl text-text-pink-600 mb-2">1+</p>
               <p className="font-poppins font-medium text-base text-black">
                 Years of Service
               </p>
@@ -412,14 +412,14 @@ export default function Home() {
             </div>
             <div>
               <p className="font-prata text-5xl text-text-pink-600 mb-2">
-                200+
+                800+
               </p>
               <p className="font-poppins font-medium text-base text-black">
                 Members
               </p>
             </div>
             <div>
-              <p className="font-prata text-5xl text-text-pink-600 mb-2">9</p>
+              <p className="font-prata text-5xl text-text-pink-600 mb-2">8</p>
               <p className="font-poppins font-medium text-base text-black">
                 Faculties
               </p>
