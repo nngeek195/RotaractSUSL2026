@@ -235,22 +235,21 @@ export default function Home() {
                 className="w-full h-full object-cover"
               />
             </div>
-
             {/* Bottom Right Image */}
             <div className="absolute bottom-0 right-0 w-[48%] h-[35%] rounded-[44px] shadow-lg overflow-hidden z-20">
               <img
-                src={images.imgRectangle4}
-                alt="Service"
-                className="w-full h-full object-cover"
+              src={images.decor1}
+              alt="Service"
+              className="w-full h-full object-cover"
               />
             </div>
 
             {/* Middle Right Image - Overlapping */}
             <div className="absolute top-[22%] right-[18%] w-[42%] h-[40%] rounded-[33px] shadow-lg overflow-hidden z-30">
               <img
-                src={images.imgRectangle5}
-                alt="Fellowship"
-                className="w-full h-full object-cover"
+              src={images.decor2}
+              alt="Fellowship"
+              className="w-full h-full object-cover"
               />
             </div>
 
