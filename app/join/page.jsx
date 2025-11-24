@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
+// Check these paths based on your folder structure
 import { images } from '../../assets/images';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, Mail } from 'lucide-react';
 
-// Firebase Imports (Storage imports removed)
-import { auth, db } from "@/lib/firebase";
+import { auth, db } from "../../lib/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
@@ -15,39 +15,30 @@ import { useRouter } from "next/navigation";
 export default function JoinUs() {
     const router = useRouter();
 
-    // Form State
     const [formData, setFormData] = useState({
-        fullName: "",
-        studentId: "",
-        faculty: "",
-        department: "",
-        contact: "",
-        email: "",
-        reason: "",
-        password: "",
+        fullName: "", studentId: "", faculty: "", department: "",
+        contact: "", email: "", reason: "", password: "",
     });
-
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState(false);
 
-    // Handle Input Changes
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
+    const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-    // Handle Form Submission
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError("");
 
         try {
-            // 1. Create User in Firebase Auth
+            // 1. Create Auth User
             const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
             const user = userCredential.user;
 
-            // 2. Save Data to Firestore (Pending Requests) - NO IMAGE URL
+            // 2. Generate Token
+            const emailToken = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
+
+            // 3. Save to Firestore (Status: email_verification_pending)
             await setDoc(doc(db, "pendingRequests", user.uid), {
                 uid: user.uid,
                 fullName: formData.fullName,
@@ -57,45 +48,47 @@ export default function JoinUs() {
                 whatsapp: formData.contact,
                 email: formData.email,
                 reason: formData.reason,
-                status: "pending",
+                status: "email_verification_pending", // HIDDEN FROM ADMIN
+                emailVerified: false,
+                emailVerificationToken: emailToken,
                 submittedAt: new Date()
             });
 
+            // 4. Send Verification Email
+            await fetch('/api/send-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: formData.email,
+                    fullName: formData.fullName,
+                    type: 'verify_email',
+                    token: emailToken
+                }),
+            });
+
             setSuccess(true);
-
-            // Redirect after success
-            setTimeout(() => {
-                router.push("/");
-            }, 3000);
-
         } catch (err) {
             console.error(err);
-            if (err.code === 'auth/email-already-in-use') {
-                setError("This email is already registered.");
-            } else if (err.code === 'auth/weak-password') {
-                setError("Password should be at least 6 characters.");
-            } else {
-                setError("Something went wrong. Please try again.");
-            }
+            setError(err.message);
         } finally {
             setLoading(false);
         }
     };
 
-    // --- Render Success State ---
     if (success) {
         return (
             <div className="bg-white min-h-screen flex flex-col relative">
                 <Navbar currentPage="join" />
                 <div className="flex-1 flex flex-col items-center justify-center px-4 text-center">
-                    <CheckCircle className="text-green-500 w-20 h-20 mb-6" />
-                    <h2 className="font-playfair text-3xl text-black mb-4">Application Submitted!</h2>
-                    <p className="font-poppins text-gray-600 max-w-md">
-                        Thank you for your interest. Your application has been sent to the Executive Committee for review. You will be notified once approved.
+                    <div className="bg-pink-50 p-6 rounded-full mb-6">
+                        <Mail className="text-pink-600 w-16 h-16" />
+                    </div>
+                    <h2 className="text-3xl font-bold mb-4">Check your Email!</h2>
+                    <p className="text-gray-600 max-w-md">
+                        We sent a verification link to <span className="font-bold">{formData.email}</span>.
+                        Please click it to complete your application.
                     </p>
-                    <button onClick={() => router.push('/')} className="mt-8 bg-pink-600 text-white px-8 py-3 rounded-full font-poppins">
-                        Back to Home
-                    </button>
+                    <button onClick={() => router.push('/')} className="mt-8 text-pink-600 font-bold">Back to Home</button>
                 </div>
                 <Footer />
             </div>
