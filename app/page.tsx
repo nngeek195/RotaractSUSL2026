@@ -115,7 +115,17 @@ export default function Home() {
   }, [allProjects]);
 
   // --- Dynamic Data (Leadership) ---
-  const [leadershipTeam, setLeadershipTeam] = useState<any[]>([]);
+  type LeadershipMember = {
+    id: string;
+    name?: string;
+    role?: string;
+    faculty?: string;
+    phone?: string;
+    photo?: string;
+    linkedin?: string;
+    positionOrder?: number;
+  };
+  const [leadershipTeam, setLeadershipTeam] = useState<LeadershipMember[]>([]);
   useEffect(() => {
     const q = query(collection(db, "leaderboard"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
