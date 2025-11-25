@@ -114,72 +114,21 @@ export default function Home() {
       .slice(0, 3); // Limit to 3 for the grid layout
   }, [allProjects]);
 
-  // --- Static Data (Leadership) ---
-  const leadershipTeam = [
-    {
-      name: "M.D.K.K. Basnayake",
-      role: "President",
-      faculty: "Faculty of Agriculture Sciences",
-      phone: "+94 78 2479942",
-      photo: images.presidentPhoto,
-    },
-    {
-      name: "D.M.H.S. Dewamiththa",
-      role: "Vice President",
-      faculty: "Faculty of Applied Science",
-      phone: "+94 77 0813440",
-      photo: images.vicePresidentDewamiththa,
-    },
-    {
-      name: "W.H.A.A.T. Wickrama",
-      role: "Vice President",
-      faculty: "Faculty of Applied Science",
-      phone: "+94 75 0727812",
-      photo: images.vicePresidentWickrama,
-    },
-    {
-      name: "A.I. Ravihansa",
-      role: "Vice President",
-      faculty: "Faculty of Applied Science",
-      phone: "+94 75 6570290",
-      photo: images.vicePresidentRavihansa,
-    },
-    {
-      name: "S.N. Edirisooriya",
-      role: "Secretary",
-      faculty: "Faculty of Agriculture Sciences",
-      phone: "+94 76 893844",
-      photo: images.secretaryEdirisooriya,
-    },
-    {
-      name: "A.A.O.I.S. Kulathilaka",
-      role: "Assistant Secretary",
-      faculty: "Faculty of Management Studies",
-      phone: "+94 78 7337298",
-      photo: images.assistantSecretaryKulathilaka,
-    },
-    {
-      name: "G.P.S. Kariyawasam",
-      role: "Editor",
-      faculty: "Faculty of Applied Sciences",
-      phone: "+94 77 1281159",
-      photo: images.editorKariyawasam,
-    },
-    {
-      name: "Nayomi Awanthika",
-      role: "Assistant treasurer",
-      faculty: "Faculty of Management Studies",
-      phone: "+94 76 6072719",
-      photo: images.assistantTreasurerAwanthika,
-    },
-    {
-      name: "J.M.D. Jayasundara",
-      role: "Sergeant at Arms",
-      faculty: "Faculty of Management Studies",
-      phone: "+94 70 1127907",
-      photo: images.sergeantAtArmsJayasundara,
-    },
-  ];
+  // --- Dynamic Data (Leadership) ---
+  const [leadershipTeam, setLeadershipTeam] = useState<any[]>([]);
+  useEffect(() => {
+    const q = query(collection(db, "leaderboard"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const list = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setLeadershipTeam(
+        list.sort((a, b) => (a.positionOrder ?? 999) - (b.positionOrder ?? 999))
+      );
+    });
+    return () => unsubscribe();
+  }, []);
 
   return (
     <div className="bg-white relative w-full">
@@ -704,9 +653,12 @@ export default function Home() {
             {/* Leadership Grid - All 9 Members */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {leadershipTeam.map((member, i) => (
-                <div key={i} className="flex flex-col">
+                <div key={member.id || i} className="flex flex-col">
                   <img
-                    src={member.photo}
+                    src={
+                      member.photo ||
+                      "/assets/leadership/placeholder-230x247.png"
+                    }
                     alt={member.name}
                     className="bg-pink-600 rounded-[32px] aspect-[230/247] mb-4 object-cover"
                   />
@@ -720,11 +672,25 @@ export default function Home() {
                     {member.faculty}
                   </p>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <img
-                      src={images.imgIcons8LinkedIn501}
-                      alt="LinkedIn"
-                      className="w-7 h-7"
-                    />
+                    {member.linkedin ? (
+                      <a
+                        href={member.linkedin}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <img
+                          src={images.imgIcons8LinkedIn501}
+                          alt="LinkedIn"
+                          className="w-7 h-7"
+                        />
+                      </a>
+                    ) : (
+                      <img
+                        src={images.imgIcons8LinkedIn501}
+                        alt="LinkedIn"
+                        className="w-7 h-7 opacity-40"
+                      />
+                    )}
                     <img
                       src={images.imgIcons8Call501}
                       alt="Call"
