@@ -123,7 +123,9 @@ export default function Home() {
         id: doc.id,
         ...doc.data(),
       }));
-      setLeadershipTeam(list.sort((a, b) => (a.positionOrder ?? 999) - (b.positionOrder ?? 999)));
+      setLeadershipTeam(
+        list.sort((a, b) => (a.positionOrder ?? 999) - (b.positionOrder ?? 999))
+      );
     });
     return () => unsubscribe();
   }, []);
@@ -653,7 +655,10 @@ export default function Home() {
               {leadershipTeam.map((member, i) => (
                 <div key={member.id || i} className="flex flex-col">
                   <img
-                    src={member.photo || "/assets/leadership/placeholder-230x247.png"}
+                    src={
+                      member.photo ||
+                      "/assets/leadership/placeholder-230x247.png"
+                    }
                     alt={member.name}
                     className="bg-pink-600 rounded-[32px] aspect-[230/247] mb-4 object-cover"
                   />
@@ -668,11 +673,23 @@ export default function Home() {
                   </p>
                   <div className="flex items-center gap-2 flex-wrap">
                     {member.linkedin ? (
-                      <a href={member.linkedin} target="_blank" rel="noopener noreferrer">
-                        <img src={images.imgIcons8LinkedIn501} alt="LinkedIn" className="w-7 h-7" />
+                      <a
+                        href={member.linkedin}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <img
+                          src={images.imgIcons8LinkedIn501}
+                          alt="LinkedIn"
+                          className="w-7 h-7"
+                        />
                       </a>
                     ) : (
-                      <img src={images.imgIcons8LinkedIn501} alt="LinkedIn" className="w-7 h-7 opacity-40" />
+                      <img
+                        src={images.imgIcons8LinkedIn501}
+                        alt="LinkedIn"
+                        className="w-7 h-7 opacity-40"
+                      />
                     )}
                     <img
                       src={images.imgIcons8Call501}
