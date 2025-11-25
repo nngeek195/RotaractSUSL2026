@@ -129,10 +129,13 @@ export default function Home() {
   useEffect(() => {
     const q = query(collection(db, "leaderboard"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const list = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const list = snapshot.docs.map(
+        (doc) =>
+          ({
+            id: doc.id,
+            ...doc.data(),
+          } as LeadershipMember)
+      );
       setLeadershipTeam(
         list.sort((a, b) => (a.positionOrder ?? 999) - (b.positionOrder ?? 999))
       );
