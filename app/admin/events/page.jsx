@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Calendar, MapPin, Edit, Trash, CheckCircle, Plus, Users, Loader2 } from "lucide-react";
+
+const CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/dvqoiqzxe/image/upload";
+const CLOUDINARY_UPLOAD_PRESET = "projects"; // Replace with your actual preset name from Cloudinary
 
 export default function EventHandling() {
     const [events, setEvents] = useState([]);
@@ -23,10 +26,56 @@ export default function EventHandling() {
 
     // View State: 'upcoming' or 'completed'
     const [view, setView] = useState("upcoming");
+    const [uploading, setUploading] = useState(false);
+    const [uploadMessage, setUploadMessage] = useState("");
+    const [selectedFile, setSelectedFile] = useState(null);
+    const fileInputRef = useRef(null);
 
     useEffect(() => {
         fetchEvents();
     }, []);
+
+    const uploadImage = async () => {
+        if (!selectedFile) return formData.imageUrl;
+
+        const sanitizeFolderName = (name) =>
+            name.toLowerCase()
+                .trim()
+                .replace(/[^a-z0-9\s-]/g, "")
+                .replace(/\s+/g, "-");
+
+        const folderName = sanitizeFolderName(formData.title);
+
+        const formDataUpload = new FormData();
+        formDataUpload.append("file", selectedFile);
+        formDataUpload.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+        formDataUpload.append("folder", `Projects/${folderName}`);
+
+        setUploading(true);
+        setUploadMessage("");
+
+        try {
+            const res = await fetch(CLOUDINARY_UPLOAD_URL, {
+                method: "POST",
+                body: formDataUpload,
+            });
+
+            const data = await res.json();
+
+            if (data.secure_url) {
+                setUploadMessage("Image uploaded successfully.");
+                return data.secure_url;
+            } else {
+                throw new Error("Upload failed");
+            }
+        } catch (err) {
+            console.error(err);
+            setUploadMessage("Image upload error.");
+            throw err;
+        } finally {
+            setUploading(false);
+        }
+    };
 
     const fetchEvents = async () => {
         setLoading(true);
@@ -60,6 +109,10 @@ export default function EventHandling() {
             imageUrl: "",
             participants: ""
         });
+        setSelectedFile(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
         setIsEditing(false);
         setCurrentEventId(null);
     };
@@ -67,15 +120,24 @@ export default function EventHandling() {
     // 1. Create or Update Event
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!isEditing && !selectedFile) {
+            alert("Please select an image for the new project.");
+            return;
+        }
         setLoading(true);
 
         try {
+            let imageUrl = formData.imageUrl;
+            if (selectedFile) {
+                imageUrl = await uploadImage();
+            }
+
             const eventData = {
                 title: formData.title,
                 location: formData.location,
                 date: formData.date,
                 description: formData.description,
-                imageUrl: formData.imageUrl,
+                imageUrl: imageUrl,
                 // If creating new, default to upcoming. If editing, keep existing status.
                 status: isEditing ? events.find(e => e.id === currentEventId).status : "upcoming",
                 updatedAt: Timestamp.now()
@@ -200,8 +262,29 @@ export default function EventHandling() {
                     </div>
 
                     <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Image Link (URL)</label>
-                        <input name="imageUrl" value={formData.imageUrl} onChange={handleInputChange} required className="w-full p-3 border rounded-lg" placeholder="https://..." />
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Project Image</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setSelectedFile(e.target.files[0])}
+                            ref={fileInputRef}
+                            className="w-full p-3 border rounded-lg"
+                        />
+                        {selectedFile && (
+                            <img
+                                src={URL.createObjectURL(selectedFile)}
+                                alt="Project Preview"
+                                className="mt-2 rounded w-full h-48 object-cover"
+                            />
+                        )}
+                        {formData.imageUrl && !selectedFile && (
+                            <img
+                                src={formData.imageUrl}
+                                alt="Current Project Image"
+                                className="mt-2 rounded w-full h-48 object-cover"
+                            />
+                        )}
+                        {uploadMessage && <p className="mt-2 text-sm text-pink-600">{uploadMessage}</p>}
                     </div>
 
                     <div className="md:col-span-2">
