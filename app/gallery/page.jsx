@@ -26,7 +26,11 @@ export default function Gallery() {
     const fetchGalleryImages = async () => {
         try {
             setLoading(true);
-            const response = await fetch('/api/gallery');
+            const response = await fetch('/api/gallery', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ expression: 'asset_folder="Gallery"' })
+            });
 
             if (!response.ok) {
                 throw new Error('Failed to fetch gallery images');
