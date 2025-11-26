@@ -93,6 +93,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <Users size={20} /> Leaderboard
             </Link>
           </li>
+          <li>
+            <Link
+              href="/admin/monthly-stars"
+              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-yellow-400 transition"
+            >
+              <Calendar size={20} /> Monthly Stars
+            </Link>
+          </li>
         </ul>
         <button
           onClick={handleLogout}

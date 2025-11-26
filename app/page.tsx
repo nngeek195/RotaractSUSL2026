@@ -115,6 +115,33 @@ export default function Home() {
   }, [allProjects]);
 
   // --- Dynamic Data (Leadership) ---
+  // --- Dynamic Data (Monthly Stars) ---
+  type MonthlyStar = {
+    image: string;
+    name: string;
+    faculty: string;
+    quote: string;
+    type: "director" | "rotaractor";
+  };
+  const [directorOfMonth, setDirectorOfMonth] = useState<MonthlyStar | null>(
+    null
+  );
+  const [rotaractorOfMonth, setRotaractorOfMonth] =
+    useState<MonthlyStar | null>(null);
+  useEffect(() => {
+    // Fetch monthly stars from Firestore
+    const fetchMonthlyStars = async () => {
+      const { getDocs, collection } = await import("firebase/firestore");
+      const { db } = await import("@/lib/firebase");
+      const querySnapshot = await getDocs(collection(db, "monthlyStars"));
+      querySnapshot.forEach((doc) => {
+        const data = doc.data() as MonthlyStar;
+        if (data.type === "director") setDirectorOfMonth(data);
+        if (data.type === "rotaractor") setRotaractorOfMonth(data);
+      });
+    };
+    fetchMonthlyStars();
+  }, []);
   type LeadershipMember = {
     id: string;
     name?: string;
@@ -555,7 +582,7 @@ export default function Home() {
                     className="rounded-[20px] overflow-hidden bg-gray-300 aspect-square"
                   >
                     <img
-                      src={img.url}
+                      src={img.url || images.imgRectangle20}
                       alt={`Gallery ${index + 1}`}
                       className="w-full h-full object-cover"
                     />
@@ -597,32 +624,7 @@ export default function Home() {
           </p>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
-            {/* Rotaractor of the Month */}
-            <div className="bg-pink-600 rounded-[37px] shadow-lg p-8 relative flex flex-col">
-              <p className="font-playfair font-medium text-[32px] text-white mb-1">
-                Rotaractor
-              </p>
-              <p className="font-poppins font-light text-[17px] text-white mb-6">
-                of the Month
-              </p>
-              <img
-                src={images.rotaracter1}
-                alt="Rotaractor of the Month"
-                className="bg-white rounded-[32px] h-[320px] mb-6 flex-shrink-0 w-full object-cover"
-              />
-              <p className="font-playfair font-medium text-[28px] text-white mb-1">
-                Asmath Sahee
-              </p>
-              <p className="font-poppins text-[19px] text-[#d9d9d9] mb-6">
-                Faculty of Computing
-              </p>
-              <p className="font-poppins font-medium italic text-[17px] text-white leading-relaxed">
-                "Service to others is the rent you pay for your room here on
-                earth."
-              </p>
-            </div>
-
-            {/* Director of the Month */}
+            {/* Director of the Month (Dynamic) */}
             <div className="bg-pink-600 rounded-[37px] shadow-lg p-8 relative flex flex-col">
               <p className="font-playfair font-medium text-[32px] text-white mb-1">
                 Director
@@ -631,19 +633,48 @@ export default function Home() {
                 of the Month
               </p>
               <img
-                src={images.communityServiceSubasingha}
+                src={
+                  directorOfMonth?.image ||
+                  "https://placehold.co/300x300?text=Director+of+Month"
+                }
                 alt="Director of the Month"
                 className="bg-white rounded-[32px] h-[320px] mb-6 flex-shrink-0 w-full object-cover"
               />
               <p className="font-playfair font-medium text-[28px] text-white mb-1">
-                S.D.U.D. Subasingha
+                {directorOfMonth?.name || "Director Name"}
               </p>
               <p className="font-poppins text-[19px] text-[#d9d9d9] mb-6">
-                Faculty of Agricultural Sciences
+                {directorOfMonth?.faculty || "Director Faculty"}
               </p>
               <p className="font-poppins font-medium italic text-[17px] text-white leading-relaxed">
-                "Service to others is the rent you pay for your room here on
-                earth."
+                {directorOfMonth?.quote || "Director quote goes here."}
+              </p>
+            </div>
+
+            {/* Rotaractor of the Month (Dynamic) */}
+            <div className="bg-pink-600 rounded-[37px] shadow-lg p-8 relative flex flex-col">
+              <p className="font-playfair font-medium text-[32px] text-white mb-1">
+                Rotaractor
+              </p>
+              <p className="font-poppins font-light text-[17px] text-white mb-6">
+                of the Month
+              </p>
+              <img
+                src={
+                  rotaractorOfMonth?.image ||
+                  "https://placehold.co/300x300?text=Rotaractor+of+Month"
+                }
+                alt="Rotaractor of the Month"
+                className="bg-white rounded-[32px] h-[320px] mb-6 flex-shrink-0 w-full object-cover"
+              />
+              <p className="font-playfair font-medium text-[28px] text-white mb-1">
+                {rotaractorOfMonth?.name || "Rotaractor Name"}
+              </p>
+              <p className="font-poppins text-[19px] text-[#d9d9d9] mb-6">
+                {rotaractorOfMonth?.faculty || "Rotaractor Faculty"}
+              </p>
+              <p className="font-poppins font-medium italic text-[17px] text-white leading-relaxed">
+                {rotaractorOfMonth?.quote || "Rotaractor quote goes here."}
               </p>
             </div>
           </div>
