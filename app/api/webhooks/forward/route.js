@@ -30,13 +30,24 @@ export async function POST(req) {
       // Fetch the full email content
       const { data: email } = await resend.emails.receiving.get(emailId);
 
-      // Forward the email
+      // Defensive check for email and subject
+      if (!email) {
+        return new Response(JSON.stringify({ error: "Email data missing" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      const subject = email.subject || "(No subject)";
+      const text = email.text || "";
+      const html = email.html || "";
+
       await resend.emails.send({
         from: process.env.FROM_EMAIL,
         to: process.env.TO_EMAIL,
-        subject: email.subject || "(No subject)",
-        text: email.text || "",
-        html: email.html || "",
+        subject,
+        text,
+        html,
       });
 
       return new Response(JSON.stringify({ status: "forwarded" }), {
