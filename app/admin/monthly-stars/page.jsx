@@ -21,25 +21,27 @@ const initialState = {
 };
 
 export default function MonthlyStarsAdmin() {
-    const [director, setDirector] = useState(initialState);
-    const [rotaractor, setRotaractor] = useState(initialState);
+    const [selectedType, setSelectedType] = useState("director");
+    const [currentData, setCurrentData] = useState(initialState);
+    const [savedDirector, setSavedDirector] = useState(initialState);
+    const [savedRotaractor, setSavedRotaractor] = useState(initialState);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
 
     useEffect(() => {
-        // Fetch current data from Firestore
+        // Fetch current data from Firestore for preview
         const fetchData = async () => {
             const querySnapshot = await getDocs(collection(db, "monthlyStars"));
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
-                if (data.type === "director") setDirector(data);
-                if (data.type === "rotaractor") setRotaractor(data);
+                if (data.type === "director") setSavedDirector(data);
+                if (data.type === "rotaractor") setSavedRotaractor(data);
             });
         };
         fetchData();
     }, []);
 
-    const handleImageUpload = async (file, setFunc) => {
+    const handleImageUpload = async (file) => {
         const formData = new FormData();
         formData.append("file", file);
         formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
@@ -53,7 +55,7 @@ export default function MonthlyStarsAdmin() {
             });
             const data = await res.json();
             if (data.secure_url) {
-                setFunc((prev) => ({ ...prev, image: data.secure_url }));
+                setCurrentData((prev) => ({ ...prev, image: data.secure_url }));
                 setMessage("Image uploaded successfully.");
             } else {
                 setMessage("Image upload failed.");
@@ -62,20 +64,20 @@ export default function MonthlyStarsAdmin() {
             setMessage("Image upload error.");
         }
         setLoading(false);
-    };
-
-    const handleSave = async (type, data) => {
+    }; const handleSave = async () => {
         setLoading(true);
         setMessage("");
         try {
-            await setDoc(doc(db, "monthlyStars", type), { ...data, type });
+            await setDoc(doc(db, "monthlyStars", selectedType), { ...currentData, type: selectedType });
             setMessage("Saved successfully.");
-            // Clear the form after successful save
-            if (type === "director") {
-                setDirector(initialState);
-            } else if (type === "rotaractor") {
-                setRotaractor(initialState);
+            // Update the saved data state
+            if (selectedType === "director") {
+                setSavedDirector({ ...currentData, type: selectedType });
+            } else {
+                setSavedRotaractor({ ...currentData, type: selectedType });
             }
+            // Clear the form
+            setCurrentData(initialState);
         } catch (err) {
             setMessage("Save failed.");
         }
@@ -83,189 +85,165 @@ export default function MonthlyStarsAdmin() {
     };
 
     return (
-        <div className="max-w-3xl mx-auto py-12 px-4">
-            <h2 className="font-playfair text-3xl mb-8">Monthly Stars Admin Panel</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Director of the Month */}
-                <div className="bg-white rounded-lg shadow p-6">
-                    <h3 className="font-bold text-xl mb-4">Director of the Month</h3>
-                    <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) =>
-                            handleImageUpload(e.target.files[0], setDirector)
-                        }
-                        className="mb-2"
-                    />
-                    {director.image && (
-                        <img
-                            src={director.image}
-                            alt="Director Preview"
-                            className="rounded mb-2 w-full h-48 object-cover"
-                        />
-                    )}
-                    <input
-                        type="text"
-                        placeholder="Name"
-                        value={director.name}
-                        onChange={(e) =>
-                            setDirector((prev) => ({ ...prev, name: e.target.value }))
-                        }
-                        className="mb-2 w-full border p-2 rounded"
-                    />
-                    <select
-                        value={director.faculty}
-                        onChange={(e) =>
-                            setDirector((prev) => ({ ...prev, faculty: e.target.value }))
-                        }
-                        className="mb-2 w-full border p-2 rounded"
-                    >
-                        <option value="">Select Faculty</option>
-                        <option value="Faculty of Applied Sciences">Faculty of Applied Sciences</option>
-                        <option value="Faculty of Agricultural Sciences">Faculty of Agricultural Sciences</option>
-                        <option value="Faculty of Geomatics">Faculty of Geomatics</option>
-                        <option value="Faculty of Management Studies">Faculty of Management Studies</option>
-                        <option value="Faculty of Medicine">Faculty of Medicine</option>
-                        <option value="Faculty of Social Sciences & Languages">Faculty of Social Sciences & Languages</option>
-                        <option value="Faculty of Technology">Faculty of Technology</option>
-                        <option value="Faculty of Computing">Faculty of Computing</option>
-                    </select>
-                    <textarea
-                        placeholder="Quote"
-                        value={director.quote}
-                        onChange={(e) =>
-                            setDirector((prev) => ({ ...prev, quote: e.target.value }))
-                        }
-                        className="mb-2 w-full border p-2 rounded"
-                    />
-                    <button
-                        onClick={() => handleSave("director", director)}
-                        className="bg-pink-600 text-white px-4 py-2 rounded"
-                        disabled={loading}
-                    >
-                        Save Director
-                    </button>
-                </div>
-                {/* Rotaractor of the Month */}
-                <div className="bg-white rounded-lg shadow p-6">
-                    <h3 className="font-bold text-xl mb-4">Rotaractor of the Month</h3>
-                    <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) =>
-                            handleImageUpload(e.target.files[0], setRotaractor)
-                        }
-                        className="mb-2"
-                    />
-                    {rotaractor.image && (
-                        <img
-                            src={rotaractor.image}
-                            alt="Rotaractor Preview"
-                            className="rounded mb-2 w-full h-48 object-cover"
-                        />
-                    )}
-                    <input
-                        type="text"
-                        placeholder="Name"
-                        value={rotaractor.name}
-                        onChange={(e) =>
-                            setRotaractor((prev) => ({ ...prev, name: e.target.value }))
-                        }
-                        className="mb-2 w-full border p-2 rounded"
-                    />
-                    <select
-                        value={rotaractor.faculty}
-                        onChange={(e) =>
-                            setRotaractor((prev) => ({ ...prev, faculty: e.target.value }))
-                        }
-                        className="mb-2 w-full border p-2 rounded"
-                    >
-                        <option value="">Select Faculty</option>
-                        <option value="Faculty of Applied Sciences">Faculty of Applied Sciences</option>
-                        <option value="Faculty of Agricultural Sciences">Faculty of Agricultural Sciences</option>
-                        <option value="Faculty of Geomatics">Faculty of Geomatics</option>
-                        <option value="Faculty of Management Studies">Faculty of Management Studies</option>
-                        <option value="Faculty of Medicine">Faculty of Medicine</option>
-                        <option value="Faculty of Social Sciences & Languages">Faculty of Social Sciences & Languages</option>
-                        <option value="Faculty of Technology">Faculty of Technology</option>
-                        <option value="Faculty of Computing">Faculty of Computing</option>
-                    </select>
-                    <textarea
-                        placeholder="Quote"
-                        value={rotaractor.quote}
-                        onChange={(e) =>
-                            setRotaractor((prev) => ({ ...prev, quote: e.target.value }))
-                        }
-                        className="mb-2 w-full border p-2 rounded"
-                    />
-                    <button
-                        onClick={() => handleSave("rotaractor", rotaractor)}
-                        className="bg-pink-600 text-white px-4 py-2 rounded"
-                        disabled={loading}
-                    >
-                        Save Rotaractor
-                    </button>
-                </div>
-            </div>
-            {message && <div className="mt-6 text-center text-pink-600">{message}</div>}
+        <div className="max-w-7xl mx-auto py-12 px-4">
+            <h2 className="font-playfair text-3xl mb-8 text-center">Monthly Stars Admin Panel</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                {/* Left Side - Form */}
+                <div className="space-y-6">
+                    <div className="bg-white rounded-lg shadow p-6">
+                        <h3 className="font-bold text-xl mb-6">Update Monthly Star</h3>
 
-            {/* Current Saved Details Preview */}
-            <div className="mt-12">
-                <h3 className="font-playfair text-2xl mb-6 text-center">Current Saved Details</h3>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
-                    {/* Director of the Month Preview */}
+                        {/* Type Selector */}
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Select Type</label>
+                            <select
+                                value={selectedType}
+                                onChange={(e) => setSelectedType(e.target.value)}
+                                className="w-full border p-2 rounded"
+                            >
+                                <option value="director">Director of the Month</option>
+                                <option value="rotaractor">Rotaractor of the Month</option>
+                            </select>
+                        </div>
+
+                        {/* Image Upload */}
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Image</label>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) =>
+                                    handleImageUpload(e.target.files[0])
+                                }
+                                className="w-full"
+                            />
+                            {currentData.image && (
+                                <img
+                                    src={currentData.image}
+                                    alt="Preview"
+                                    className="mt-2 rounded w-full h-48 object-cover"
+                                />
+                            )}
+                        </div>
+
+                        {/* Name */}
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                            <input
+                                type="text"
+                                placeholder="Enter name"
+                                value={currentData.name}
+                                onChange={(e) =>
+                                    setCurrentData((prev) => ({ ...prev, name: e.target.value }))
+                                }
+                                className="w-full border p-2 rounded"
+                            />
+                        </div>
+
+                        {/* Faculty */}
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Faculty</label>
+                            <select
+                                value={currentData.faculty}
+                                onChange={(e) =>
+                                    setCurrentData((prev) => ({ ...prev, faculty: e.target.value }))
+                                }
+                                className="w-full border p-2 rounded"
+                            >
+                                <option value="">Select Faculty</option>
+                                <option value="Faculty of Applied Sciences">Faculty of Applied Sciences</option>
+                                <option value="Faculty of Agricultural Sciences">Faculty of Agricultural Sciences</option>
+                                <option value="Faculty of Geomatics">Faculty of Geomatics</option>
+                                <option value="Faculty of Management Studies">Faculty of Management Studies</option>
+                                <option value="Faculty of Medicine">Faculty of Medicine</option>
+                                <option value="Faculty of Social Sciences & Languages">Faculty of Social Sciences & Languages</option>
+                                <option value="Faculty of Technology">Faculty of Technology</option>
+                                <option value="Faculty of Computing">Faculty of Computing</option>
+                            </select>
+                        </div>
+
+                        {/* Quote */}
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Quote</label>
+                            <textarea
+                                placeholder="Enter quote"
+                                value={currentData.quote}
+                                onChange={(e) =>
+                                    setCurrentData((prev) => ({ ...prev, quote: e.target.value }))
+                                }
+                                className="w-full border p-2 rounded h-24"
+                            />
+                        </div>
+
+                        {/* Save Button */}
+                        <button
+                            onClick={handleSave}
+                            className="bg-pink-600 text-white px-6 py-3 rounded w-full font-medium"
+                            disabled={loading}
+                        >
+                            {loading ? "Saving..." : `Save ${selectedType === "director" ? "Director" : "Rotaractor"}`}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Right Side - Preview */}
+                <div className="space-y-6">
+                    <h3 className="font-bold text-xl">Current Saved Details</h3>
+
+                    {/* Director Preview */}
                     <div className="bg-pink-600 rounded-[37px] shadow-lg p-8 relative flex flex-col">
                         <p className="font-playfair font-medium text-[32px] text-white mb-1">Director</p>
                         <p className="font-poppins font-light text-[17px] text-white mb-6">of the Month</p>
-                        {director.image ? (
+                        {savedDirector.image ? (
                             <img
-                                src={director.image}
+                                src={savedDirector.image}
                                 alt="Director of the Month"
-                                className="bg-white rounded-[32px] h-[320px] mb-6 flex-shrink-0 w-full object-cover"
+                                className="bg-white rounded-[32px] h-[280px] mb-6 flex-shrink-0 w-full object-cover"
                             />
                         ) : (
-                            <div className="bg-white rounded-[32px] h-[320px] mb-6 flex items-center justify-center">
+                            <div className="bg-white rounded-[32px] h-[280px] mb-6 flex items-center justify-center">
                                 <p className="text-gray-500">No image uploaded</p>
                             </div>
                         )}
-                        <p className="font-playfair font-medium text-[28px] text-white mb-1">
-                            {director.name || "Director Name"}
+                        <p className="font-playfair font-medium text-[24px] text-white mb-1">
+                            {savedDirector.name || "Director Name"}
                         </p>
-                        <p className="font-poppins text-[19px] text-[#d9d9d9] mb-6">
-                            {director.faculty || "Director Faculty"}
+                        <p className="font-poppins text-[16px] text-[#d9d9d9] mb-4">
+                            {savedDirector.faculty || "Director Faculty"}
                         </p>
-                        <p className="font-poppins font-medium italic text-[17px] text-white leading-relaxed">
-                            {director.quote || "Director quote goes here."}
+                        <p className="font-poppins font-medium italic text-[15px] text-white leading-relaxed">
+                            {savedDirector.quote || "Director quote goes here."}
                         </p>
                     </div>
 
-                    {/* Rotaractor of the Month Preview */}
+                    {/* Rotaractor Preview */}
                     <div className="bg-pink-600 rounded-[37px] shadow-lg p-8 relative flex flex-col">
                         <p className="font-playfair font-medium text-[32px] text-white mb-1">Rotaractor</p>
                         <p className="font-poppins font-light text-[17px] text-white mb-6">of the Month</p>
-                        {rotaractor.image ? (
+                        {savedRotaractor.image ? (
                             <img
-                                src={rotaractor.image}
+                                src={savedRotaractor.image}
                                 alt="Rotaractor of the Month"
-                                className="bg-white rounded-[32px] h-[320px] mb-6 flex-shrink-0 w-full object-cover"
+                                className="bg-white rounded-[32px] h-[280px] mb-6 flex-shrink-0 w-full object-cover"
                             />
                         ) : (
-                            <div className="bg-white rounded-[32px] h-[320px] mb-6 flex items-center justify-center">
+                            <div className="bg-white rounded-[32px] h-[280px] mb-6 flex items-center justify-center">
                                 <p className="text-gray-500">No image uploaded</p>
                             </div>
                         )}
-                        <p className="font-playfair font-medium text-[28px] text-white mb-1">
-                            {rotaractor.name || "Rotaractor Name"}
+                        <p className="font-playfair font-medium text-[24px] text-white mb-1">
+                            {savedRotaractor.name || "Rotaractor Name"}
                         </p>
-                        <p className="font-poppins text-[19px] text-[#d9d9d9] mb-6">
-                            {rotaractor.faculty || "Rotaractor Faculty"}
+                        <p className="font-poppins text-[16px] text-[#d9d9d9] mb-4">
+                            {savedRotaractor.faculty || "Rotaractor Faculty"}
                         </p>
-                        <p className="font-poppins font-medium italic text-[17px] text-white leading-relaxed">
-                            {rotaractor.quote || "Rotaractor quote goes here."}
+                        <p className="font-poppins font-medium italic text-[15px] text-white leading-relaxed">
+                            {savedRotaractor.quote || "Rotaractor quote goes here."}
                         </p>
                     </div>
                 </div>
             </div>
+            {message && <div className="mt-6 text-center text-pink-600 font-medium">{message}</div>}
         </div>
     );
 }
