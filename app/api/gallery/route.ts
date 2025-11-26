@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import { v2 as cloudinary } from 'cloudinary';
+import { NextResponse } from "next/server";
+import { v2 as cloudinary } from "cloudinary";
 
 // Configure Cloudinary
 cloudinary.config({
@@ -7,45 +7,45 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-
+function mapImages(resources: any[]) {
+  return resources.map((img: any) => ({
+    url: img.secure_url,
+    publicId: img.public_id,
+    width: img.width,
+    height: img.height,
+  }));
+}
 export async function GET() {
   try {
-    // Option 1: Fetch by folder - uncomment and use if your images are in a folder
-    // const result = await cloudinary.api.resources({
-    //   type: 'upload',
-    //   prefix: 'gallery/',  // Change 'gallery/' to your folder name
-    //   max_results: 500,
-    //   resource_type: 'image',
-    // });
-
-    // Option 2: Fetch by tag - uncomment and use if your images are tagged
     const result = await cloudinary.api.resources_by_tag(
-      'gallery',  // Change 'gallery' to your tag name
+      "gallery", // Change 'gallery' to your tag name
       {
         max_results: 500,
-        resource_type: 'image',
+        resource_type: "image",
       }
     );
-
-    // Option 3: Fetch all images (current default)
-    // const result = await cloudinary.api.resources({
-    //   type: 'upload',
-    //   max_results: 500,
-    //   resource_type: 'image',
-    // });
-
-    const images = result.resources.map((resource: any) => ({
-      url: resource.secure_url,
-      publicId: resource.public_id,
-      width: resource.width,
-      height: resource.height,
-    }));
-
-    return NextResponse.json({ images });
+    return NextResponse.json({ images: mapImages(result.resources) });
   } catch (error: any) {
-    console.error('Error fetching Cloudinary images:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch images', details: error.message },
+      { error: "Failed to fetch images", details: error.message },
+      { status: 500 }
+    );
+  }
+}
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const folder = body.folder || "Gallery";
+    const max_results = body.max_results || 500;
+    // Fetch all images from Gallery and its subfolders
+    const result = await cloudinary.search
+      .expression(`folder="${folder}" OR folder="${folder}/*"`)
+      .max_results(max_results)
+      .execute();
+    return NextResponse.json({ images: mapImages(result.resources) });
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: "Failed to fetch images", details: error.message },
       { status: 500 }
     );
   }
