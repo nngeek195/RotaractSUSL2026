@@ -634,8 +634,9 @@ export default function Home() {
               </p>
               <img
                 src={
-                  directorOfMonth?.image ||
-                  "https://placehold.co/300x300?text=Director+of+Month"
+                  directorOfMonth?.image
+                    ? `https://res.cloudinary.com/dvqoiqzxe/image/upload/${directorOfMonth.image}`
+                    : "https://placehold.co/300x300?text=Director+of+Month"
                 }
                 alt="Director of the Month"
                 className="bg-white rounded-[32px] h-[320px] mb-6 flex-shrink-0 w-full object-cover"
@@ -661,12 +662,14 @@ export default function Home() {
               </p>
               <img
                 src={
-                  rotaractorOfMonth?.image ||
-                  "https://placehold.co/300x300?text=Rotaractor+of+Month"
+                  rotaractorOfMonth?.image
+                    ? `https://res.cloudinary.com/dvqoiqzxe/image/upload/${rotaractorOfMonth.image}`
+                    : "https://placehold.co/300x300?text=Rotaractor+of+Month"
                 }
                 alt="Rotaractor of the Month"
                 className="bg-white rounded-[32px] h-[320px] mb-6 flex-shrink-0 w-full object-cover"
               />
+
               <p className="font-playfair font-medium text-[28px] text-white mb-1">
                 {rotaractorOfMonth?.name || "Rotaractor Name"}
               </p>

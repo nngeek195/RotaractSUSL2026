@@ -54,10 +54,14 @@ export default function MonthlyStarsAdmin() {
                 body: formData,
             });
             const data = await res.json();
-            if (data.secure_url) {
-                setCurrentData((prev) => ({ ...prev, image: data.secure_url }));
+            if (data.public_id) {
+                setCurrentData((prev) => ({
+                    ...prev,
+                    image: data.public_id, // 👈 only public_id
+                }));
                 setMessage("Image uploaded successfully.");
-            } else {
+            }
+            else {
                 setMessage("Image upload failed.");
             }
         } catch (err) {
@@ -119,11 +123,12 @@ export default function MonthlyStarsAdmin() {
                             />
                             {currentData.image && (
                                 <img
-                                    src={currentData.image}
+                                    src={`https://res.cloudinary.com/dvqoiqzxe/image/upload/${currentData.image}`}
                                     alt="Preview"
                                     className="mt-2 rounded w-full h-48 object-cover"
                                 />
                             )}
+
                         </div>
 
                         {/* Name */}
@@ -196,10 +201,11 @@ export default function MonthlyStarsAdmin() {
                         <p className="font-poppins font-light text-[17px] text-white mb-6">of the Month</p>
                         {savedDirector.image ? (
                             <img
-                                src={savedDirector.image}
+                                src={`https://res.cloudinary.com/dvqoiqzxe/image/upload/${savedDirector.image}`}
                                 alt="Director of the Month"
                                 className="bg-white rounded-[32px] h-[280px] mb-6 flex-shrink-0 w-full object-cover"
                             />
+
                         ) : (
                             <div className="bg-white rounded-[32px] h-[280px] mb-6 flex items-center justify-center">
                                 <p className="text-gray-500">No image uploaded</p>
@@ -222,10 +228,11 @@ export default function MonthlyStarsAdmin() {
                         <p className="font-poppins font-light text-[17px] text-white mb-6">of the Month</p>
                         {savedRotaractor.image ? (
                             <img
-                                src={savedRotaractor.image}
+                                src={`https://res.cloudinary.com/dvqoiqzxe/image/upload/${savedRotaractor.image}`}
                                 alt="Rotaractor of the Month"
                                 className="bg-white rounded-[32px] h-[280px] mb-6 flex-shrink-0 w-full object-cover"
                             />
+
                         ) : (
                             <div className="bg-white rounded-[32px] h-[280px] mb-6 flex items-center justify-center">
                                 <p className="text-gray-500">No image uploaded</p>
