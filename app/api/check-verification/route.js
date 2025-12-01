@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { adminAuth } from "../../../lib/firebaseAdmin";
+import { getAdminAuth } from "../../../lib/firebaseAdmin";
+
+// Ensure this route is always dynamic and not pre-rendered during build
+export const dynamic = 'force-dynamic';
 
 export async function POST(request) {
   try {
@@ -14,6 +17,14 @@ export async function POST(request) {
 
     // Check verification status for each UID
     const verificationStatus = {};
+
+    let adminAuth;
+    try {
+      adminAuth = getAdminAuth();
+    } catch (e) {
+      console.error("Admin SDK not configured:", e);
+      return NextResponse.json({ error: "Server not configured" }, { status: 500 });
+    }
 
     for (const uid of uids) {
       try {
