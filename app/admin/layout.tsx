@@ -1,6 +1,6 @@
 "use client";
 
-import React, { ReactNode } from "react"; // Import ReactNode for children type
+import React, { ReactNode, useState } from "react"; // Import ReactNode for children type
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -11,6 +11,8 @@ import {
   Calendar,
   LogOut,
   Mail,
+  Menu,
+  X,
 } from "lucide-react";
 import { auth } from "@/lib/firebase";
 
@@ -22,6 +24,7 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const { user, isAdmin, loading } = useAuth();
   const router = useRouter();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   if (loading) {
     return (
@@ -47,8 +50,28 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   return (
     <div className="flex min-h-screen bg-gray-100">
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-gray-900 text-white rounded-lg"
+      >
+        {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+      </button>
+
+      {/* Overlay for mobile */}
+      {isSidebarOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/50 z-30"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <nav className="w-64 bg-gray-900 text-white p-5 flex flex-col fixed h-full z-10">
+      <nav
+        className={`w-64 bg-gray-900 text-white p-5 flex flex-col fixed h-full z-40 transition-transform duration-300 ${
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        }`}
+      >
         <div className="text-2xl font-bold mb-10 text-center border-b border-gray-800 pb-4">
           <span className="text-blue-400">Admin</span>Panel
         </div>
@@ -56,6 +79,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <li>
             <Link
               href="/admin"
+              onClick={() => setIsSidebarOpen(false)}
               className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-pink-400 transition"
             >
               <LayoutDashboard size={20} /> Dashboard
@@ -64,6 +88,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <li>
             <Link
               href="/admin/requests"
+              onClick={() => setIsSidebarOpen(false)}
               className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-pink-400 transition"
             >
               <Clock size={20} /> Pending Requests
@@ -72,6 +97,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <li>
             <Link
               href="/admin/users"
+              onClick={() => setIsSidebarOpen(false)}
               className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-pink-400 transition"
             >
               <Users size={20} /> User Handling
@@ -80,6 +106,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <li>
             <Link
               href="/admin/events"
+              onClick={() => setIsSidebarOpen(false)}
               className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-pink-400 transition"
             >
               <Calendar size={20} /> Event Handling
@@ -88,6 +115,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <li>
             <Link
               href="/admin/leaderboard"
+              onClick={() => setIsSidebarOpen(false)}
               className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-blue-400 transition"
             >
               <Users size={20} /> Leaderboard
@@ -96,6 +124,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <li>
             <Link
               href="/admin/monthly-stars"
+              onClick={() => setIsSidebarOpen(false)}
               className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-yellow-400 transition"
             >
               <Calendar size={20} /> Monthly Stars
@@ -111,7 +140,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       </nav>
 
       {/* Main Content */}
-      <main className="flex-1 p-10 ml-64">{children}</main>
+      <main className="flex-1 p-4 md:p-10 md:ml-64 pt-16 md:pt-10">
+        {children}
+      </main>
     </div>
   );
 }

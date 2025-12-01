@@ -47,7 +47,7 @@ export default function Leadership() {
     return (
         <div className="bg-white min-h-screen flex flex-col">
             {/* Nav */}
-            <NavBar activeLink="leadership" />
+            <NavBar currentPage="leadership" />
             <br /><br />
 
             {/* Hero banner */}
