@@ -201,13 +201,13 @@ export default function Home() {
             <div className="flex gap-4 pt-2">
               <a
                 href="/about"
-                className="bg-pink-600 text-white px-6 py-3 rounded-full font-poppins font-medium text-sm hover:bg-opacity-90 text-center"
+                className="bg-pink-600 text-white px-6 py-3 rounded-full font-poppins font-medium text-sm hover:bg-opacity-90 text-center transition-transform hover:scale-105"
               >
                 Learn More
               </a>
               <a
                 href="/join"
-                className="border border-black text-black px-6 py-3 rounded-full font-poppins font-medium text-sm hover:bg-black hover:text-white transition text-center"
+                className="border border-black text-black px-6 py-3 rounded-full font-poppins font-medium text-sm hover:bg-black hover:text-white transition transition-transform hover:scale-105 text-center"
               >
                 Join Us
               </a>
@@ -266,7 +266,7 @@ export default function Home() {
       <section className="bg-pink-600 py-12 lg:py-16">
         <div className="max-w-[1300px] mx-auto px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
           {/* Service */}
-          <div className="bg-white rounded-[33px] shadow-lg p-6 flex flex-col min-h-[220px]">
+          <div className="bg-white rounded-[33px] shadow-lg p-6 flex flex-col min-h-[220px] transition-transform duration-300 hover:-translate-y-2 hover:shadow-2xl">
             <img
               src={images.imgIcons8Heart601}
               alt="Service"
@@ -282,7 +282,7 @@ export default function Home() {
           </div>
 
           {/* Fellowship */}
-          <div className="bg-white rounded-[33px] shadow-lg p-6 flex flex-col min-h-[220px]">
+          <div className="bg-white rounded-[33px] shadow-lg p-6 flex flex-col min-h-[220px] transition-transform duration-300 hover:-translate-y-2 hover:shadow-2xl">
             <img
               src={images.imgIcons8UserAccount641}
               alt="Fellowship"
@@ -298,7 +298,7 @@ export default function Home() {
           </div>
 
           {/* Leadership */}
-          <div className="bg-white rounded-[33px] shadow-lg p-6 flex flex-col min-h-[220px]">
+          <div className="bg-white rounded-[33px] shadow-lg p-6 flex flex-col min-h-[220px] transition-transform duration-300 hover:-translate-y-2 hover:shadow-2xl">
             <img
               src={images.imgIcons8Leadership481}
               alt="Leadership"
@@ -314,7 +314,7 @@ export default function Home() {
           </div>
 
           {/* Excellence */}
-          <div className="bg-white rounded-[33px] shadow-lg p-6 flex flex-col min-h-[220px]">
+          <div className="bg-white rounded-[33px] shadow-lg p-6 flex flex-col min-h-[220px] transition-transform duration-300 hover:-translate-y-2 hover:shadow-2xl">
             <img
               src={images.imgIcons8Badge501}
               alt="Excellence"
@@ -356,7 +356,7 @@ export default function Home() {
               </p>
               <a
                 href="/about"
-                className="bg-pink-600 text-white px-6 py-3 rounded-full font-poppins font-medium text-sm hover:bg-opacity-90 inline-block"
+                className="bg-pink-600 text-white px-6 py-3 rounded-full font-poppins font-medium text-sm hover:bg-opacity-90 inline-block transition-transform hover:scale-105"
               >
                 Learn More
               </a>
@@ -439,7 +439,7 @@ export default function Home() {
           </p>
           <a
             href="/join"
-            className="bg-pink-600 text-white px-6 py-3 rounded-full font-poppins font-medium text-sm hover:bg-opacity-90"
+            className="bg-pink-600 text-white px-6 py-3 rounded-full font-poppins font-medium text-sm hover:bg-opacity-90 transition-transform hover:scale-105"
           >
             Join Us
           </a>
@@ -464,7 +464,7 @@ export default function Home() {
             <div className="text-center lg:text-right">
               <a
                 href="/projects"
-                className="bg-pink-600 text-white px-6 py-3 rounded-full font-poppins font-medium text-sm hover:bg-opacity-90 inline-block"
+                className="bg-pink-600 text-white px-6 py-3 rounded-full font-poppins font-medium text-sm hover:bg-opacity-90 inline-block transition-transform hover:scale-105"
               >
                 See All Projects
               </a>
@@ -598,7 +598,7 @@ export default function Home() {
             <div className="text-center mt-8">
               <a
                 href="/gallery"
-                className="bg-pink-600 text-white px-6 py-3 rounded-full font-poppins font-medium text-sm hover:bg-opacity-90 inline-block"
+                className="bg-pink-600 text-white px-6 py-3 rounded-full font-poppins font-medium text-sm hover:bg-opacity-90 inline-block transition-transform hover:scale-105"
               >
                 See More
               </a>

@@ -53,7 +53,7 @@ export default function ProjectsPage() {
 
     return (
         <><div className="bg-gray-100">
-            <NavBar activeLink="projects" />
+            <NavBar currentPage="projects" />
             <br /><br />
 
             {/* Hero banner - Preserved your Exact CSS */}
