@@ -15,6 +15,7 @@ export default function EventHandling() {
     // Form States
     const [isEditing, setIsEditing] = useState(false);
     const [currentEventId, setCurrentEventId] = useState(null);
+    const [isMarkingAsDone, setIsMarkingAsDone] = useState(false); // Track if we're marking as done vs just editing
     const [formData, setFormData] = useState({
         title: "",
         location: "",
@@ -115,6 +116,7 @@ export default function EventHandling() {
         }
         setIsEditing(false);
         setCurrentEventId(null);
+        setIsMarkingAsDone(false);
     };
 
     // 1. Create or Update Event
@@ -170,6 +172,7 @@ export default function EventHandling() {
     const handleMarkAsHappened = (event) => {
         setIsEditing(true);
         setCurrentEventId(event.id);
+        setIsMarkingAsDone(true); // Flag that we're marking as done
         // Pre-fill form but force user to add participants
         setFormData({
             title: event.title,
@@ -221,6 +224,7 @@ export default function EventHandling() {
     const handleEditClick = (event) => {
         setIsEditing(true);
         setCurrentEventId(event.id);
+        setIsMarkingAsDone(false); // Flag that we're just editing, NOT marking as done
         setFormData({
             title: event.title,
             location: event.location,
@@ -245,7 +249,7 @@ export default function EventHandling() {
                     {isEditing ? "Edit / Finalize Project" : "Add New Project"}
                 </h2>
 
-                <form onSubmit={(e) => { e.preventDefault(); isEditing && view === 'upcoming' ? finalizeHappened() : handleSubmit(e); }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <form onSubmit={(e) => { e.preventDefault(); isMarkingAsDone ? finalizeHappened() : handleSubmit(e); }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Project Name</label>
                         <input name="title" value={formData.title} onChange={handleInputChange} required className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="e.g., Beach Cleanup Phase 1" />
@@ -314,14 +318,14 @@ export default function EventHandling() {
                     <div className="md:col-span-2 flex gap-3 mt-2">
                         {isEditing ? (
                             <>
-                                {/* If it's upcoming, we show 'Mark as Happened' button logic */}
-                                {view === 'upcoming' ? (
+                                {/* Show different button based on whether marking as done or just editing */}
+                                {isMarkingAsDone ? (
                                     <button type="submit" className="flex-1 py-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition">
                                         Save as "Happened" & Move to Projects
                                     </button>
                                 ) : (
-                                    <button onClick={handleSubmit} className="flex-1 py-3 bg-blue-900 text-white rounded-lg font-bold hover:bg-blue-800 transition">
-                                        Update Project Details
+                                    <button type="submit" className="flex-1 py-3 bg-blue-900 text-white rounded-lg font-bold hover:bg-blue-800 transition">
+                                        Update Event Details
                                     </button>
                                 )}
 

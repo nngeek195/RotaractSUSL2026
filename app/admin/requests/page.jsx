@@ -8,16 +8,23 @@ import { Check, X, Mail, Phone, User, Loader2 } from "lucide-react";
 
 // --- Helper Functions ---
 
-// Send Email via API
-async function sendEmailNotification(email, fullName, type) {
-    try {
-        await fetch('/api/send-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, fullName, type }),
-        });
-    } catch (error) {
-        console.error("Failed to trigger email:", error);
+// Send Email via API (Resend backend)
+async function sendEmailNotification(email, fullName, action) {
+    const isApprove = action === 'approve';
+    const loginUrl = typeof window !== 'undefined' ? window.location.origin + '/login' : '';
+
+    const res = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            to: email,
+            template: isApprove ? 'membership_approved' : 'membership_rejected',
+            data: { name: fullName, loginUrl }
+        })
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error || 'Failed to send email');
     }
 }
 
@@ -50,10 +57,30 @@ export default function PendingRequests() {
             const querySnapshot = await getDocs(collection(db, "pendingRequests"));
             const reqs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            // Filter out those who haven't verified their email yet (so Admin doesn't see spam)
-            const visibleReqs = reqs.filter(r => r.status !== 'email_verification_pending');
+            // Get UIDs of pending requests
+            const uids = reqs.filter(r => r.status === 'pending').map(r => r.id);
 
-            setRequests(visibleReqs);
+            if (uids.length === 0) {
+                setRequests([]);
+                setLoading(false);
+                return;
+            }
+
+            // Check email verification from Firebase Auth via API
+            const response = await fetch('/api/check-verification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uids })
+            });
+
+            const { verificationStatus } = await response.json();
+
+            // Filter to show only verified users
+            const verifiedReqs = reqs.filter(req =>
+                verificationStatus[req.id] === true && req.status === 'pending'
+            );
+
+            setRequests(verifiedReqs);
         } catch (error) {
             console.error("Error fetching requests:", error);
         }
@@ -68,7 +95,7 @@ export default function PendingRequests() {
 
         try {
             // Destructure to remove temporary fields we don't need in the final profile
-            const { id, status, emailVerificationToken, ...userData } = selectedRequest;
+            const { id, status, ...userData } = selectedRequest;
 
             // A. Determine Target Collection
             const isExecutive = executiveRoles.includes(selectedRole);
@@ -89,9 +116,8 @@ export default function PendingRequests() {
             // D. Delete from Pending Requests (Cleanup)
             await deleteDoc(doc(db, "pendingRequests", id));
 
-            // E. Send Welcome Email (Background)
-            // We trigger this asynchronously so the UI updates instantly
-            sendEmailNotification(selectedRequest.email, selectedRequest.fullName, 'approve');
+            // E. Send Welcome Email via API
+            await sendEmailNotification(selectedRequest.email, selectedRequest.fullName, 'approve');
 
             // F. Update UI
             setRequests(prev => prev.filter(req => req.id !== id));
@@ -101,7 +127,7 @@ export default function PendingRequests() {
 
         } catch (error) {
             console.error("Error approving user:", error);
-            alert("Failed to approve user. Check console.");
+            alert("User approved, but sending the email failed. Please verify email settings and try again.");
         }
     };
 
@@ -113,8 +139,8 @@ export default function PendingRequests() {
             // Delete from DB
             await deleteDoc(doc(db, "pendingRequests", request.id));
 
-            // Send Rejection Email
-            sendEmailNotification(request.email, request.fullName, 'reject');
+            // Send Rejection Email via API
+            await sendEmailNotification(request.email, request.fullName, 'reject');
 
             // Remove from UI
             setRequests(prev => prev.filter(r => r.id !== request.id));

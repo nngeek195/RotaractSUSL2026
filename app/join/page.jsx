@@ -8,7 +8,7 @@ import Footer from '../components/Footer';
 import { Loader2, AlertCircle, Mail } from 'lucide-react';
 
 import { auth, db } from "../../lib/firebase";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
@@ -35,8 +35,11 @@ export default function JoinUs() {
             const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
             const user = userCredential.user;
 
-            // 2. Generate Token
-            const emailToken = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
+            // 2. Send Firebase built-in verification email
+            await sendEmailVerification(user, {
+                url: `${window.location.origin}/login`, // Redirect to login after verification
+                handleCodeInApp: false
+            });
 
             // 3. Save to Firestore (Status: email_verification_pending)
             await setDoc(doc(db, "pendingRequests", user.uid), {
@@ -48,22 +51,8 @@ export default function JoinUs() {
                 whatsapp: formData.contact,
                 email: formData.email,
                 reason: formData.reason,
-                status: "email_verification_pending", // HIDDEN FROM ADMIN
-                emailVerified: false,
-                emailVerificationToken: emailToken,
+                status: "pending", // Will check auth.currentUser.emailVerified
                 submittedAt: new Date()
-            });
-
-            // 4. Send Verification Email
-            await fetch('/api/send-email', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: formData.email,
-                    fullName: formData.fullName,
-                    type: 'verify_email',
-                    token: emailToken
-                }),
             });
 
             setSuccess(true);
@@ -86,7 +75,7 @@ export default function JoinUs() {
                     <h2 className="text-3xl font-bold mb-4">Check your Email!</h2>
                     <p className="text-gray-600 max-w-md">
                         We sent a verification link to <span className="font-bold">{formData.email}</span>.
-                        Please click it to complete your application.
+                        Please click it to verify your email, then our admin team will review your application.
                     </p>
                     <button onClick={() => router.push('/')} className="mt-8 text-pink-600 font-bold">Back to Home</button>
                 </div>
