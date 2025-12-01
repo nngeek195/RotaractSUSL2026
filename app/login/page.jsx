@@ -1,18 +1,19 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { Loader2, AlertCircle } from 'lucide-react'; // Ensure lucide-react is installed
+import { Loader2, AlertCircle, CheckCircle, Info } from 'lucide-react'; // Ensure lucide-react is installed
 
 // Firebase Imports
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function Login() {
     const router = useRouter();
+    const searchParams = useSearchParams();
 
     // UI State
     const [activeTab, setActiveTab] = useState('member');
@@ -21,17 +22,42 @@ export default function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
+    const [notice, setNotice] = useState("");
     const [loading, setLoading] = useState(false);
+
+    // Check for verification success from URL
+    useEffect(() => {
+        if (searchParams.get('verified') === 'true') {
+            setSuccess('Email verified successfully! You can now log in.');
+        }
+    }, [searchParams]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError("");
+        setSuccess("");
+        setNotice("");
 
         try {
             // 1. Firebase Auth Login
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
+
+            // 1.5. Check if email is verified (for pending users)
+            const pendingSnap = await getDoc(doc(db, "pendingRequests", user.uid));
+            if (pendingSnap.exists()) {
+                if (!user.emailVerified) {
+                    setError("Please verify your email before logging in. Check your inbox for the verification link.");
+                    await auth.signOut();
+                    return;
+                }
+                // Do not write to Firestore here; admin manages approvals.
+                setNotice("Your email is verified! Your application is now pending admin approval. You'll receive an email once approved.");
+                await auth.signOut();
+                return;
+            }
 
             // 2. Role-Based Routing Logic
 
@@ -56,15 +82,17 @@ export default function Login() {
                 return;
             }
 
-            // Check if still pending
-            const pendingSnap = await getDoc(doc(db, "pendingRequests", user.uid));
-            if (pendingSnap.exists()) {
-                setError("Your account is pending approval by the Board.");
-                await auth.signOut(); // Force logout so they can't access protected routes
-            } else {
-                setError("Account not found in active member lists.");
+            // If not found anywhere, check if still pending approval
+            const pendingAgain = await getDoc(doc(db, "pendingRequests", user.uid));
+            if (pendingAgain.exists()) {
+                setNotice("Your application is pending admin approval. Please wait for confirmation. You'll receive an email once approved.");
                 await auth.signOut();
+                return;
             }
+
+            // Otherwise, show a clearer guidance message
+            setError("We couldn't find an active membership for this account. If you recently applied, please wait for admin approval. Otherwise, contact support.");
+            await auth.signOut();
 
         } catch (err) {
             console.error(err);
@@ -112,6 +140,22 @@ export default function Login() {
 
                     {/* Divider Line */}
                     <div className="w-full h-px bg-gray-300 mb-8"></div>
+
+                    {/* Success Message */}
+                    {success && (
+                        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-2xl mb-8 flex items-center gap-2 font-poppins text-sm">
+                            <CheckCircle size={18} />
+                            {success}
+                        </div>
+                    )}
+
+                    {/* Notice (Pending Approval) */}
+                    {notice && (
+                        <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-2xl mb-8 flex items-center gap-2 font-poppins text-sm">
+                            <Info size={18} />
+                            {notice}
+                        </div>
+                    )}
 
                     {/* Error Display */}
                     {error && (
