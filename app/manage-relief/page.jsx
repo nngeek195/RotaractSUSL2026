@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { collection, query, where, getDocs, updateDoc, doc, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import NavBar from "../components/Navbar.jsx";
@@ -8,7 +8,7 @@ import Footer from "../components/Footer.jsx";
 import { Key, Search, CheckCircle, AlertCircle, Edit } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
-export default function ManageReliefPage() {
+function ManageReliefContent() {
     const searchParams = useSearchParams();
     const [token, setToken] = useState("");
     const [searching, setSearching] = useState(false);
@@ -263,8 +263,8 @@ export default function ManageReliefPage() {
                                     <button
                                         onClick={() => setNewStatus("pending")}
                                         className={`p-4 rounded-lg border-2 transition ${newStatus === "pending"
-                                                ? "bg-yellow-50 border-yellow-500 text-yellow-700"
-                                                : "bg-white border-gray-300 text-gray-700 hover:border-yellow-300"
+                                            ? "bg-yellow-50 border-yellow-500 text-yellow-700"
+                                            : "bg-white border-gray-300 text-gray-700 hover:border-yellow-300"
                                             }`}
                                     >
                                         <p className="font-poppins font-bold mb-1">Pending</p>
@@ -273,8 +273,8 @@ export default function ManageReliefPage() {
                                     <button
                                         onClick={() => setNewStatus("assigned")}
                                         className={`p-4 rounded-lg border-2 transition ${newStatus === "assigned"
-                                                ? "bg-blue-50 border-blue-500 text-blue-700"
-                                                : "bg-white border-gray-300 text-gray-700 hover:border-blue-300"
+                                            ? "bg-blue-50 border-blue-500 text-blue-700"
+                                            : "bg-white border-gray-300 text-gray-700 hover:border-blue-300"
                                             }`}
                                     >
                                         <p className="font-poppins font-bold mb-1">Assigned</p>
@@ -283,8 +283,8 @@ export default function ManageReliefPage() {
                                     <button
                                         onClick={() => setNewStatus("fulfilled")}
                                         className={`p-4 rounded-lg border-2 transition ${newStatus === "fulfilled"
-                                                ? "bg-green-50 border-green-500 text-green-700"
-                                                : "bg-white border-gray-300 text-gray-700 hover:border-green-300"
+                                            ? "bg-green-50 border-green-500 text-green-700"
+                                            : "bg-white border-gray-300 text-gray-700 hover:border-green-300"
                                             }`}
                                     >
                                         <p className="font-poppins font-bold mb-1">Fulfilled</p>
@@ -327,5 +327,20 @@ export default function ManageReliefPage() {
 
             <Footer />
         </div>
+    );
+}
+
+export default function ManageReliefPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto mb-4"></div>
+                    <p className="font-poppins text-gray-600">Loading...</p>
+                </div>
+            </div>
+        }>
+            <ManageReliefContent />
+        </Suspense>
     );
 }
