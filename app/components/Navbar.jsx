@@ -13,7 +13,7 @@ export default function Navbar({ currentPage = 'home' }) {
 
     return (
         <>
-            <nav className="absolute top-0 left-0 right-0 z-50 px-4 lg:px-8 py-5">
+            <nav className="relative z-50 w-full bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 shadow-sm px-4 lg:px-8 py-4">
                 <div className="flex items-center justify-between max-w-[1440px] mx-auto">
 
                     {/* Logo */}
@@ -26,6 +26,7 @@ export default function Navbar({ currentPage = 'home' }) {
                         <NavLink href="/" label="Home" active={currentPage === 'home'} />
                         <NavLink href="/about" label="About" active={currentPage === 'about'} />
                         <NavLink href="/projects" label="Projects" active={currentPage === 'projects'} />
+                        <NavLink href="/relief-requests" label="🇱🇰 Relief" active={currentPage === 'relief'} />
                         <NavLink href="/gallery" label="Gallery" active={currentPage === 'gallery'} />
                         <NavLink href="/leadership" label="Leadership" active={currentPage === 'leadership'} />
                         <NavLink href="/join" label="Join Us" active={currentPage === 'join'} />
@@ -81,6 +82,7 @@ export default function Navbar({ currentPage = 'home' }) {
                     <MobileNavLink href="/" label="Home" active={currentPage === 'home'} onClick={closeMenu} />
                     <MobileNavLink href="/about" label="About" active={currentPage === 'about'} onClick={closeMenu} />
                     <MobileNavLink href="/projects" label="Projects" active={currentPage === 'projects'} onClick={closeMenu} />
+                    <MobileNavLink href="/relief-requests" label="🇱🇰 Relief" active={currentPage === 'relief-requests'} onClick={closeMenu} />
                     <MobileNavLink href="/gallery" label="Gallery" active={currentPage === 'gallery'} onClick={closeMenu} />
                     <MobileNavLink href="/leadership" label="Leadership" active={currentPage === 'leadership'} onClick={closeMenu} />
                     <MobileNavLink href="/join" label="Join Us" active={currentPage === 'join'} onClick={closeMenu} />

@@ -28,6 +28,14 @@ export default function Home() {
   const [galleryImages, setGalleryImages] = useState<any[]>([]);
   const [galleryLoading, setGalleryLoading] = useState(true);
 
+  // Relief stats state
+  const [reliefStats, setReliefStats] = useState({
+    totalRequests: 0,
+    pendingRequests: 0,
+    assignedRequests: 0,
+    fulfilledRequests: 0,
+  });
+
   useEffect(() => {
     setLoading(true);
     // Fetch ALL events/projects
@@ -70,6 +78,23 @@ export default function Home() {
     };
 
     fetchGalleryImages();
+  }, []);
+
+  useEffect(() => {
+    // Fetch relief request stats
+    const q = query(collection(db, "materialRequests"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const requests = snapshot.docs.map((doc) => doc.data());
+      setReliefStats({
+        totalRequests: requests.length,
+        pendingRequests: requests.filter((r) => r.status === "pending").length,
+        assignedRequests: requests.filter((r) => r.status === "assigned")
+          .length,
+        fulfilledRequests: requests.filter((r) => r.status === "fulfilled")
+          .length,
+      });
+    });
+    return () => unsubscribe();
   }, []);
 
   // --- 2. Filtering Logic ---
@@ -174,6 +199,172 @@ export default function Home() {
     <div className="bg-white relative w-full">
       {/* Navigation */}
       <Navbar currentPage="home" />
+
+      {/* Flood Relief Emergency Banner Section */}
+      <section className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 text-white py-16 px-4 relative overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 left-0 w-64 h-64 bg-white rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            {/* Left Content */}
+            <div className="space-y-6">
+              <div className="inline-block bg-red-500 text-white px-4 py-2 rounded-full font-poppins font-bold text-sm animate-pulse">
+                🚨 URGENT: Flood Relief Campaign
+              </div>
+
+              <h2 className="font-playfair font-bold text-4xl lg:text-5xl leading-tight">
+                🇱🇰 Sri Lanka Flood Relief 2025
+              </h2>
+
+              <p className="font-poppins text-lg text-blue-50 leading-relaxed">
+                Devastating floods have affected hundreds of schools across Sri
+                Lanka. Students have lost books, stationery, and essential
+                learning materials.{" "}
+                <span className="font-bold text-white">
+                  Your help can restore hope and education.
+                </span>
+              </p>
+
+              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="font-playfair font-bold text-3xl">
+                      {reliefStats.totalRequests}
+                    </p>
+                    <p className="font-poppins text-sm text-blue-100">
+                      Total Requests
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-playfair font-bold text-3xl">
+                      {reliefStats.pendingRequests}
+                    </p>
+                    <p className="font-poppins text-sm text-blue-100">
+                      Pending Requests
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-playfair font-bold text-3xl">
+                      {reliefStats.fulfilledRequests}
+                    </p>
+                    <p className="font-poppins text-sm text-blue-100">
+                      Fulfilled
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                <a
+                  href="/relief-requests"
+                  className="bg-white text-blue-600 px-8 py-4 rounded-lg font-poppins font-bold text-lg hover:bg-blue-50 transition shadow-xl flex items-center justify-center gap-2 group"
+                >
+                  <svg
+                    className="w-6 h-6 group-hover:scale-110 transition"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                    />
+                  </svg>
+                  Request Material Help
+                </a>
+                <a
+                  href="/relief-requests"
+                  className="bg-pink-600 text-white px-8 py-4 rounded-lg font-poppins font-bold text-lg hover:bg-pink-700 transition shadow-xl flex items-center justify-center gap-2 group"
+                >
+                  <svg
+                    className="w-6 h-6 group-hover:scale-110 transition"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Donate Materials Now
+                </a>
+              </div>
+
+              <p className="font-poppins text-sm text-blue-100 italic">
+                💙 Every donation counts. Together, we can help students return
+                to learning.
+              </p>
+            </div>
+
+            {/* Right Visual */}
+            <div className="hidden lg:block">
+              <div className="relative">
+                <div className="bg-white/20 backdrop-blur-md rounded-2xl p-8 border border-white/30 shadow-2xl">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4 bg-white/10 p-4 rounded-lg">
+                      <div className="w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center text-2xl">
+                        📚
+                      </div>
+                      <div>
+                        <p className="font-poppins font-bold">
+                          Notebooks & Books
+                        </p>
+                        <p className="font-poppins text-sm text-blue-100">
+                          Most needed items
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 bg-white/10 p-4 rounded-lg">
+                      <div className="w-12 h-12 bg-green-400 rounded-full flex items-center justify-center text-2xl">
+                        ✏️
+                      </div>
+                      <div>
+                        <p className="font-poppins font-bold">Stationery</p>
+                        <p className="font-poppins text-sm text-blue-100">
+                          Pens, pencils, erasers
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 bg-white/10 p-4 rounded-lg">
+                      <div className="w-12 h-12 bg-blue-400 rounded-full flex items-center justify-center text-2xl">
+                        🎒
+                      </div>
+                      <div>
+                        <p className="font-poppins font-bold">School Bags</p>
+                        <p className="font-poppins text-sm text-blue-100">
+                          Replace damaged bags
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 bg-white/10 p-4 rounded-lg">
+                      <div className="w-12 h-12 bg-purple-400 rounded-full flex items-center justify-center text-2xl">
+                        💧
+                      </div>
+                      <div>
+                        <p className="font-poppins font-bold">Water Bottles</p>
+                        <p className="font-poppins text-sm text-blue-100">
+                          Clean drinking water
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Floating Elements */}
+                <div className="absolute -top-4 -right-4 w-24 h-24 bg-yellow-400 rounded-full opacity-20 animate-bounce"></div>
+                <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-pink-400 rounded-full opacity-20 animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Hero Section */}
       <section className="relative min-h-[600px] lg:min-h-[750px] flex items-center px-4 lg:px-16 pt-24 pb-16">
