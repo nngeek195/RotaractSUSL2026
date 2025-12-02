@@ -263,8 +263,8 @@ function ManageReliefContent() {
                                     <button
                                         onClick={() => setNewStatus("pending")}
                                         className={`p-4 rounded-lg border-2 transition ${newStatus === "pending"
-                                                ? "bg-yellow-50 border-yellow-500 text-yellow-700"
-                                                : "bg-white border-gray-300 text-gray-700 hover:border-yellow-300"
+                                            ? "bg-yellow-50 border-yellow-500 text-yellow-700"
+                                            : "bg-white border-gray-300 text-gray-700 hover:border-yellow-300"
                                             }`}
                                     >
                                         <p className="font-poppins font-bold mb-1">Pending</p>
@@ -273,8 +273,8 @@ function ManageReliefContent() {
                                     <button
                                         onClick={() => setNewStatus("assigned")}
                                         className={`p-4 rounded-lg border-2 transition ${newStatus === "assigned"
-                                                ? "bg-blue-50 border-blue-500 text-blue-700"
-                                                : "bg-white border-gray-300 text-gray-700 hover:border-blue-300"
+                                            ? "bg-blue-50 border-blue-500 text-blue-700"
+                                            : "bg-white border-gray-300 text-gray-700 hover:border-blue-300"
                                             }`}
                                     >
                                         <p className="font-poppins font-bold mb-1">Assigned</p>
@@ -283,8 +283,8 @@ function ManageReliefContent() {
                                     <button
                                         onClick={() => setNewStatus("fulfilled")}
                                         className={`p-4 rounded-lg border-2 transition ${newStatus === "fulfilled"
-                                                ? "bg-green-50 border-green-500 text-green-700"
-                                                : "bg-white border-gray-300 text-gray-700 hover:border-green-300"
+                                            ? "bg-green-50 border-green-500 text-green-700"
+                                            : "bg-white border-gray-300 text-gray-700 hover:border-green-300"
                                             }`}
                                     >
                                         <p className="font-poppins font-bold mb-1">Fulfilled</p>
