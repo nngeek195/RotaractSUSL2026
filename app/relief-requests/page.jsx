@@ -1017,6 +1017,15 @@ export default function ReliefRequestsPage() {
                                     </div>
                                 </div>
 
+                                <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
+                                    <p className="font-poppins text-sm text-red-800 mb-2">
+                                        <strong>Important:</strong> When a donor is assigned or your needs are fully met, please update the request status using your tracking token via <span className="font-semibold">Track My Request</span>. Keeping your status current helps us direct support to schools still in need.
+                                    </p>
+                                    <p className="font-poppins text-sm text-red-700">
+                                        <strong>වැදගත්:</strong> පරිත්‍යාගකරුවෙකු හා සම්බන්ධ වී ඔබගේ අවශ්‍යතා පූරණය වූ පසු, ඔබගේ ටෝකනය භාවිතා කර ඔබගේ ඉල්ලීමේ තත්ත්වය යාවත්කාලීන කරන්න. මෙය තවදුරටත් උපකාර අවශ්‍ය පාසල් වෙත සහාය වීමට උපකාරී වේ.
+                                    </p>
+                                </div>
+
                                 <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
                                     <p className="font-poppins text-sm text-gray-800 mb-2">
                                         ⚠️ After submission, you will receive a tracking token. Please save it to check your request status later.
