@@ -13,6 +13,7 @@ import {
   Mail,
   Menu,
   X,
+  FileText,
 } from "lucide-react";
 import { auth } from "@/lib/firebase";
 
@@ -110,6 +111,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-pink-400 transition"
             >
               <Calendar size={20} /> Event Handling
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/admin/project-details"
+              onClick={() => setIsSidebarOpen(false)}
+              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-pink-400 transition"
+            >
+              <FileText size={20} /> Project Details
             </Link>
           </li>
           <li>
