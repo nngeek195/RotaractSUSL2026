@@ -201,9 +201,18 @@ export default function Home() {
       <Navbar currentPage="home" />
 
       {/* Flood Relief Emergency Banner Section */}
-      <section className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 text-white py-16 px-4 relative overflow-hidden">
+      <section
+        className="relative text-white py-16 px-4 overflow-hidden"
+        style={{
+          backgroundImage:
+            "linear-gradient(135deg, rgba(37,99,235,0.70), rgba(79,70,229,0.70), rgba(124,58,237,0.70)), url('https://res.cloudinary.com/dvqoiqzxe/image/upload/v1764693342/Image_fx_bwy0xx.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
         {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0 opacity-10 pointer-events-none">
           <div className="absolute top-0 left-0 w-64 h-64 bg-white rounded-full blur-3xl"></div>
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl"></div>
         </div>
