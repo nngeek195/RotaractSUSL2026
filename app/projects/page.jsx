@@ -175,7 +175,7 @@ export default function ProjectsPage() {
 
                                             {/* Button */}
                                             <div>
-                                                <button 
+                                                <button
                                                     onClick={() => router.push(`/projects/${createSlug(project)}`)}
                                                     className="bg-pink-600 text-white px-5 py-2 rounded-[26px] font-poppins font-medium text-sm hover:bg-[#b51b52] transition"
                                                 >
@@ -226,7 +226,7 @@ export default function ProjectsPage() {
 
                                             {/* Button */}
                                             <div>
-                                                <button 
+                                                <button
                                                     onClick={() => router.push(`/projects/${createSlug(project)}`)}
                                                     className="bg-pink-600 text-white px-5 py-2 rounded-[26px] font-poppins font-medium text-sm hover:bg-[#b51b52] transition"
                                                 >

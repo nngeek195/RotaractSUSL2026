@@ -52,7 +52,7 @@ export default function ProjectDetailsManagement() {
     const handleSelectProject = (project) => {
         setSelectedProject(project);
         setEditingProject(project);
-        
+
         // Populate form with existing data or defaults
         setMainImage(project.imageUrl || project.image || "");
         setGalleryImages(project.galleryImages || []);
@@ -80,7 +80,7 @@ export default function ProjectDetailsManagement() {
 
             await updateDoc(doc(db, "events", editingProject.id), updateData);
             alert("Project details updated successfully!");
-            
+
             // Refresh projects list
             await fetchProjects();
             setSelectedProject(null);
@@ -160,7 +160,7 @@ export default function ProjectDetailsManagement() {
             const uploadedUrls = await Promise.all(uploadPromises);
             setGalleryImages([...galleryImages, ...uploadedUrls]);
             alert(`${uploadedUrls.length} image(s) uploaded successfully!`);
-            
+
             // Clear the file input
             e.target.value = '';
         } catch (err) {
@@ -259,7 +259,7 @@ export default function ProjectDetailsManagement() {
             {!selectedProject && (
                 <div className="bg-white p-8 rounded-xl shadow-md border border-gray-100">
                     <h2 className="text-2xl font-bold text-gray-800 mb-6">Select a Project to Edit</h2>
-                    
+
                     {loading ? (
                         <div className="flex items-center justify-center py-12">
                             <Loader2 className="animate-spin text-pink-600" size={40} />
@@ -318,7 +318,7 @@ export default function ProjectDetailsManagement() {
                             <ImageIcon className="text-pink-600" />
                             Main Project Image
                         </h3>
-                        
+
                         {mainImage && (
                             <div className="mb-4">
                                 <img
@@ -340,7 +340,7 @@ export default function ProjectDetailsManagement() {
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                                 />
                             </div>
-                            
+
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Or Upload New Image</label>
                                 <input
@@ -406,7 +406,7 @@ export default function ProjectDetailsManagement() {
                             <ImageIcon className="text-blue-600" />
                             Gallery Images ({galleryImages.length})
                         </h3>
-                        
+
                         <div className="mb-4 flex gap-2">
                             <input
                                 type="text"
@@ -461,7 +461,7 @@ export default function ProjectDetailsManagement() {
                             <UsersIcon className="text-purple-600" />
                             Partners ({partners.length})
                         </h3>
-                        
+
                         <button
                             onClick={handleAddPartner}
                             className="mb-4 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition flex items-center gap-2"
@@ -496,7 +496,7 @@ export default function ProjectDetailsManagement() {
                             <MessageSquare className="text-orange-600" />
                             Testimonials ({testimonials.length})
                         </h3>
-                        
+
                         <button
                             onClick={handleAddTestimonial}
                             className="mb-4 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition flex items-center gap-2"

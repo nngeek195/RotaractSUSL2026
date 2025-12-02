@@ -21,16 +21,16 @@ export default function ProjectDetailsPage() {
                 // Try to extract ID from the URL param (format: "project-name-id" or just "id")
                 const urlParam = params.id;
                 let projectId = urlParam;
-                
+
                 // If the URL contains a hyphen, extract the last segment as the ID
                 if (urlParam.includes('-')) {
                     const segments = urlParam.split('-');
                     projectId = segments[segments.length - 1];
                 }
-                
+
                 const docRef = doc(db, "events", projectId);
                 const docSnap = await getDoc(docRef);
-                
+
                 if (docSnap.exists()) {
                     setProject({ id: docSnap.id, ...docSnap.data() });
                 } else {
@@ -64,7 +64,7 @@ export default function ProjectDetailsPage() {
             <div className="min-h-screen bg-white flex items-center justify-center">
                 <div className="text-center">
                     <h1 className="font-playfair text-4xl font-medium text-gray-800 mb-4">Project Not Found</h1>
-                    <button 
+                    <button
                         onClick={() => router.push('/projects')}
                         className="text-pink-600 font-poppins hover:underline"
                     >
@@ -97,10 +97,10 @@ export default function ProjectDetailsPage() {
     const formatDate = (dateString) => {
         if (!dateString) return 'TBA';
         const date = new Date(dateString);
-        return date.toLocaleDateString('en-GB', { 
-            day: '2-digit', 
-            month: '2-digit', 
-            year: 'numeric' 
+        return date.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
         }).replace(/\//g, '. ');
     };
 
@@ -122,7 +122,7 @@ export default function ProjectDetailsPage() {
 
             {/* Back to Projects Button */}
             <div className="pt-32 px-4 lg:px-8 max-w-7xl mx-auto">
-                <button 
+                <button
                     onClick={() => router.push('/projects')}
                     className="flex items-center gap-2 text-[#cd215e] font-poppins font-medium text-sm hover:opacity-80 transition-opacity mb-6"
                 >
@@ -134,8 +134,8 @@ export default function ProjectDetailsPage() {
             {/* Hero Image */}
             <div className="px-4 lg:px-8 max-w-7xl mx-auto mb-12">
                 <div className="relative h-[500px] rounded-[43px] overflow-hidden">
-                    <img 
-                        src={project.imageUrl || project.image || images.imgRectangle20} 
+                    <img
+                        src={project.imageUrl || project.image || images.imgRectangle20}
                         alt={project.title || project.name || 'Project'}
                         className="w-full h-full object-cover"
                     />
@@ -194,7 +194,7 @@ export default function ProjectDetailsPage() {
                                 </h2>
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                     {project.testimonials.map((testimonial, index) => (
-                                        <div 
+                                        <div
                                             key={index}
                                             className="bg-white rounded-[22px] shadow-lg p-8"
                                         >
@@ -265,7 +265,7 @@ export default function ProjectDetailsPage() {
                             </div>
 
                             {/* Share Button */}
-                            <button 
+                            <button
                                 onClick={handleShare}
                                 className="w-full bg-[#cd215e] text-white font-poppins font-medium text-sm py-3 rounded-[26px] hover:bg-opacity-90 transition-opacity flex items-center justify-center gap-2"
                             >
@@ -285,12 +285,12 @@ export default function ProjectDetailsPage() {
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {project.galleryImages.slice(0, 6).map((image, index) => (
-                            <div 
+                            <div
                                 key={index}
                                 className="h-[300px] rounded-[22px] overflow-hidden"
                             >
-                                <img 
-                                    src={image} 
+                                <img
+                                    src={image}
                                     alt={`Gallery ${index + 1}`}
                                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                                 />
