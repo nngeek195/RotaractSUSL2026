@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query } from "firebase/firestore";
 import { images } from '../../assets/images.js';
@@ -10,10 +11,21 @@ import NavBar from "../components/Navbar.jsx";
 import { Calendar, MapPin, Clock, CheckCircle, Loader2, CircleDashed } from 'lucide-react';
 
 export default function ProjectsPage() {
+    const router = useRouter();
     // --- 1. Logic: State & Data Fetching ---
     const [allProjects, setAllProjects] = useState([]);
     const [view, setView] = useState('upcoming'); // 'upcoming' or 'completed'
     const [loading, setLoading] = useState(true);
+
+    // Helper function to create URL-friendly slug
+    const createSlug = (project) => {
+        const name = project.title || project.name || 'project';
+        const slug = name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')  // Replace non-alphanumeric with hyphens
+            .replace(/^-+|-+$/g, '');      // Remove leading/trailing hyphens
+        return `${slug}-${project.id}`;
+    };
 
     useEffect(() => {
         setLoading(true);
@@ -163,7 +175,10 @@ export default function ProjectsPage() {
 
                                             {/* Button */}
                                             <div>
-                                                <button className="bg-pink-600 text-white px-5 py-2 rounded-[26px] font-poppins font-medium text-sm hover:bg-[#b51b52] transition">
+                                                <button 
+                                                    onClick={() => router.push(`/projects/${createSlug(project)}`)}
+                                                    className="bg-pink-600 text-white px-5 py-2 rounded-[26px] font-poppins font-medium text-sm hover:bg-[#b51b52] transition"
+                                                >
                                                     See More
                                                 </button>
                                             </div>
@@ -211,7 +226,10 @@ export default function ProjectsPage() {
 
                                             {/* Button */}
                                             <div>
-                                                <button className="bg-pink-600 text-white px-5 py-2 rounded-[26px] font-poppins font-medium text-sm hover:bg-[#b51b52] transition">
+                                                <button 
+                                                    onClick={() => router.push(`/projects/${createSlug(project)}`)}
+                                                    className="bg-pink-600 text-white px-5 py-2 rounded-[26px] font-poppins font-medium text-sm hover:bg-[#b51b52] transition"
+                                                >
                                                     See More
                                                 </button>
                                             </div>
