@@ -36,7 +36,7 @@ export async function POST(request) {
        ====================================================== */
     if (template === "membership_approved") {
       subject = "🎉 Your Rotaract SUSL Membership Has Been Approved!";
-    htmlContent = `
+      htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -101,8 +101,8 @@ export async function POST(request) {
 
           ${
             data?.loginUrl
-            ? `<a href="${data.loginUrl}" class="button" style="color:#fff !important;">Login to Your Account</a>`
-            : ""
+              ? `<a href="${data.loginUrl}" class="button" style="color:#fff !important;">Login to Your Account</a>`
+              : ""
           }
 
           <p style="margin-top:25px;">
@@ -120,8 +120,7 @@ export async function POST(request) {
       </html>
     `;
     } else if (template === "membership_rejected") {
-
-    /* ======================================================
+      /* ======================================================
        🩷  MEMBERSHIP REJECTED TEMPLATE
        ====================================================== */
       subject = "Rotaract SUSL — Membership Application Update";
@@ -203,6 +202,220 @@ export async function POST(request) {
           </div>
         </body>
         </html>
+      `;
+    } else if (template === "relief_token") {
+    /* ======================================================
+       🇱🇰  FLOOD RELIEF TOKEN EMAIL  (BLUE)
+       ====================================================== */
+      subject = "🇱🇰 Your Flood Relief Request Token - Rotaract SUSL";
+      htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charSet="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <style>
+        body {
+          font-family: Arial, sans-serif;
+          color: #333;
+          background-color: #f5f5f7;
+          padding: 0;
+          margin: 0;
+        }
+        .container {
+          max-width: 600px;
+          margin: 40px auto;
+          background-color: white;
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .header {
+          background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+          color: white;
+          padding: 40px 30px;
+          text-align: center;
+        }
+        .header h1 {
+          margin: 0 0 10px 0;
+          font-size: 28px;
+        }
+        .header p {
+          margin: 0;
+          font-size: 16px;
+          opacity: 0.9;
+        }
+        .content {
+          padding: 40px 30px;
+        }
+        .token-box {
+          background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+          border: 2px solid #3b82f6;
+          border-radius: 8px;
+          padding: 20px;
+          text-align: center;
+          margin: 30px 0;
+        }
+        .token-label {
+          font-size: 14px;
+          color: #1e40af;
+          margin-bottom: 10px;
+          font-weight: 600;
+        }
+        .token {
+          font-size: 24px;
+          font-weight: bold;
+          color: #1e3a8a;
+          font-family: 'Courier New', monospace;
+          letter-spacing: 2px;
+        }
+        .info-box {
+          background-color: #fef3c7;
+          border-left: 4px solid #f59e0b;
+          padding: 15px;
+          margin: 20px 0;
+          border-radius: 4px;
+        }
+        .info-box p {
+          margin: 0;
+          font-size: 14px;
+          color: #92400e;
+        }
+        .request-details {
+          background-color: #f9fafb;
+          padding: 20px;
+          border-radius: 8px;
+          margin: 20px 0;
+        }
+        .detail-row {
+          padding: 8px 0;
+          border-bottom: 1px solid #e5e7eb;
+        }
+        .detail-row:last-child {
+          border-bottom: none;
+        }
+        .detail-label {
+          font-weight: 600;
+          color: #4b5563;
+          font-size: 14px;
+        }
+        .detail-value {
+          color: #111827;
+          margin-top: 4px;
+        }
+        .materials-list {
+          margin-top: 10px;
+        }
+        .material-item {
+          padding: 5px 0;
+          color: #374151;
+        }
+        .button {
+          display: inline-block;
+          background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+          color: white;
+          padding: 14px 32px;
+          text-decoration: none;
+          border-radius: 8px;
+          font-weight: 600;
+          margin: 20px 0;
+        }
+        .footer {
+          background-color: #f9fafb;
+          padding: 20px;
+          text-align: center;
+          font-size: 12px;
+          color: #6b7280;
+        }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🇱🇰 Flood Relief Request Submitted</h1>
+            <p>Your request has been received successfully</p>
+          </div>
+          <div class="content">
+            <p>Dear ${data.schoolName || "School Administrator"},</p>
+            <p style="margin-top: 15px;">
+              Thank you for submitting your flood relief material request. We have received your submission and our team will review it shortly.
+            </p>
+
+            <div class="token-box">
+              <div class="token-label">📌 YOUR TRACKING TOKEN</div>
+              <div class="token">${data.token}</div>
+            </div>
+
+            <div class="info-box">
+              <p><strong>⚠️ Important:</strong> Please save this token. You will need it to track and update your request status.</p>
+            </div>
+
+            <h3 style="color: #1e3a8a; margin-top: 30px;">Request Details:</h3>
+            <div class="request-details">
+              <div class="detail-row">
+                <div class="detail-label">School Name</div>
+                <div class="detail-value">${data.schoolName}</div>
+              </div>
+              <div class="detail-row">
+                <div class="detail-label">District</div>
+                <div class="detail-value">${data.district}</div>
+              </div>
+              <div class="detail-row">
+                <div class="detail-label">Contact Person</div>
+                <div class="detail-value">${data.contactPerson}</div>
+              </div>
+              <div class="detail-row">
+                <div class="detail-label">Contact Number</div>
+                <div class="detail-value">${data.contactNumber}</div>
+              </div>
+              ${
+                data.description
+                  ? `
+              <div class="detail-row">
+                <div class="detail-label">Description</div>
+                <div class="detail-value">${data.description}</div>
+              </div>
+              `
+                  : ""
+              }
+              <div class="detail-row">
+                <div class="detail-label">Materials Requested</div>
+                <div class="materials-list">
+                  ${
+                    data.items
+                      ?.map(
+                        (item) =>
+                          `<div class="material-item">• ${item.name} - Quantity: ${item.quantity}</div>`
+                      )
+                      .join("") || ""
+                  }
+                </div>
+              </div>
+            </div>
+
+            <div style="text-align: center;">
+              <a href="${
+                data.trackUrl || "https://rotaractsusl.org/manage-relief"
+              }" class="button">
+                Track My Request
+              </a>
+            </div>
+
+            <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">
+              💙 We are working hard to connect donors with schools in need. You will be notified once your request is assigned to a donor.
+            </p>
+
+            <p style="margin-top: 15px; font-size: 14px; color: #6b7280;">
+              For any questions, please contact us at <a href="mailto:info@rotaractsusl.org" style="color: #2563eb;">info@rotaractsusl.org</a>
+            </p>
+          </div>
+          <div class="footer">
+            This is an automated message from Rotaract Club of Sabaragamuwa University of Sri Lanka<br>
+            Sri Lanka Flood Relief Campaign 2025
+          </div>
+        </div>
+      </body>
+      </html>
       `;
     } else {
       return NextResponse.json(
