@@ -444,12 +444,28 @@ export default function ProjectDetailsManagement() {
                                         alt={`Gallery ${index + 1}`}
                                         className="w-full h-32 object-cover rounded-lg"
                                     />
-                                    <button
-                                        onClick={() => handleRemoveGalleryImage(index)}
-                                        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
+                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+                                        <button
+                                            onClick={() => setMainImage(url)}
+                                            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg text-sm flex items-center gap-1"
+                                            title="Set as main image"
+                                        >
+                                            <ImageIcon size={14} />
+                                            Set Main
+                                        </button>
+                                        <button
+                                            onClick={() => handleRemoveGalleryImage(index)}
+                                            className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg"
+                                            title="Remove image"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                    {mainImage === url && (
+                                        <div className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-bold">
+                                            MAIN
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
