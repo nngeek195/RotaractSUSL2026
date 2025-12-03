@@ -453,153 +453,153 @@ export default function ReliefAdminPage() {
                         </div>
                         <h2 className="font-playfair text-3xl font-bold text-gray-900">Material Requests</h2>
                     </div>
-                        {/* Stats Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div className="bg-white border-2 border-gray-200 rounded-xl p-6">
-                                <p className="font-poppins text-sm text-gray-600 mb-1">Total Requests</p>
-                                <p className="font-playfair text-4xl font-bold text-gray-900">{requestStats.total}</p>
-                            </div>
-                            <div className="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-6">
-                                <p className="font-poppins text-sm text-yellow-700 mb-1">Pending</p>
-                                <p className="font-playfair text-4xl font-bold text-yellow-800">{requestStats.pending}</p>
-                            </div>
-                            <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-6">
-                                <p className="font-poppins text-sm text-blue-700 mb-1">Assigned</p>
-                                <p className="font-playfair text-4xl font-bold text-blue-800">{requestStats.assigned}</p>
-                            </div>
-                            <div className="bg-green-50 border-2 border-green-300 rounded-xl p-6">
-                                <p className="font-poppins text-sm text-green-700 mb-1">Fulfilled</p>
-                                <p className="font-playfair text-4xl font-bold text-green-800">{requestStats.fulfilled}</p>
-                            </div>
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="bg-white border-2 border-gray-200 rounded-xl p-6">
+                            <p className="font-poppins text-sm text-gray-600 mb-1">Total Requests</p>
+                            <p className="font-playfair text-4xl font-bold text-gray-900">{requestStats.total}</p>
                         </div>
-
-                        {/* Filters */}
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
-                            <div className="flex flex-col md:flex-row gap-4">
-                                <div className="flex-1">
-                                    <label className="block font-poppins text-sm font-semibold text-gray-700 mb-2">
-                                        <Search size={16} className="inline mr-2" />
-                                        Search
-                                    </label>
-                                    <input
-                                        type="text"
-                                        placeholder="Search by school, district, or token..."
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block font-poppins text-sm font-semibold text-gray-700 mb-2">
-                                        <Filter size={16} className="inline mr-2" />
-                                        Status
-                                    </label>
-                                    <select
-                                        value={requestStatusFilter}
-                                        onChange={(e) => setRequestStatusFilter(e.target.value)}
-                                        className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 font-poppins"
-                                    >
-                                        <option value="all">All Statuses</option>
-                                        <option value="pending">Pending</option>
-                                        <option value="assigned">Assigned</option>
-                                        <option value="fulfilled">Fulfilled</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block font-poppins text-sm font-semibold text-gray-700 mb-2">
-                                        <MapPin size={16} className="inline mr-2" />
-                                        District
-                                    </label>
-                                    <select
-                                        value={requestDistrictFilter}
-                                        onChange={(e) => setRequestDistrictFilter(e.target.value)}
-                                        className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 font-poppins"
-                                    >
-                                        <option value="all">All Districts</option>
-                                        {requestDistricts.map(district => (
-                                            <option key={district} value={district}>{district}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                {/* CSV export removed in favor of Google Sheet workflow */}
-                            </div>
+                        <div className="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-6">
+                            <p className="font-poppins text-sm text-yellow-700 mb-1">Pending</p>
+                            <p className="font-playfair text-4xl font-bold text-yellow-800">{requestStats.pending}</p>
                         </div>
+                        <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-6">
+                            <p className="font-poppins text-sm text-blue-700 mb-1">Assigned</p>
+                            <p className="font-playfair text-4xl font-bold text-blue-800">{requestStats.assigned}</p>
+                        </div>
+                        <div className="bg-green-50 border-2 border-green-300 rounded-xl p-6">
+                            <p className="font-poppins text-sm text-green-700 mb-1">Fulfilled</p>
+                            <p className="font-playfair text-4xl font-bold text-green-800">{requestStats.fulfilled}</p>
+                        </div>
+                    </div>
 
-                        {/* Requests Table */}
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                            {requestsLoading ? (
-                                <div className="p-12 text-center">
-                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
-                                    <p className="font-poppins text-gray-600 mt-4">Loading requests...</p>
-                                </div>
-                            ) : (
-                                <> 
-                                    {/* Mobile Card View */}
-                                    <div className="block md:hidden divide-y divide-gray-200">
-                                        {filteredRequests.map((request) => (
-                                            <div key={request.id} className="p-4 bg-white">
-                                                <div className="mb-3">
-                                                    <h3 className="font-poppins font-bold text-gray-900 text-lg">{request.schoolName}</h3>
-                                                    <div className="flex flex-wrap items-center gap-2 mt-1">
-                                                        <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-semibold font-poppins">
-                                                            {request.district}
-                                                        </span>
-                                                        <span className="text-xs text-gray-400 font-poppins">
-                                                            {request.createdAt?.toDate?.()?.toLocaleDateString()}
-                                                        </span>
-                                                    </div>
-                                                </div>
+                    {/* Filters */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
+                        <div className="flex flex-col md:flex-row gap-4">
+                            <div className="flex-1">
+                                <label className="block font-poppins text-sm font-semibold text-gray-700 mb-2">
+                                    <Search size={16} className="inline mr-2" />
+                                    Search
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="Search by school, district, or token..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
+                                />
+                            </div>
+                            <div>
+                                <label className="block font-poppins text-sm font-semibold text-gray-700 mb-2">
+                                    <Filter size={16} className="inline mr-2" />
+                                    Status
+                                </label>
+                                <select
+                                    value={requestStatusFilter}
+                                    onChange={(e) => setRequestStatusFilter(e.target.value)}
+                                    className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 font-poppins"
+                                >
+                                    <option value="all">All Statuses</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="assigned">Assigned</option>
+                                    <option value="fulfilled">Fulfilled</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block font-poppins text-sm font-semibold text-gray-700 mb-2">
+                                    <MapPin size={16} className="inline mr-2" />
+                                    District
+                                </label>
+                                <select
+                                    value={requestDistrictFilter}
+                                    onChange={(e) => setRequestDistrictFilter(e.target.value)}
+                                    className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 font-poppins"
+                                >
+                                    <option value="all">All Districts</option>
+                                    {requestDistricts.map(district => (
+                                        <option key={district} value={district}>{district}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            {/* CSV export removed in favor of Google Sheet workflow */}
+                        </div>
+                    </div>
 
-                                                <div className="mb-4">
-                                                    <select
-                                                        value={request.status}
-                                                        onChange={(e) => handleUpdateRequestStatus(request.id, e.target.value)}
-                                                        className={`w-full px-3 py-2 rounded-lg font-poppins font-bold text-xs uppercase border-2 ${getStatusBadge(request.status)}`}
-                                                        disabled={updating}
-                                                    >
-                                                        <option value="pending">Pending</option>
-                                                        <option value="assigned">Assigned</option>
-                                                        <option value="fulfilled">Fulfilled</option>
-                                                    </select>
-                                                </div>
-
-                                                <div className="mb-4">
-                                                    <p className="font-poppins text-sm text-gray-700 flex items-center gap-2">
-                                                        <UserCheck size={14} className="text-gray-400" />
-                                                        {request.contactPerson}
-                                                    </p>
-                                                    <p className="font-poppins text-sm text-gray-700 flex items-center gap-2 mt-1">
-                                                        <Phone size={14} className="text-gray-400" />
-                                                        {request.contactNumber}
-                                                    </p>
-                                                </div>
-
-                                                <div className="flex gap-3">
-                                                    <button
-                                                        onClick={() => {
-                                                            setSelectedRequest(request)
-                                                            setShowRequestModal(true)
-                                                        }}
-                                                        className="flex-1 py-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition flex justify-center items-center gap-2 text-sm font-semibold font-poppins"
-                                                    >
-                                                        <Eye size={16} /> View Details
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteRequest(request.id)}
-                                                        className="w-12 py-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition flex justify-center items-center"
-                                                        title="Delete"
-                                                        disabled={updating}
-                                                    >
-                                                        <Trash2 size={18} />
-                                                    </button>
+                    {/* Requests Table */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        {requestsLoading ? (
+                            <div className="p-12 text-center">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
+                                <p className="font-poppins text-gray-600 mt-4">Loading requests...</p>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Mobile Card View */}
+                                <div className="block md:hidden divide-y divide-gray-200">
+                                    {filteredRequests.map((request) => (
+                                        <div key={request.id} className="p-4 bg-white">
+                                            <div className="mb-3">
+                                                <h3 className="font-poppins font-bold text-gray-900 text-lg">{request.schoolName}</h3>
+                                                <div className="flex flex-wrap items-center gap-2 mt-1">
+                                                    <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-semibold font-poppins">
+                                                        {request.district}
+                                                    </span>
+                                                    <span className="text-xs text-gray-400 font-poppins">
+                                                        {request.createdAt?.toDate?.()?.toLocaleDateString()}
+                                                    </span>
                                                 </div>
                                             </div>
-                                        ))}
-                                    </div>
 
-                                    {/* Desktop Table View */}
-                                    <div className="hidden md:block overflow-x-auto">
-                                        <table className="w-full">
+                                            <div className="mb-4">
+                                                <select
+                                                    value={request.status}
+                                                    onChange={(e) => handleUpdateRequestStatus(request.id, e.target.value)}
+                                                    className={`w-full px-3 py-2 rounded-lg font-poppins font-bold text-xs uppercase border-2 ${getStatusBadge(request.status)}`}
+                                                    disabled={updating}
+                                                >
+                                                    <option value="pending">Pending</option>
+                                                    <option value="assigned">Assigned</option>
+                                                    <option value="fulfilled">Fulfilled</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="mb-4">
+                                                <p className="font-poppins text-sm text-gray-700 flex items-center gap-2">
+                                                    <UserCheck size={14} className="text-gray-400" />
+                                                    {request.contactPerson}
+                                                </p>
+                                                <p className="font-poppins text-sm text-gray-700 flex items-center gap-2 mt-1">
+                                                    <Phone size={14} className="text-gray-400" />
+                                                    {request.contactNumber}
+                                                </p>
+                                            </div>
+
+                                            <div className="flex gap-3">
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedRequest(request)
+                                                        setShowRequestModal(true)
+                                                    }}
+                                                    className="flex-1 py-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition flex justify-center items-center gap-2 text-sm font-semibold font-poppins"
+                                                >
+                                                    <Eye size={16} /> View Details
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteRequest(request.id)}
+                                                    className="w-12 py-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition flex justify-center items-center"
+                                                    title="Delete"
+                                                    disabled={updating}
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Desktop Table View */}
+                                <div className="hidden md:block overflow-x-auto">
+                                    <table className="w-full">
                                         <thead className="bg-gray-50 border-b border-gray-200">
                                             <tr>
                                                 <th className="px-6 py-4 text-left font-poppins font-semibold text-gray-700">School</th>
@@ -661,9 +661,9 @@ export default function ReliefAdminPage() {
                                         </tbody>
                                     </table>
                                 </div>
-                                </>
-                            )}
-                        </div>
+                            </>
+                        )}
+                    </div>
                 </section>
 
                 {/* Donation Offers Section */}
@@ -674,145 +674,145 @@ export default function ReliefAdminPage() {
                         </div>
                         <h2 className="font-playfair text-3xl font-bold text-gray-900">Donation Offers</h2>
                     </div>
-                        {/* Stats Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div className="bg-white border-2 border-gray-200 rounded-xl p-6">
-                                <p className="font-poppins text-sm text-gray-600 mb-1">Total Offers</p>
-                                <p className="font-playfair text-4xl font-bold text-gray-900">{offerStats.total}</p>
-                            </div>
-                            <div className="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-6">
-                                <p className="font-poppins text-sm text-yellow-700 mb-1">Pending</p>
-                                <p className="font-playfair text-4xl font-bold text-yellow-800">{offerStats.pending}</p>
-                            </div>
-                            <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-6">
-                                <p className="font-poppins text-sm text-blue-700 mb-1">Contacted</p>
-                                <p className="font-playfair text-4xl font-bold text-blue-800">{offerStats.contacted}</p>
-                            </div>
-                            <div className="bg-green-50 border-2 border-green-300 rounded-xl p-6">
-                                <p className="font-poppins text-sm text-green-700 mb-1">Completed</p>
-                                <p className="font-playfair text-4xl font-bold text-green-800">{offerStats.completed}</p>
-                            </div>
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="bg-white border-2 border-gray-200 rounded-xl p-6">
+                            <p className="font-poppins text-sm text-gray-600 mb-1">Total Offers</p>
+                            <p className="font-playfair text-4xl font-bold text-gray-900">{offerStats.total}</p>
                         </div>
-
-                        {/* Filters */}
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
-                            <div className="flex flex-col md:flex-row gap-4">
-                                <div>
-                                    <label className="block font-poppins text-sm font-semibold text-gray-700 mb-2">
-                                        <Filter size={16} className="inline mr-2" />
-                                        Status
-                                    </label>
-                                    <select
-                                        value={offerStatusFilter}
-                                        onChange={(e) => setOfferStatusFilter(e.target.value)}
-                                        className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 font-poppins"
-                                    >
-                                        <option value="all">All Statuses</option>
-                                        <option value="pending">Pending</option>
-                                        <option value="contacted">Contacted</option>
-                                        <option value="completed">Completed</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block font-poppins text-sm font-semibold text-gray-700 mb-2">
-                                        <MapPin size={16} className="inline mr-2" />
-                                        District
-                                    </label>
-                                    <select
-                                        value={offerDistrictFilter}
-                                        onChange={(e) => setOfferDistrictFilter(e.target.value)}
-                                        className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 font-poppins"
-                                    >
-                                        <option value="all">All Districts</option>
-                                        {offerDistricts.map(district => (
-                                            <option key={district} value={district}>{district}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                {/* CSV export removed in favor of Google Sheet workflow */}
-                            </div>
+                        <div className="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-6">
+                            <p className="font-poppins text-sm text-yellow-700 mb-1">Pending</p>
+                            <p className="font-playfair text-4xl font-bold text-yellow-800">{offerStats.pending}</p>
                         </div>
+                        <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-6">
+                            <p className="font-poppins text-sm text-blue-700 mb-1">Contacted</p>
+                            <p className="font-playfair text-4xl font-bold text-blue-800">{offerStats.contacted}</p>
+                        </div>
+                        <div className="bg-green-50 border-2 border-green-300 rounded-xl p-6">
+                            <p className="font-poppins text-sm text-green-700 mb-1">Completed</p>
+                            <p className="font-playfair text-4xl font-bold text-green-800">{offerStats.completed}</p>
+                        </div>
+                    </div>
 
-                        {/* Offers Table */}
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                            {offersLoading ? (
-                                <div className="p-12 text-center">
-                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
-                                    <p className="font-poppins text-gray-600 mt-4">Loading offers...</p>
-                                </div>
-                            ) : filteredOffers.length === 0 ? (
-                                <div className="p-12 text-center">
-                                    <p className="font-poppins text-gray-600">No donation offers found</p>
-                                </div>
-                            ) : (
-                                <>
-                                    {/* Mobile Card View */}
-                                    <div className="block md:hidden divide-y divide-gray-200">
-                                        {filteredOffers.map((offer) => (
-                                            <div key={offer.id} className="p-4 bg-white">
-                                                <div className="mb-3">
-                                                    <h3 className="font-poppins font-bold text-gray-900 text-lg">{offer.donorName}</h3>
-                                                    <div className="flex flex-wrap items-center gap-2 mt-1">
-                                                        <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-semibold font-poppins">
-                                                            {offer.district}
-                                                        </span>
-                                                        <span className="text-xs text-gray-400 font-poppins">
-                                                            {offer.createdAt?.toDate?.()?.toLocaleDateString()}
-                                                        </span>
-                                                    </div>
-                                                </div>
+                    {/* Filters */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
+                        <div className="flex flex-col md:flex-row gap-4">
+                            <div>
+                                <label className="block font-poppins text-sm font-semibold text-gray-700 mb-2">
+                                    <Filter size={16} className="inline mr-2" />
+                                    Status
+                                </label>
+                                <select
+                                    value={offerStatusFilter}
+                                    onChange={(e) => setOfferStatusFilter(e.target.value)}
+                                    className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 font-poppins"
+                                >
+                                    <option value="all">All Statuses</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="contacted">Contacted</option>
+                                    <option value="completed">Completed</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block font-poppins text-sm font-semibold text-gray-700 mb-2">
+                                    <MapPin size={16} className="inline mr-2" />
+                                    District
+                                </label>
+                                <select
+                                    value={offerDistrictFilter}
+                                    onChange={(e) => setOfferDistrictFilter(e.target.value)}
+                                    className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 font-poppins"
+                                >
+                                    <option value="all">All Districts</option>
+                                    {offerDistricts.map(district => (
+                                        <option key={district} value={district}>{district}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            {/* CSV export removed in favor of Google Sheet workflow */}
+                        </div>
+                    </div>
 
-                                                <div className="mb-4">
-                                                    <select
-                                                        value={offer.status}
-                                                        onChange={(e) => handleUpdateOfferStatus(offer.id, e.target.value)}
-                                                        className={`w-full px-3 py-2 rounded-lg font-poppins font-bold text-xs uppercase border-2 ${getStatusBadge(offer.status)}`}
-                                                        disabled={updating}
-                                                    >
-                                                        <option value="pending">Pending</option>
-                                                        <option value="contacted">Contacted</option>
-                                                        <option value="completed">Completed</option>
-                                                    </select>
-                                                </div>
-
-                                                <div className="mb-3 bg-gray-50 p-3 rounded-lg">
-                                                    <p className="font-poppins text-xs font-semibold text-gray-500 mb-1 uppercase">Items Offered</p>
-                                                    <p className="font-poppins text-sm text-gray-800 line-clamp-2">{offer.itemsOffered}</p>
-                                                </div>
-
-                                                <div className="mb-4">
-                                                    <p className="font-poppins text-sm text-gray-700 flex items-center gap-2">
-                                                        <Phone size={14} className="text-gray-400" />
-                                                        {offer.contactNumber}
-                                                    </p>
-                                                </div>
-
-                                                <div className="flex gap-3">
-                                                    <button
-                                                        onClick={() => {
-                                                            setSelectedOffer(offer)
-                                                            setShowOfferModal(true)
-                                                        }}
-                                                        className="flex-1 py-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition flex justify-center items-center gap-2 text-sm font-semibold font-poppins"
-                                                    >
-                                                        <Eye size={16} /> View Details
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteOffer(offer.id)}
-                                                        className="w-12 py-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition flex justify-center items-center"
-                                                        title="Delete"
-                                                        disabled={updating}
-                                                    >
-                                                        <Trash2 size={18} />
-                                                    </button>
+                    {/* Offers Table */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        {offersLoading ? (
+                            <div className="p-12 text-center">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
+                                <p className="font-poppins text-gray-600 mt-4">Loading offers...</p>
+                            </div>
+                        ) : filteredOffers.length === 0 ? (
+                            <div className="p-12 text-center">
+                                <p className="font-poppins text-gray-600">No donation offers found</p>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Mobile Card View */}
+                                <div className="block md:hidden divide-y divide-gray-200">
+                                    {filteredOffers.map((offer) => (
+                                        <div key={offer.id} className="p-4 bg-white">
+                                            <div className="mb-3">
+                                                <h3 className="font-poppins font-bold text-gray-900 text-lg">{offer.donorName}</h3>
+                                                <div className="flex flex-wrap items-center gap-2 mt-1">
+                                                    <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-semibold font-poppins">
+                                                        {offer.district}
+                                                    </span>
+                                                    <span className="text-xs text-gray-400 font-poppins">
+                                                        {offer.createdAt?.toDate?.()?.toLocaleDateString()}
+                                                    </span>
                                                 </div>
                                             </div>
-                                        ))}
-                                    </div>
 
-                                    {/* Desktop Table View */}
-                                    <div className="hidden md:block overflow-x-auto">
-                                        <table className="w-full">
+                                            <div className="mb-4">
+                                                <select
+                                                    value={offer.status}
+                                                    onChange={(e) => handleUpdateOfferStatus(offer.id, e.target.value)}
+                                                    className={`w-full px-3 py-2 rounded-lg font-poppins font-bold text-xs uppercase border-2 ${getStatusBadge(offer.status)}`}
+                                                    disabled={updating}
+                                                >
+                                                    <option value="pending">Pending</option>
+                                                    <option value="contacted">Contacted</option>
+                                                    <option value="completed">Completed</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="mb-3 bg-gray-50 p-3 rounded-lg">
+                                                <p className="font-poppins text-xs font-semibold text-gray-500 mb-1 uppercase">Items Offered</p>
+                                                <p className="font-poppins text-sm text-gray-800 line-clamp-2">{offer.itemsOffered}</p>
+                                            </div>
+
+                                            <div className="mb-4">
+                                                <p className="font-poppins text-sm text-gray-700 flex items-center gap-2">
+                                                    <Phone size={14} className="text-gray-400" />
+                                                    {offer.contactNumber}
+                                                </p>
+                                            </div>
+
+                                            <div className="flex gap-3">
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedOffer(offer)
+                                                        setShowOfferModal(true)
+                                                    }}
+                                                    className="flex-1 py-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition flex justify-center items-center gap-2 text-sm font-semibold font-poppins"
+                                                >
+                                                    <Eye size={16} /> View Details
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteOffer(offer.id)}
+                                                    className="w-12 py-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition flex justify-center items-center"
+                                                    title="Delete"
+                                                    disabled={updating}
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Desktop Table View */}
+                                <div className="hidden md:block overflow-x-auto">
+                                    <table className="w-full">
                                         <thead className="bg-gray-50 border-b border-gray-200">
                                             <tr>
                                                 <th className="px-6 py-4 text-left font-poppins font-semibold text-gray-700">Donor</th>
@@ -878,398 +878,398 @@ export default function ReliefAdminPage() {
                                         </tbody>
                                     </table>
                                 </div>
-                                </>
-                            )}
-                        </div>
+                            </>
+                        )}
+                    </div>
                 </section>
 
                 {/* Relief Items Section */}
                 <section className="space-y-6">
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <div>
-                                    <h2 className="font-playfair text-2xl font-bold text-gray-900">Relief Items</h2>
-                                    <p className="font-poppins text-gray-600 text-sm">
-                                        Manage the list of predefined relief items used in request forms.
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={() => setShowAddItemForm(!showAddItemForm)}
-                                    className="bg-pink-600 text-white px-4 py-2 rounded-lg font-poppins font-semibold hover:bg-pink-700 transition flex items-center gap-2"
-                                >
-                                    {showAddItemForm ? <X size={18} /> : <Plus size={18} />}
-                                    {showAddItemForm ? 'Cancel' : 'Add Item'}
-                                </button>
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <div>
+                                <h2 className="font-playfair text-2xl font-bold text-gray-900">Relief Items</h2>
+                                <p className="font-poppins text-gray-600 text-sm">
+                                    Manage the list of predefined relief items used in request forms.
+                                </p>
                             </div>
+                            <button
+                                onClick={() => setShowAddItemForm(!showAddItemForm)}
+                                className="bg-pink-600 text-white px-4 py-2 rounded-lg font-poppins font-semibold hover:bg-pink-700 transition flex items-center gap-2"
+                            >
+                                {showAddItemForm ? <X size={18} /> : <Plus size={18} />}
+                                {showAddItemForm ? 'Cancel' : 'Add Item'}
+                            </button>
+                        </div>
 
-                            {showAddItemForm && (
-                                <form onSubmit={handleAddItem} className="bg-pink-50 border border-pink-200 rounded-xl p-4 mb-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        <div>
-                                            <label className="block font-poppins text-sm font-semibold text-gray-700 mb-1">
-                                                Item ID <span className="text-red-500">*</span>
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={newItem.id}
-                                                onChange={(e) => setNewItem({ ...newItem, id: e.target.value.toLowerCase().replace(/\s+/g, '') })}
-                                                placeholder="notebooks (lowercase, no spaces)"
-                                                className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block font-poppins text-sm font-semibold text-gray-700 mb-1">
-                                                Name (English) <span className="text-red-500">*</span>
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={newItem.name}
-                                                onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-                                                placeholder="Notebooks"
-                                                className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block font-poppins text-sm font-semibold text-gray-700 mb-1">
-                                                Name (Sinhala)
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={newItem.nameSi}
-                                                onChange={(e) => setNewItem({ ...newItem, nameSi: e.target.value })}
-                                                placeholder="සටහන් පොත්"
-                                                className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block font-poppins text-sm font-semibold text-gray-700 mb-1">
-                                                Category <span className="text-red-500">*</span>
-                                            </label>
-                                            <select
-                                                value={newItem.category}
-                                                onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-                                                className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
-                                                required
-                                            >
-                                                <option value="">Select category</option>
-                                                {categories.map(cat => (
-                                                    <option key={cat} value={cat}>{cat}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block font-poppins text-sm font-semibold text-gray-700 mb-1">
-                                                Sort Order
-                                            </label>
-                                            <input
-                                                type="number"
-                                                value={newItem.sortOrder}
-                                                onChange={(e) => setNewItem({ ...newItem, sortOrder: e.target.value })}
-                                                placeholder="0"
-                                                className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
-                                            />
-                                        </div>
+                        {showAddItemForm && (
+                            <form onSubmit={handleAddItem} className="bg-pink-50 border border-pink-200 rounded-xl p-4 mb-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <div>
+                                        <label className="block font-poppins text-sm font-semibold text-gray-700 mb-1">
+                                            Item ID <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={newItem.id}
+                                            onChange={(e) => setNewItem({ ...newItem, id: e.target.value.toLowerCase().replace(/\s+/g, '') })}
+                                            placeholder="notebooks (lowercase, no spaces)"
+                                            className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
+                                            required
+                                        />
                                     </div>
-                                    <div className="mt-4 flex gap-3">
-                                        <button
-                                            type="submit"
-                                            className="bg-green-600 text-white px-5 py-2 rounded-lg font-poppins font-semibold hover:bg-green-700 transition flex items-center gap-2"
-                                        >
-                                            <Plus size={16} />
-                                            Save Item
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowAddItemForm(false)}
-                                            className="bg-gray-200 text-gray-700 px-5 py-2 rounded-lg font-poppins font-semibold hover:bg-gray-300 transition"
-                                        >
-                                            Cancel
-                                        </button>
+                                    <div>
+                                        <label className="block font-poppins text-sm font-semibold text-gray-700 mb-1">
+                                            Name (English) <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={newItem.name}
+                                            onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                                            placeholder="Notebooks"
+                                            className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
+                                            required
+                                        />
                                     </div>
-                                </form>
+                                    <div>
+                                        <label className="block font-poppins text-sm font-semibold text-gray-700 mb-1">
+                                            Name (Sinhala)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={newItem.nameSi}
+                                            onChange={(e) => setNewItem({ ...newItem, nameSi: e.target.value })}
+                                            placeholder="සටහන් පොත්"
+                                            className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block font-poppins text-sm font-semibold text-gray-700 mb-1">
+                                            Category <span className="text-red-500">*</span>
+                                        </label>
+                                        <select
+                                            value={newItem.category}
+                                            onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+                                            className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
+                                            required
+                                        >
+                                            <option value="">Select category</option>
+                                            {categories.map(cat => (
+                                                <option key={cat} value={cat}>{cat}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block font-poppins text-sm font-semibold text-gray-700 mb-1">
+                                            Sort Order
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={newItem.sortOrder}
+                                            onChange={(e) => setNewItem({ ...newItem, sortOrder: e.target.value })}
+                                            placeholder="0"
+                                            className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="mt-4 flex gap-3">
+                                    <button
+                                        type="submit"
+                                        className="bg-green-600 text-white px-5 py-2 rounded-lg font-poppins font-semibold hover:bg-green-700 transition flex items-center gap-2"
+                                    >
+                                        <Plus size={16} />
+                                        Save Item
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAddItemForm(false)}
+                                        className="bg-gray-200 text-gray-700 px-5 py-2 rounded-lg font-poppins font-semibold hover:bg-gray-300 transition"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+
+                        {/* Mobile Card View */}
+                        <div className="block md:hidden space-y-4">
+                            {itemsLoading ? (
+                                <p className="text-center font-poppins text-gray-500 py-4">Loading items...</p>
+                            ) : reliefItems.length === 0 ? (
+                                <p className="text-center font-poppins text-gray-500 py-4">No items found.</p>
+                            ) : (
+                                reliefItems.map((item) => (
+                                    <div key={item.docId} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                                        {editingItem?.docId === item.docId ? (
+                                            <div className="space-y-3">
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label className="text-xs font-poppins font-semibold text-gray-500">Order</label>
+                                                        <input
+                                                            type="number"
+                                                            value={editingItem.sortOrder}
+                                                            onChange={(e) => setEditingItem({ ...editingItem, sortOrder: e.target.value })}
+                                                            className="w-full px-2 py-1.5 border-2 border-gray-300 rounded-lg font-poppins text-sm"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-xs font-poppins font-semibold text-gray-500">ID</label>
+                                                        <input
+                                                            type="text"
+                                                            value={editingItem.id}
+                                                            onChange={(e) => setEditingItem({ ...editingItem, id: e.target.value.toLowerCase().replace(/\s+/g, '') })}
+                                                            className="w-full px-2 py-1.5 border-2 border-gray-300 rounded-lg font-poppins text-sm"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs font-poppins font-semibold text-gray-500">Name (EN)</label>
+                                                    <input
+                                                        type="text"
+                                                        value={editingItem.name}
+                                                        onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
+                                                        className="w-full px-2 py-1.5 border-2 border-gray-300 rounded-lg font-poppins text-sm"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs font-poppins font-semibold text-gray-500">Name (SI)</label>
+                                                    <input
+                                                        type="text"
+                                                        value={editingItem.nameSi}
+                                                        onChange={(e) => setEditingItem({ ...editingItem, nameSi: e.target.value })}
+                                                        className="w-full px-2 py-1.5 border-2 border-gray-300 rounded-lg font-poppins text-sm"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs font-poppins font-semibold text-gray-500">Category</label>
+                                                    <select
+                                                        value={editingItem.category}
+                                                        onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
+                                                        className="w-full px-2 py-1.5 border-2 border-gray-300 rounded-lg font-poppins text-sm"
+                                                    >
+                                                        {categories.map(cat => (
+                                                            <option key={cat} value={cat}>{cat}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <div className="flex gap-2 pt-2">
+                                                    <button
+                                                        onClick={() => handleUpdateItem(item.docId)}
+                                                        className="flex-1 bg-green-600 text-white py-2 rounded-lg text-sm font-poppins font-semibold"
+                                                    >
+                                                        Save
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setEditingItem(null)}
+                                                        className="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg text-sm font-poppins font-semibold"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <div>
+                                                        <span className="text-xs font-mono text-gray-400">#{item.sortOrder} • {item.id}</span>
+                                                        <h3 className="font-poppins font-bold text-gray-900 text-lg">{item.name}</h3>
+                                                        {item.nameSi && <p className="font-poppins text-gray-600 text-sm">{item.nameSi}</p>}
+                                                    </div>
+                                                    <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-[10px] font-bold uppercase font-poppins">
+                                                        {item.category}
+                                                    </span>
+                                                </div>
+                                                <div className="flex gap-2 mt-4 border-t border-gray-100 pt-3">
+                                                    <button
+                                                        onClick={() => setEditingItem({ ...item })}
+                                                        className="flex-1 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition flex justify-center items-center gap-2 text-sm font-semibold font-poppins"
+                                                    >
+                                                        <Edit2 size={16} /> Edit
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteItem(item.docId, item.name)}
+                                                        className="w-12 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition flex justify-center items-center"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                ))
                             )}
+                        </div>
 
-                            {/* Mobile Card View */}
-                            <div className="block md:hidden space-y-4">
-                                {itemsLoading ? (
-                                    <p className="text-center font-poppins text-gray-500 py-4">Loading items...</p>
-                                ) : reliefItems.length === 0 ? (
-                                    <p className="text-center font-poppins text-gray-500 py-4">No items found.</p>
-                                ) : (
-                                    reliefItems.map((item) => (
-                                        <div key={item.docId} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                                            {editingItem?.docId === item.docId ? (
-                                                <div className="space-y-3">
-                                                    <div className="grid grid-cols-2 gap-3">
-                                                        <div>
-                                                            <label className="text-xs font-poppins font-semibold text-gray-500">Order</label>
+                        {/* Desktop Table View */}
+                        <div className="hidden md:block overflow-x-auto">
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="bg-gray-50 border-b border-gray-200">
+                                        <th className="px-4 py-3 text-left font-poppins text-xs font-semibold text-gray-600 uppercase tracking-wide">Order</th>
+                                        <th className="px-4 py-3 text-left font-poppins text-xs font-semibold text-gray-600 uppercase tracking-wide">ID</th>
+                                        <th className="px-4 py-3 text-left font-poppins text-xs font-semibold text-gray-600 uppercase tracking-wide">Name (EN)</th>
+                                        <th className="px-4 py-3 text-left font-poppins text-xs font-semibold text-gray-600 uppercase tracking-wide">Name (SI)</th>
+                                        <th className="px-4 py-3 text-left font-poppins text-xs font-semibold text-gray-600 uppercase tracking-wide">Category</th>
+                                        <th className="px-4 py-3 text-left font-poppins text-xs font-semibold text-gray-600 uppercase tracking-wide">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {itemsLoading ? (
+                                        <tr>
+                                            <td colSpan={6} className="px-4 py-6 text-center font-poppins text-gray-500">
+                                                Loading relief items...
+                                            </td>
+                                        </tr>
+                                    ) : reliefItems.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={6} className="px-4 py-6 text-center font-poppins text-gray-500">
+                                                No relief items found. Add your first item.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        reliefItems.map((item) => (
+                                            <tr key={item.docId} className="border-b border-gray-100 hover:bg-gray-50">
+                                                {editingItem?.docId === item.docId ? (
+                                                    <>
+                                                        <td className="px-4 py-3">
                                                             <input
                                                                 type="number"
                                                                 value={editingItem.sortOrder}
                                                                 onChange={(e) => setEditingItem({ ...editingItem, sortOrder: e.target.value })}
-                                                                className="w-full px-2 py-1.5 border-2 border-gray-300 rounded-lg font-poppins text-sm"
+                                                                className="w-20 px-2 py-1 border-2 border-gray-300 rounded font-poppins text-sm"
                                                             />
-                                                        </div>
-                                                        <div>
-                                                            <label className="text-xs font-poppins font-semibold text-gray-500">ID</label>
+                                                        </td>
+                                                        <td className="px-4 py-3">
                                                             <input
                                                                 type="text"
                                                                 value={editingItem.id}
                                                                 onChange={(e) => setEditingItem({ ...editingItem, id: e.target.value.toLowerCase().replace(/\s+/g, '') })}
-                                                                className="w-full px-2 py-1.5 border-2 border-gray-300 rounded-lg font-poppins text-sm"
+                                                                className="w-32 px-2 py-1 border-2 border-gray-300 rounded font-poppins text-sm"
                                                             />
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <label className="text-xs font-poppins font-semibold text-gray-500">Name (EN)</label>
-                                                        <input
-                                                            type="text"
-                                                            value={editingItem.name}
-                                                            onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
-                                                            className="w-full px-2 py-1.5 border-2 border-gray-300 rounded-lg font-poppins text-sm"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="text-xs font-poppins font-semibold text-gray-500">Name (SI)</label>
-                                                        <input
-                                                            type="text"
-                                                            value={editingItem.nameSi}
-                                                            onChange={(e) => setEditingItem({ ...editingItem, nameSi: e.target.value })}
-                                                            className="w-full px-2 py-1.5 border-2 border-gray-300 rounded-lg font-poppins text-sm"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="text-xs font-poppins font-semibold text-gray-500">Category</label>
-                                                        <select
-                                                            value={editingItem.category}
-                                                            onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
-                                                            className="w-full px-2 py-1.5 border-2 border-gray-300 rounded-lg font-poppins text-sm"
-                                                        >
-                                                            {categories.map(cat => (
-                                                                <option key={cat} value={cat}>{cat}</option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-                                                    <div className="flex gap-2 pt-2">
-                                                        <button
-                                                            onClick={() => handleUpdateItem(item.docId)}
-                                                            className="flex-1 bg-green-600 text-white py-2 rounded-lg text-sm font-poppins font-semibold"
-                                                        >
-                                                            Save
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setEditingItem(null)}
-                                                            className="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg text-sm font-poppins font-semibold"
-                                                        >
-                                                            Cancel
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    <div className="flex justify-between items-start mb-2">
-                                                        <div>
-                                                            <span className="text-xs font-mono text-gray-400">#{item.sortOrder} • {item.id}</span>
-                                                            <h3 className="font-poppins font-bold text-gray-900 text-lg">{item.name}</h3>
-                                                            {item.nameSi && <p className="font-poppins text-gray-600 text-sm">{item.nameSi}</p>}
-                                                        </div>
-                                                        <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-[10px] font-bold uppercase font-poppins">
-                                                            {item.category}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex gap-2 mt-4 border-t border-gray-100 pt-3">
-                                                        <button
-                                                            onClick={() => setEditingItem({ ...item })}
-                                                            className="flex-1 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition flex justify-center items-center gap-2 text-sm font-semibold font-poppins"
-                                                        >
-                                                            <Edit2 size={16} /> Edit
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDeleteItem(item.docId, item.name)}
-                                                            className="w-12 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition flex justify-center items-center"
-                                                        >
-                                                            <Trash2 size={18} />
-                                                        </button>
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-
-                            {/* Desktop Table View */}
-                            <div className="hidden md:block overflow-x-auto">
-                                <table className="w-full">
-                                    <thead>
-                                        <tr className="bg-gray-50 border-b border-gray-200">
-                                            <th className="px-4 py-3 text-left font-poppins text-xs font-semibold text-gray-600 uppercase tracking-wide">Order</th>
-                                            <th className="px-4 py-3 text-left font-poppins text-xs font-semibold text-gray-600 uppercase tracking-wide">ID</th>
-                                            <th className="px-4 py-3 text-left font-poppins text-xs font-semibold text-gray-600 uppercase tracking-wide">Name (EN)</th>
-                                            <th className="px-4 py-3 text-left font-poppins text-xs font-semibold text-gray-600 uppercase tracking-wide">Name (SI)</th>
-                                            <th className="px-4 py-3 text-left font-poppins text-xs font-semibold text-gray-600 uppercase tracking-wide">Category</th>
-                                            <th className="px-4 py-3 text-left font-poppins text-xs font-semibold text-gray-600 uppercase tracking-wide">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {itemsLoading ? (
-                                            <tr>
-                                                <td colSpan={6} className="px-4 py-6 text-center font-poppins text-gray-500">
-                                                    Loading relief items...
-                                                </td>
-                                            </tr>
-                                        ) : reliefItems.length === 0 ? (
-                                            <tr>
-                                                <td colSpan={6} className="px-4 py-6 text-center font-poppins text-gray-500">
-                                                    No relief items found. Add your first item.
-                                                </td>
-                                            </tr>
-                                        ) : (
-                                            reliefItems.map((item) => (
-                                                <tr key={item.docId} className="border-b border-gray-100 hover:bg-gray-50">
-                                                    {editingItem?.docId === item.docId ? (
-                                                        <>
-                                                            <td className="px-4 py-3">
-                                                                <input
-                                                                    type="number"
-                                                                    value={editingItem.sortOrder}
-                                                                    onChange={(e) => setEditingItem({ ...editingItem, sortOrder: e.target.value })}
-                                                                    className="w-20 px-2 py-1 border-2 border-gray-300 rounded font-poppins text-sm"
-                                                                />
-                                                            </td>
-                                                            <td className="px-4 py-3">
-                                                                <input
-                                                                    type="text"
-                                                                    value={editingItem.id}
-                                                                    onChange={(e) => setEditingItem({ ...editingItem, id: e.target.value.toLowerCase().replace(/\s+/g, '') })}
-                                                                    className="w-32 px-2 py-1 border-2 border-gray-300 rounded font-poppins text-sm"
-                                                                />
-                                                            </td>
-                                                            <td className="px-4 py-3">
-                                                                <input
-                                                                    type="text"
-                                                                    value={editingItem.name}
-                                                                    onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
-                                                                    className="w-40 px-2 py-1 border-2 border-gray-300 rounded font-poppins text-sm"
-                                                                />
-                                                            </td>
-                                                            <td className="px-4 py-3">
-                                                                <input
-                                                                    type="text"
-                                                                    value={editingItem.nameSi}
-                                                                    onChange={(e) => setEditingItem({ ...editingItem, nameSi: e.target.value })}
-                                                                    className="w-40 px-2 py-1 border-2 border-gray-300 rounded font-poppins text-sm"
-                                                                />
-                                                            </td>
-                                                            <td className="px-4 py-3">
-                                                                <select
-                                                                    value={editingItem.category}
-                                                                    onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
-                                                                    className="w-32 px-2 py-1 border-2 border-gray-300 rounded font-poppins text-sm"
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <input
+                                                                type="text"
+                                                                value={editingItem.name}
+                                                                onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
+                                                                className="w-40 px-2 py-1 border-2 border-gray-300 rounded font-poppins text-sm"
+                                                            />
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <input
+                                                                type="text"
+                                                                value={editingItem.nameSi}
+                                                                onChange={(e) => setEditingItem({ ...editingItem, nameSi: e.target.value })}
+                                                                className="w-40 px-2 py-1 border-2 border-gray-300 rounded font-poppins text-sm"
+                                                            />
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <select
+                                                                value={editingItem.category}
+                                                                onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
+                                                                className="w-32 px-2 py-1 border-2 border-gray-300 rounded font-poppins text-sm"
+                                                            >
+                                                                {categories.map(cat => (
+                                                                    <option key={cat} value={cat}>{cat}</option>
+                                                                ))}
+                                                            </select>
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    onClick={() => handleUpdateItem(item.docId)}
+                                                                    className="bg-green-600 text-white px-3 py-1 rounded-lg text-xs font-poppins hover:bg-green-700 transition flex items-center gap-1"
                                                                 >
-                                                                    {categories.map(cat => (
-                                                                        <option key={cat} value={cat}>{cat}</option>
-                                                                    ))}
-                                                                </select>
-                                                            </td>
-                                                            <td className="px-4 py-3">
-                                                                <div className="flex gap-2">
-                                                                    <button
-                                                                        onClick={() => handleUpdateItem(item.docId)}
-                                                                        className="bg-green-600 text-white px-3 py-1 rounded-lg text-xs font-poppins hover:bg-green-700 transition flex items-center gap-1"
-                                                                    >
-                                                                        <Save size={14} />
-                                                                        Save
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => setEditingItem(null)}
-                                                                        className="bg-gray-300 text-gray-800 px-3 py-1 rounded-lg text-xs font-poppins hover:bg-gray-400 transition"
-                                                                    >
-                                                                        Cancel
-                                                                    </button>
-                                                                </div>
-                                                            </td>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <td className="px-4 py-3 font-poppins text-sm text-gray-700">{item.sortOrder}</td>
-                                                            <td className="px-4 py-3 font-mono text-xs text-gray-600">{item.id}</td>
-                                                            <td className="px-4 py-3 font-poppins text-sm text-gray-900 font-semibold">{item.name}</td>
-                                                            <td className="px-4 py-3 font-poppins text-sm text-gray-700">{item.nameSi || '-'}</td>
-                                                            <td className="px-4 py-3">
-                                                                <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full font-poppins text-xs font-semibold">
-                                                                    {item.category}
-                                                                </span>
-                                                            </td>
-                                                            <td className="px-4 py-3">
-                                                                <div className="flex gap-2">
-                                                                    <button
-                                                                        onClick={() => setEditingItem({ ...item })}
-                                                                        className="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-poppins hover:bg-blue-700 transition flex items-center gap-1"
-                                                                    >
-                                                                        <Edit2 size={14} />
-                                                                        Edit
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => handleDeleteItem(item.docId, item.name)}
-                                                                        className="bg-red-600 text-white px-3 py-1 rounded-lg text-xs font-poppins hover:bg-red-700 transition flex items-center gap-1"
-                                                                    >
-                                                                        <Trash2 size={14} />
-                                                                        Delete
-                                                                    </button>
-                                                                </div>
-                                                            </td>
-                                                        </>
-                                                    )}
-                                                </tr>
-                                            ))
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
+                                                                    <Save size={14} />
+                                                                    Save
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setEditingItem(null)}
+                                                                    className="bg-gray-300 text-gray-800 px-3 py-1 rounded-lg text-xs font-poppins hover:bg-gray-400 transition"
+                                                                >
+                                                                    Cancel
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <td className="px-4 py-3 font-poppins text-sm text-gray-700">{item.sortOrder}</td>
+                                                        <td className="px-4 py-3 font-mono text-xs text-gray-600">{item.id}</td>
+                                                        <td className="px-4 py-3 font-poppins text-sm text-gray-900 font-semibold">{item.name}</td>
+                                                        <td className="px-4 py-3 font-poppins text-sm text-gray-700">{item.nameSi || '-'}</td>
+                                                        <td className="px-4 py-3">
+                                                            <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full font-poppins text-xs font-semibold">
+                                                                {item.category}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    onClick={() => setEditingItem({ ...item })}
+                                                                    className="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-poppins hover:bg-blue-700 transition flex items-center gap-1"
+                                                                >
+                                                                    <Edit2 size={14} />
+                                                                    Edit
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDeleteItem(item.docId, item.name)}
+                                                                    className="bg-red-600 text-white px-3 py-1 rounded-lg text-xs font-poppins hover:bg-red-700 transition flex items-center gap-1"
+                                                                >
+                                                                    <Trash2 size={14} />
+                                                                    Delete
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </>
+                                                )}
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
+                    </div>
                 </section>
 
                 {/* Settings Section */}
                 <section className="space-y-6">
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
-                            <h2 className="font-playfair text-2xl font-bold text-gray-900 mb-2">Google Sheet Link</h2>
-                            <p className="font-poppins text-gray-600 text-sm mb-4">
-                                Store the Google Sheet URL used for managing detailed reports of requests and donations.
-                            </p>
-                            <div className="space-y-3 max-w-2xl">
-                                <input
-                                    type="url"
-                                    value={googleSheetUrl}
-                                    onChange={(e) => setGoogleSheetUrl(e.target.value)}
-                                    placeholder="https://docs.google.com/spreadsheets/..."
-                                    className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
-                                />
-                                <div className="flex flex-wrap gap-3 mt-2">
-                                    <button
-                                        onClick={saveGoogleSheetUrl}
-                                        disabled={savingSheetUrl}
-                                        className="bg-pink-600 text-white px-5 py-2 rounded-lg font-poppins font-semibold hover:bg-pink-700 disabled:opacity-60 disabled:cursor-not-allowed transition flex items-center gap-2"
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
+                        <h2 className="font-playfair text-2xl font-bold text-gray-900 mb-2">Google Sheet Link</h2>
+                        <p className="font-poppins text-gray-600 text-sm mb-4">
+                            Store the Google Sheet URL used for managing detailed reports of requests and donations.
+                        </p>
+                        <div className="space-y-3 max-w-2xl">
+                            <input
+                                type="url"
+                                value={googleSheetUrl}
+                                onChange={(e) => setGoogleSheetUrl(e.target.value)}
+                                placeholder="https://docs.google.com/spreadsheets/..."
+                                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
+                            />
+                            <div className="flex flex-wrap gap-3 mt-2">
+                                <button
+                                    onClick={saveGoogleSheetUrl}
+                                    disabled={savingSheetUrl}
+                                    className="bg-pink-600 text-white px-5 py-2 rounded-lg font-poppins font-semibold hover:bg-pink-700 disabled:opacity-60 disabled:cursor-not-allowed transition flex items-center gap-2"
+                                >
+                                    <Save size={16} />
+                                    {savingSheetUrl ? 'Saving...' : 'Save Link'}
+                                </button>
+                                {googleSheetUrl && (
+                                    <a
+                                        href={googleSheetUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-2 px-5 py-2 border-2 border-gray-300 rounded-lg font-poppins text-gray-800 hover:bg-gray-50 transition"
                                     >
-                                        <Save size={16} />
-                                        {savingSheetUrl ? 'Saving...' : 'Save Link'}
-                                    </button>
-                                    {googleSheetUrl && (
-                                        <a
-                                            href={googleSheetUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-2 px-5 py-2 border-2 border-gray-300 rounded-lg font-poppins text-gray-800 hover:bg-gray-50 transition"
-                                        >
-                                            <ExternalLink size={16} />
-                                            Open Google Sheet
-                                        </a>
-                                    )}
-                                </div>
+                                        <ExternalLink size={16} />
+                                        Open Google Sheet
+                                    </a>
+                                )}
                             </div>
                         </div>
+                    </div>
                 </section>
 
                 {/* Request Detail Modal */}
