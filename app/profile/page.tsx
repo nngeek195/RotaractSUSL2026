@@ -244,7 +244,7 @@ export default function Profile() {
 
     return (
         <div className="bg-white min-h-screen flex flex-col">
-            <NavBar currentPage="leadership" />
+            <NavBar currentPage="profile" />
             <br /><br /><br /><br />
 
             <main className="flex-1 px-4 py-8">
