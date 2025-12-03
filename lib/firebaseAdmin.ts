@@ -1,4 +1,4 @@
-import admin from 'firebase-admin';
+import admin from "firebase-admin";
 
 // Initialize Firebase Admin SDK safely across hot reloads
 if (!admin.apps.length) {
@@ -7,11 +7,11 @@ if (!admin.apps.length) {
   let privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
   if (!projectId || !clientEmail || !privateKey) {
-    throw new Error('Missing Firebase Admin environment variables.');
+    throw new Error("Missing Firebase Admin environment variables.");
   }
 
   // Handle escaped newlines in private key
-  privateKey = privateKey.replace(/\\n/g, '\n');
+  privateKey = privateKey.replace(/\\n/g, "\n");
 
   admin.initializeApp({
     credential: admin.credential.cert({
