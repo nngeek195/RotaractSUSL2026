@@ -25,7 +25,7 @@ interface AdminLayoutProps {
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
-  const { user, isAdmin, loading } = useAuth();
+  const { user, isAdmin, isCommittee, loading } = useAuth();
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -38,7 +38,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   // This is our route protection
-  if (!user || !isAdmin) {
+  if (!user || (!isAdmin && !isCommittee)) {
     // We use useEffect to avoid server-side render issues with router
     if (typeof window !== "undefined") {
       router.push("/login");
@@ -79,51 +79,56 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <span className="text-blue-400">Admin</span>Panel
         </div>
         <ul className="space-y-2 flex-1">
-          <li>
-            <Link
-              href="/admin"
-              onClick={() => setIsSidebarOpen(false)}
-              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-pink-400 transition"
-            >
-              <LayoutDashboard size={20} /> Dashboard
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/admin/requests"
-              onClick={() => setIsSidebarOpen(false)}
-              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-pink-400 transition"
-            >
-              <Clock size={20} /> Pending Requests
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/admin/users"
-              onClick={() => setIsSidebarOpen(false)}
-              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-pink-400 transition"
-            >
-              <Users size={20} /> User Handling
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/admin/events"
-              onClick={() => setIsSidebarOpen(false)}
-              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-pink-400 transition"
-            >
-              <Calendar size={20} /> Event Handling
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/admin/project-details"
-              onClick={() => setIsSidebarOpen(false)}
-              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-pink-400 transition"
-            >
-              <FileText size={20} /> Project Details
-            </Link>
-          </li>
+          {isAdmin && (
+            <>
+              <li>
+                <Link
+                  href="/admin"
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-pink-400 transition"
+                >
+                  <LayoutDashboard size={20} /> Dashboard
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/admin/requests"
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-pink-400 transition"
+                >
+                  <Clock size={20} /> Pending Requests
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/admin/users"
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-pink-400 transition"
+                >
+                  <Users size={20} /> User Handling
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/admin/events"
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-pink-400 transition"
+                >
+                  <Calendar size={20} /> Event Handling
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/admin/project-details"
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-pink-400 transition"
+                >
+                  <FileText size={20} /> Project Details
+                </Link>
+              </li>
+            </>
+          )}
+
           <li>
             <Link
               href="/admin/relief"
@@ -133,24 +138,29 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <Heart size={20} /> 🇱🇰 Flood Relief
             </Link>
           </li>
-          <li>
-            <Link
-              href="/admin/leaderboard"
-              onClick={() => setIsSidebarOpen(false)}
-              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-blue-400 transition"
-            >
-              <Users size={20} /> Leaderboard
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/admin/monthly-stars"
-              onClick={() => setIsSidebarOpen(false)}
-              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-yellow-400 transition"
-            >
-              <Calendar size={20} /> Monthly Stars
-            </Link>
-          </li>
+
+          {isAdmin && (
+            <>
+              <li>
+                <Link
+                  href="/admin/leaderboard"
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-blue-400 transition"
+                >
+                  <Users size={20} /> Leaderboard
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/admin/monthly-stars"
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-yellow-400 transition"
+                >
+                  <Calendar size={20} /> Monthly Stars
+                </Link>
+              </li>
+            </>
+          )}
         </ul>
         <button
           onClick={handleLogout}
