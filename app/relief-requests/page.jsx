@@ -203,13 +203,37 @@ export default function ReliefRequestsPage() {
             return;
         }
 
+        if (!donationForm.district) {
+            alert("Please select your district");
+            return;
+        }
+
+        if (donationForm.email && !/\S+@\S+\.\S+/.test(donationForm.email)) {
+            alert("Please enter a valid email address");
+            return;
+        }
+
         setSubmittingDonation(true);
         try {
-            await addDoc(collection(db, "donationOffers"), {
+            const docRef = await addDoc(collection(db, "donationOffers"), {
                 ...donationForm,
                 createdAt: new Date(),
                 status: "pending"
             });
+
+            // Update Google Sheet
+            fetch('/api/relief/update-sheet', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'donation',
+                    data: {
+                        ...donationForm,
+                        id: docRef.id, // Pass the ID for future updates
+                        status: 'pending'
+                    }
+                })
+            }).catch(err => console.error('Failed to update sheet:', err));
 
             alert("Thank you! Your donation offer has been submitted successfully. Our team will contact you soon.");
             setShowDonationForm(false);
@@ -276,6 +300,27 @@ export default function ReliefRequestsPage() {
             });
 
             setGeneratedToken(token);
+
+            // Update Google Sheet
+            fetch('/api/relief/update-sheet', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'request',
+                    data: {
+                        schoolName: requestForm.schoolName,
+                        district: requestForm.district,
+                        address: requestForm.address,
+                        contactPerson: requestForm.contactPerson,
+                        contactNumber: requestForm.contactNumber,
+                        email: requestForm.email,
+                        items: selectedItems,
+                        requestToken: token,
+                        description: requestForm.description,
+                        status: 'pending'
+                    }
+                })
+            }).catch(err => console.error('Failed to update sheet:', err));
 
             // Send email notification if email provided
             if (requestForm.email) {

@@ -302,9 +302,28 @@ export default function ReliefAdminPage() {
                 updatedAt: new Date()
             })
 
-            setRequests(prev => prev.map(req =>
-                req.id === requestId ? { ...req, status: newStatus, updatedAt: new Date() } : req
-            ))
+            setRequests(prev => prev.map(req => {
+                if (req.id === requestId) {
+                    const updatedReq = { ...req, status: newStatus, updatedAt: new Date() }
+                    
+                    // Send update to Google Sheet (Append as new entry/log)
+                    fetch('/api/relief/update-sheet', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            type: 'request',
+                            data: {
+                                ...updatedReq,
+                                // Ensure date is formatted if it's a Firestore timestamp
+                                createdAt: updatedReq.createdAt?.toDate ? updatedReq.createdAt.toDate() : new Date() 
+                            }
+                        })
+                    }).catch(err => console.error('Failed to update sheet:', err))
+
+                    return updatedReq
+                }
+                return req
+            }))
 
             if (selectedRequest?.id === requestId) {
                 setSelectedRequest(prev => ({ ...prev, status: newStatus }))
@@ -329,9 +348,27 @@ export default function ReliefAdminPage() {
                 updatedAt: new Date()
             })
 
-            setOffers(prev => prev.map(offer =>
-                offer.id === offerId ? { ...offer, status: newStatus, updatedAt: new Date() } : offer
-            ))
+            setOffers(prev => prev.map(offer => {
+                if (offer.id === offerId) {
+                    const updatedOffer = { ...offer, status: newStatus, updatedAt: new Date() }
+
+                    // Send update to Google Sheet (Append as new entry/log)
+                    fetch('/api/relief/update-sheet', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            type: 'donation',
+                            data: {
+                                ...updatedOffer,
+                                createdAt: updatedOffer.createdAt?.toDate ? updatedOffer.createdAt.toDate() : new Date()
+                            }
+                        })
+                    }).catch(err => console.error('Failed to update sheet:', err))
+
+                    return updatedOffer
+                }
+                return offer
+            }))
 
             if (selectedOffer?.id === offerId) {
                 setSelectedOffer(prev => ({ ...prev, status: newStatus }))
