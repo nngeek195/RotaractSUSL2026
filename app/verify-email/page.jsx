@@ -44,47 +44,24 @@ function VerifyEmailContent() {
             <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8 text-center">
                 {status === 'verifying' && (
                     <>
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Verifying Email</h2>
-                        <p className="text-gray-600">Please wait while we verify your email address...</p>
-                    </>
-                )}
-
-                {status === 'success' && (
-                    <>
-                        <div className="text-green-500 text-5xl mb-4">✓</div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Email Verified!</h2>
-                        <p className="text-gray-600 mb-4">Your email has been successfully verified.</p>
-                        <p className="text-sm text-gray-500">Redirecting to login...</p>
-                    </>
-                )}
-
-                {status === 'error' && (
-                    <>
-                        <div className="text-red-500 text-5xl mb-4">✗</div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Verification Failed</h2>
-                        <p className="text-gray-600 mb-4">The verification link is invalid or has expired.</p>
-                        <button
-                            onClick={() => router.push('/join')}
-                            className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
-                        >
-                            Register Again
-                        </button>
-                    </>
-                )}
-
-                {status === 'invalid' && (
-                    <>
-                        <div className="text-yellow-500 text-5xl mb-4">⚠</div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Invalid Link</h2>
-                        <p className="text-gray-600">This verification link is not valid.</p>
-                    </>
-                )}
-            </div>
-        </div>
-    );
-}
-
+            return (
+                <section className="min-h-[60vh] py-12 sm:py-16">
+                    <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="mx-auto max-w-xl rounded-2xl border border-gray-200 bg-white/70 backdrop-blur p-6 sm:p-8 shadow-sm">
+                            <div className="mx-auto w-20 h-20 rounded-full bg-pink-100 flex items-center justify-center mb-6">
+                                <Mail className="w-10 h-10 text-pink-600" />
+                            </div>
+                            <h1 className="text-2xl sm:text-3xl font-bold mb-3 text-gray-900 text-center">Check your Email!</h1>
+                            <p className="text-gray-600 leading-relaxed text-center">
+                                We sent a verification link to <span className="font-semibold">your email</span>. Please click it to verify your email, then our admin team will review your application. If you don’t see the email, check your <span className="font-semibold">Spam/Junk</span> folder and mark it as Not Spam.
+                            </p>
+                            <div className="mt-6 flex justify-center">
+                                <a href="/" className="inline-flex items-center gap-2 rounded-full bg-pink-600 px-5 py-2.5 text-white font-medium shadow hover:bg-pink-700 transition-colors">Back to Home</a>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
 export default function VerifyEmail() {
     return (
         <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>

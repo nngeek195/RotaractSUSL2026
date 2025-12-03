@@ -9,7 +9,7 @@ import { Check, X, Mail, Phone, User, Loader2 } from "lucide-react";
 // --- Helper Functions ---
 
 // Send Email via API (Resend backend)
-async function sendEmailNotification(email, fullName, action) {
+async function sendEmailNotification(email, fullName, action, reason) {
     const isApprove = action === 'approve';
     const loginUrl = typeof window !== 'undefined' ? window.location.origin + '/login' : '';
 
@@ -19,7 +19,7 @@ async function sendEmailNotification(email, fullName, action) {
         body: JSON.stringify({
             to: email,
             template: isApprove ? 'membership_approved' : 'membership_rejected',
-            data: { name: fullName, loginUrl }
+            data: { name: fullName, loginUrl, reason }
         })
     });
     if (!res.ok) {
@@ -40,6 +40,8 @@ export default function PendingRequests() {
     // --- State Management ---
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [rejectingId, setRejectingId] = useState(null);
+    const [rejectReason, setRejectReason] = useState('');
 
     // Modal State
     const [selectedRequest, setSelectedRequest] = useState(null);
@@ -132,23 +134,60 @@ export default function PendingRequests() {
     };
 
     // 2. Reject Logic
-    const handleReject = async (request) => {
-        if (!confirm(`Are you sure you want to reject ${request.fullName}?`)) return;
+    const handleReject = async (request, providedReason) => {
+            const trimmed = (providedReason || '').trim();
+            if (!trimmed) {
+                alert('Rejection reason is required.');
+                return;
+            }
 
-        try {
-            // Delete from DB
-            await deleteDoc(doc(db, "pendingRequests", request.id));
+            try {
+                // Persist rejection record for user visibility
+                await setDoc(doc(db, 'rejectedRequests', request.id), {
+                    uid: request.id,
+                    fullName: request.fullName,
+                    nameWithInitials: request.nameWithInitials || '',
+                    studentId: request.studentId || '',
+                    faculty: request.faculty || '',
+                    department: request.department || '',
+                    whatsapp: request.whatsapp || '',
+                    email: request.email,
+                    reasonToJoin: request.reason || '',
+                    rejectionReason: trimmed,
+                    rejectedAt: new Date(),
+                    status: 'rejected'
+                });
 
-            // Send Rejection Email via API
-            await sendEmailNotification(request.email, request.fullName, 'reject');
+                // Delete from pending (local cleanup)
+                await deleteDoc(doc(db, 'pendingRequests', request.id));
 
-            // Remove from UI
-            setRequests(prev => prev.filter(r => r.id !== request.id));
-        } catch (e) {
-            console.error(e);
-            alert("Failed to reject user");
-        }
-    };
+                // Server-side: Remove user from Firebase Auth and Firestore
+                try {
+                    const token = await (await import('firebase/auth')).getIdToken((await import('../../../lib/firebase')).auth.currentUser);
+                } catch {}
+                const idToken = await (await import('firebase/auth')).getIdToken((await import('../../../lib/firebase')).auth.currentUser).catch(() => null);
+                await fetch('/api/admin/delete-user', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+                    },
+                    body: JSON.stringify({ uid: request.id })
+                });
+
+                // Send Rejection Email with reason
+                await sendEmailNotification(request.email, request.fullName, 'reject', trimmed);
+
+                // Update UI
+                setRequests(prev => prev.filter(r => r.id !== request.id));
+                setRejectingId(null);
+                setRejectReason('');
+                alert('User rejected, removed, and notified with the provided reason.');
+            } catch (e) {
+                console.error(e);
+                alert('Failed to reject user.');
+            }
+        };
 
     // --- Render ---
     return (
@@ -159,76 +198,129 @@ export default function PendingRequests() {
                 <div className="flex justify-center mt-10">
                     <Loader2 className="animate-spin text-blue-600" size={40} />
                 </div>
-            ) : (
-                <div className="bg-white shadow-xl rounded-lg overflow-hidden border border-gray-100">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Applicant</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact Details</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reason</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {requests.length === 0 && (
-                                <tr>
-                                    <td colSpan="4" className="px-6 py-8 text-center text-gray-500">
-                                        No pending requests found.
-                                    </td>
-                                </tr>
-                            )}
+                ) : requests.length === 0 ? (
+                    <div className="bg-white shadow-lg rounded-xl p-12 text-center border border-gray-100">
+                        <div className="text-gray-400 mb-4">
+                            <User size={64} className="mx-auto" />
+                        </div>
+                        <p className="text-gray-500 text-lg">No pending requests found.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {requests.map((req) => (
+                            <div key={req.id} className="bg-white shadow-lg rounded-xl border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow">
+                                {/* Card Header */}
+                                <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
+                                    <h3 className="text-xl font-bold text-white">{req.fullName}</h3>
+                                    {req.nameWithInitials && (
+                                        <p className="text-blue-100 text-sm mt-1">
+                                            Name with Initials: {req.nameWithInitials}
+                                        </p>
+                                    )}
+                                </div>
 
-                            {requests.map((req) => (
-                                <tr key={req.id} className="hover:bg-gray-50 transition">
-                                    <td className="px-6 py-4">
-                                        <div className="font-medium text-gray-900">{req.fullName}</div>
-                                        <div className="text-sm text-gray-500">{req.studentId}</div>
-                                    </td>
+                                {/* Card Body */}
+                                <div className="p-6 space-y-4">
+                                    {/* Academic Info */}
+                                    <div className="bg-gray-50 rounded-lg p-4">
+                                        <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Academic Information</h4>
+                                        <div className="space-y-2 text-sm">
+                                            <div className="flex items-start">
+                                                <span className="font-medium text-gray-700 w-28 flex-shrink-0">Student ID:</span>
+                                                <span className="text-gray-900">{req.studentId}</span>
+                                            </div>
+                                            <div className="flex items-start">
+                                                <span className="font-medium text-gray-700 w-28 flex-shrink-0">Faculty:</span>
+                                                <span className="text-gray-900">{req.faculty}</span>
+                                            </div>
+                                            {req.department && (
+                                                <div className="flex items-start">
+                                                    <span className="font-medium text-gray-700 w-28 flex-shrink-0">Department:</span>
+                                                    <span className="text-gray-900">{req.department}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
 
-                                    <td className="px-6 py-4 text-sm text-gray-600">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <User size={14} className="text-gray-400" /> {req.faculty}
+                                    {/* Contact Info */}
+                                    <div className="bg-blue-50 rounded-lg p-4">
+                                        <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Contact Details</h4>
+                                        <div className="space-y-2 text-sm">
+                                            <div className="flex items-center gap-2">
+                                                <Mail size={16} className="text-blue-600 flex-shrink-0" />
+                                                <span className="text-gray-900 break-all">{req.email}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Phone size={16} className="text-blue-600 flex-shrink-0" />
+                                                <span className="text-gray-900">{req.whatsapp}</span>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <Mail size={14} className="text-gray-400" /> {req.email}
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Phone size={14} className="text-gray-400" /> {req.whatsapp}
-                                        </div>
-                                    </td>
+                                    </div>
 
-                                    <td className="px-6 py-4">
-                                        <div className="text-sm text-gray-600 max-w-xs truncate" title={req.reason}>
+                                    {/* Reason to Join */}
+                                    <div className="bg-purple-50 rounded-lg p-4">
+                                        <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Why Join Rotaract?</h4>
+                                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
                                             {req.reason}
-                                        </div>
-                                    </td>
+                                        </p>
+                                    </div>
+                                </div>
 
-                                    <td className="px-6 py-4 text-right space-x-2">
-                                        <button
-                                            onClick={() => {
-                                                setSelectedRequest(req);
-                                                setSelectedRole("Member");
-                                                setShowRoleModal(true);
-                                            }}
-                                            className="p-2 bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition"
-                                            title="Approve User"
-                                        >
-                                            <Check size={18} />
-                                        </button>
-                                        <button
-                                            onClick={() => handleReject(req)}
-                                            className="p-2 bg-red-100 text-red-700 rounded-full hover:bg-red-200 transition"
-                                            title="Reject User"
-                                        >
-                                            <X size={18} />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                                {/* Card Actions */}
+                                <div className="bg-gray-50 px-6 py-4 border-t border-gray-100">
+                                    {rejectingId === req.id ? (
+                                        <div className="space-y-3">
+                                            <label className="text-sm font-medium text-gray-700">Rejection Reason</label>
+                                            <textarea
+                                                value={rejectReason}
+                                                onChange={(e) => setRejectReason(e.target.value)}
+                                                rows={3}
+                                                className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-red-400"
+                                                placeholder={`Explain why ${req.fullName} is being rejected...`}
+                                            />
+                                            <div className="flex justify-end gap-3">
+                                                <button
+                                                    onClick={() => { setRejectingId(null); setRejectReason(''); }}
+                                                    className="px-5 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition"
+                                                >
+                                                    Cancel
+                                                </button>
+                                                <button
+                                                    onClick={() => handleReject(req, rejectReason)}
+                                                    className="px-5 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                                                >
+                                                    Confirm Reject
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex justify-end gap-3">
+                                            <button
+                                                onClick={() => { setRejectingId(req.id); setRejectReason(''); }}
+                                                className="px-6 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition font-medium flex items-center gap-2"
+                                                title="Reject User"
+                                            >
+                                                <X size={18} />
+                                                Reject
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedRequest(req);
+                                                    setSelectedRole("Member");
+                                                    setShowRoleModal(true);
+                                                }}
+                                                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center gap-2 shadow-md"
+                                                title="Approve User"
+                                            >
+                                                <Check size={18} />
+                                                Approve
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
             )}
 
             {/* --- Approval Modal --- */}

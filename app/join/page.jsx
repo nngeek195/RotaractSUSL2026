@@ -16,7 +16,7 @@ export default function JoinUs() {
     const router = useRouter();
 
     const [formData, setFormData] = useState({
-        fullName: "", studentId: "", faculty: "", department: "",
+        fullName: "", nameWithInitials: "", studentId: "", faculty: "", department: "",
         contact: "", email: "", reason: "", password: "",
     });
     const [loading, setLoading] = useState(false);
@@ -45,6 +45,7 @@ export default function JoinUs() {
             await setDoc(doc(db, "pendingRequests", user.uid), {
                 uid: user.uid,
                 fullName: formData.fullName,
+                nameWithInitials: formData.nameWithInitials,
                 studentId: formData.studentId,
                 faculty: formData.faculty,
                 department: formData.department,
@@ -124,6 +125,17 @@ export default function JoinUs() {
                                 <input
                                     id="fullName" name="fullName" type="text" required
                                     value={formData.fullName} onChange={handleChange}
+                                    className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
+                                />
+                            </div>
+
+                            {/* Name with Initials */}
+                            <div>
+                                <label htmlFor="nameWithInitials" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">Name with Initials</label>
+                                <input
+                                    id="nameWithInitials" name="nameWithInitials" type="text" required
+                                    placeholder="e.g. W.A.D. Silva"
+                                    value={formData.nameWithInitials} onChange={handleChange}
                                     className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
                                 />
                             </div>

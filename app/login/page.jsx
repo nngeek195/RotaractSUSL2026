@@ -15,7 +15,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 function LoginContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { user, loading: authLoading, isAdmin } = useAuth();
+    const { user, loading: authLoading, isAdmin, isCommittee, isApproved } = useAuth();
 
     // UI State
     const [activeTab, setActiveTab] = useState('member');
@@ -28,23 +28,42 @@ function LoginContent() {
     const [notice, setNotice] = useState("");
     const [loading, setLoading] = useState(false);
 
-    // Redirect if already logged in
+    // Redirect only when verified and approved/committee/admin
     useEffect(() => {
-        if (!authLoading && user) {
-            if (isAdmin) {
-                router.push('/admin');
-            } else {
-                router.push('/profile');
-            }
+        if (authLoading) return;
+        if (!user) return;
+        const isVerified = !!user.emailVerified;
+        const canAccessProfile = isVerified && (isAdmin || isCommittee || isApproved);
+        if (isAdmin) {
+            router.push('/admin');
+            return;
         }
-    }, [user, authLoading, isAdmin, router]);
+        if (canAccessProfile) {
+            router.push('/profile');
+        }
+        // If not approved or not verified, stay on login page
+    }, [user, authLoading, isAdmin, isCommittee, isApproved, router]);
 
     // Check for verification success from URL
     useEffect(() => {
         if (searchParams.get('verified') === 'true') {
-            setSuccess('Email verified successfully! You can now log in.');
+            setSuccess('Your email has been verified. Your application is now pending admin approval. We will notify you by email once your account is approved.');
         }
     }, [searchParams]);
+
+    // Show pending/verification status when user visits login
+    useEffect(() => {
+        if (authLoading) return;
+        if (!user) return;
+        const isVerified = !!user.emailVerified;
+        const hasAccess = isAdmin || isCommittee || isApproved;
+        if (isVerified && !hasAccess) {
+            setNotice("Your email is verified! Your application is now pending admin approval. You'll receive an email once approved.");
+        }
+        if (!isVerified) {
+            setNotice("Please verify your email before logging in. If you don't see the email, check your Spam/Junk folder and mark it as Not Spam.");
+        }
+    }, [user, authLoading, isAdmin, isCommittee, isApproved]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

@@ -10,7 +10,9 @@ import { useRouter } from 'next/navigation';
 export default function Navbar({ currentPage = 'home' }) {
     // State to toggle the mobile sidebar
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const { user, loading } = useAuth();
+    const { user, loading, isApproved, isCommittee, isAdmin } = useAuth();
+    const isVerified = !!(user && user.emailVerified);
+    const canShowAccount = isVerified && (isApproved || isCommittee || isAdmin);
     const router = useRouter();
 
     // Helper to close menu when clicking a link
@@ -53,7 +55,7 @@ export default function Navbar({ currentPage = 'home' }) {
                             <div className="w-24 h-10 flex items-center justify-center">
                                 <Loader2 className="animate-spin text-pink-600" size={20} />
                             </div>
-                        ) : user ? (
+                        ) : canShowAccount ? (
                             <div className="flex items-center gap-4">
                                 <a 
                                     href="/profile" 
@@ -131,7 +133,7 @@ export default function Navbar({ currentPage = 'home' }) {
                         <MobileNavLink href="/join" label="Join Us" active={currentPage === 'join'} onClick={closeMenu} />
                     )}
                     
-                    {user && (
+                    {canShowAccount && (
                         <MobileNavLink href="/profile" label="My Profile" active={currentPage === 'profile'} onClick={closeMenu} />
                     )}
 
@@ -140,7 +142,7 @@ export default function Navbar({ currentPage = 'home' }) {
                              <div className="w-full flex justify-center py-3">
                                 <Loader2 className="animate-spin text-pink-600" size={24} />
                              </div>
-                        ) : user ? (
+                        ) : canShowAccount ? (
                             <button 
                                 onClick={handleLogout}
                                 className="w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-xl font-poppins font-bold text-sm hover:bg-gray-200 transition flex items-center justify-center gap-2"
