@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { auth } from '../../lib/firebase';
 import { applyActionCode } from 'firebase/auth';
+import { Mail, CheckCircle, XCircle, Loader } from 'lucide-react';
 
 function VerifyEmailContent() {
     const searchParams = useSearchParams();
@@ -22,73 +23,103 @@ function VerifyEmailContent() {
 
                     setStatus('success');
 
-                    // Redirect to login after 2 seconds
-                    // Admin will check Firebase Auth directly for verification status
+                    // Redirect to login after 3 seconds
                     setTimeout(() => {
                         router.push('/login?verified=true');
-                    }, 2000);
+                    }, 3000);
                 } catch (error) {
                     console.error('Verification error:', error);
                     setStatus('error');
                 }
             } else {
-                setStatus('invalid');
+                // If no code is present, show the "Check your email" message (default state for manual navigation)
+                setStatus('check-email');
             }
         };
 
         verifyEmail();
     }, [searchParams, router]);
 
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-            <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8 text-center">
-                {status === 'verifying' && (
-                    <>
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Verifying Email</h2>
-                        <p className="text-gray-600">Please wait while we verify your email address...</p>
-                    </>
-                )}
-
-                {status === 'success' && (
-                    <>
-                        <div className="text-green-500 text-5xl mb-4">✓</div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Email Verified!</h2>
-                        <p className="text-gray-600 mb-4">Your email has been successfully verified.</p>
-                        <p className="text-sm text-gray-500">Redirecting to login...</p>
-                    </>
-                )}
-
-                {status === 'error' && (
-                    <>
-                        <div className="text-red-500 text-5xl mb-4">✗</div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Verification Failed</h2>
-                        <p className="text-gray-600 mb-4">The verification link is invalid or has expired.</p>
-                        <button
-                            onClick={() => router.push('/join')}
-                            className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
-                        >
-                            Register Again
-                        </button>
-                    </>
-                )}
-
-                {status === 'invalid' && (
-                    <>
-                        <div className="text-yellow-500 text-5xl mb-4">⚠</div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Invalid Link</h2>
-                        <p className="text-gray-600">This verification link is not valid.</p>
-                    </>
-                )}
+    if (status === 'check-email') {
+        return (
+            <div className="mx-auto max-w-xl rounded-2xl border border-gray-200 bg-white/70 backdrop-blur p-6 sm:p-8 shadow-sm text-center">
+                <div className="mx-auto w-20 h-20 rounded-full bg-pink-100 flex items-center justify-center mb-6">
+                    <Mail className="w-10 h-10 text-pink-600" />
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-bold mb-3 text-gray-900">Check your Email!</h1>
+                <p className="text-gray-600 leading-relaxed">
+                    We sent a verification link to your email. Please click it to verify your email. 
+                    <br/>After verification, our admin team will review your membership application.
+                </p>
+                <p className="text-sm text-gray-500 mt-4">
+                    If you don’t see the email, check your <strong>Spam/Junk</strong> folder.
+                </p>
+                <div className="mt-6">
+                    <a href="/" className="inline-flex items-center gap-2 rounded-full bg-pink-600 px-5 py-2.5 text-white font-medium shadow hover:bg-pink-700 transition-colors">
+                        Back to Home
+                    </a>
+                </div>
             </div>
+        );
+    }
+
+    return (
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
+            {status === 'verifying' && (
+                <>
+                    <div className="mx-auto w-16 h-16 flex items-center justify-center mb-4 text-pink-600">
+                        <Loader className="w-10 h-10 animate-spin" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Verifying...</h2>
+                    <p className="text-gray-600">Please wait while we verify your email address.</p>
+                </>
+            )}
+
+            {status === 'success' && (
+                <>
+                    <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 text-green-600">
+                        <CheckCircle className="w-8 h-8" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Email Verified!</h2>
+                    <p className="text-gray-600 mb-4">Your email has been successfully verified.</p>
+                    <p className="text-sm text-gray-500">Redirecting to login...</p>
+                </>
+            )}
+
+            {status === 'error' && (
+                <>
+                    <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4 text-red-600">
+                        <XCircle className="w-8 h-8" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Verification Failed</h2>
+                    <p className="text-gray-600 mb-4">The verification link is invalid or has expired.</p>
+                    <a href="/login" className="text-pink-600 font-semibold hover:underline">
+                        Return to Login
+                    </a>
+                </>
+            )}
+             {status === 'invalid' && (
+                <>
+                    <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-gray-600">
+                        <XCircle className="w-8 h-8" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Invalid Link</h2>
+                    <p className="text-gray-600 mb-4">This verification link is missing required information.</p>
+                    <a href="/" className="text-pink-600 font-semibold hover:underline">
+                        Go Home
+                    </a>
+                </>
+            )}
         </div>
     );
 }
 
 export default function VerifyEmail() {
     return (
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
-            <VerifyEmailContent />
-        </Suspense>
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+            <Suspense fallback={<div className="text-pink-600 font-bold">Loading...</div>}>
+                <VerifyEmailContent />
+            </Suspense>
+        </div>
     );
 }

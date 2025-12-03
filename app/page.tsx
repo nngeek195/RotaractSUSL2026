@@ -222,12 +222,17 @@ export default function Home() {
             {/* Left Content */}
             <div className="space-y-6">
               <div className="inline-block bg-red-500 text-white px-4 py-2 rounded-full font-poppins font-bold text-sm animate-pulse">
-                🚨 URGENT: Flood Relief Campaign
+                🚨 &apos;Embrace&apos; Flood Relief Campaign
               </div>
 
-              <h2 className="font-playfair font-bold text-4xl lg:text-5xl leading-tight">
-                🇱🇰 Sri Lanka Flood Relief 2025
-              </h2>
+              <div>
+                <h2 className="font-playfair font-bold text-4xl lg:text-5xl leading-tight mb-2">
+                  Embrace - Hold their future with your heart
+                </h2>
+                <p className="font-playfair font-medium text-xl lg:text-2xl text-blue-100 italic">
+                  &quot;ඔවුන්ගේ අනාගතය ඔබේ හදවතින් වැළඳගන්න&quot;
+                </p>
+              </div>
 
               <p className="font-poppins text-lg text-blue-50 leading-relaxed">
                 Devastating floods have affected hundreds of schools across Sri
