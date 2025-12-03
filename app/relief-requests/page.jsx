@@ -5,12 +5,18 @@ import { collection, getDocs, query, orderBy, addDoc, where } from "firebase/fir
 import { db } from "@/lib/firebase";
 import NavBar from "../components/Navbar.jsx";
 import Footer from "../components/Footer.jsx";
-import { Search, MapPin, Phone, Package, X, Loader2, Heart, Plus, FileSearch, User } from "lucide-react";
+import { Search, MapPin, Phone, Package, X, Loader2, Heart, Plus, FileSearch, User, Upload } from "lucide-react";
+
+const CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/dvqoiqzxe/image/upload";
+const CLOUDINARY_UPLOAD_PRESET = "projects";
 
 export default function ReliefRequestsPage() {
     const [requests, setRequests] = useState([]);
     const [filteredRequests, setFilteredRequests] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    // Config state
+    const [bankDetails, setBankDetails] = useState(null);
 
     // Filter states
     const [searchSchool, setSearchSchool] = useState("");
@@ -28,9 +34,11 @@ export default function ReliefRequestsPage() {
         email: "",
         itemsOffered: "",
         district: "",
-        message: ""
+        message: "",
+        paymentSlip: ""
     });
     const [submittingDonation, setSubmittingDonation] = useState(false);
+    const [uploadingSlip, setUploadingSlip] = useState(false);
 
     // Request donation form state
     const [showRequestForm, setShowRequestForm] = useState(false);
@@ -68,7 +76,23 @@ export default function ReliefRequestsPage() {
     useEffect(() => {
         fetchPredefinedItems();
         fetchRequests();
+        fetchConfig();
     }, []);
+
+    const fetchConfig = async () => {
+        try {
+            const q = query(collection(db, "reliefConfig"));
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+                const config = querySnapshot.docs[0].data();
+                if (config.bankDetails) {
+                    setBankDetails(config.bankDetails);
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching config:", error);
+        }
+    };
 
     useEffect(() => {
         applyFilters();
@@ -83,7 +107,7 @@ export default function ReliefRequestsPage() {
                 name: item.name,
                 icon: item.icon,
                 totalRequested: 0,
-                totalFulfilled: 0,
+                totalFulfilled: item.globalFulfilled || 0, // Use global fulfilled count from admin
                 pending: 0
             };
         });
@@ -94,14 +118,13 @@ export default function ReliefRequestsPage() {
                 if (stats[itemId]) {
                     const quantity = parseInt(item.quantity) || 0;
                     stats[itemId].totalRequested += quantity;
-
-                    if (request.status === 'fulfilled') {
-                        stats[itemId].totalFulfilled += quantity;
-                    } else {
-                        stats[itemId].pending += quantity;
-                    }
                 }
             });
+        });
+
+        // Calculate pending after summing up requests
+        Object.values(stats).forEach(stat => {
+            stat.pending = Math.max(0, stat.totalRequested - stat.totalFulfilled);
         });
 
         return Object.values(stats).filter(stat => stat.totalRequested > 0);
@@ -195,12 +218,49 @@ export default function ReliefRequestsPage() {
 
     const counts = getStatusCounts();
 
+    const handleUploadSlip = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploadingSlip(true);
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+            formData.append("folder", "Donations/Slips");
+
+            const res = await fetch(CLOUDINARY_UPLOAD_URL, {
+                method: "POST",
+                body: formData,
+            });
+
+            const data = await res.json();
+
+            if (data.secure_url) {
+                setDonationForm(prev => ({ ...prev, paymentSlip: data.secure_url }));
+                alert("Payment slip uploaded successfully!");
+            } else {
+                throw new Error("Upload failed");
+            }
+        } catch (err) {
+            console.error("Error uploading slip:", err);
+            alert("Failed to upload payment slip. Please try again.");
+        } finally {
+            setUploadingSlip(false);
+        }
+    };
+
     const handleDonationSubmit = async (e) => {
         e.preventDefault();
 
-        if (!donationForm.donorName || !donationForm.contactNumber || !donationForm.itemsOffered) {
+        if (!donationForm.donorName || !donationForm.contactNumber) {
             alert("Please fill in all required fields");
             return;
+        }
+
+        if (!donationForm.itemsOffered && !donationForm.paymentSlip) {
+             alert("Please either offer items or upload a payment slip.");
+             return;
         }
 
         if (!donationForm.district) {
@@ -243,7 +303,8 @@ export default function ReliefRequestsPage() {
                 email: "",
                 itemsOffered: "",
                 district: "",
-                message: ""
+                message: "",
+                paymentSlip: ""
             });
         } catch (error) {
             console.error("Error submitting donation:", error);
@@ -857,7 +918,7 @@ export default function ReliefRequestsPage() {
 
                             <div>
                                 <label className="block font-poppins font-semibold text-gray-700 mb-2">
-                                    Items You Can Donate <span className="text-red-500">*</span>
+                                    Items You Can Donate (Optional)
                                 </label>
                                 <textarea
                                     value={donationForm.itemsOffered}
@@ -865,7 +926,6 @@ export default function ReliefRequestsPage() {
                                     placeholder="E.g., 50 notebooks, 100 pens, 20 water bottles"
                                     rows={4}
                                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
-                                    required
                                 />
                             </div>
 
@@ -880,6 +940,44 @@ export default function ReliefRequestsPage() {
                                     rows={3}
                                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
                                 />
+                            </div>
+
+                            {bankDetails && (
+                                <div className="bg-gray-50 border-2 border-gray-200 rounded-lg p-4">
+                                    <h3 className="font-playfair text-lg font-bold text-gray-800 mb-2">Bank Transfer Details</h3>
+                                    <div className="text-sm font-poppins text-gray-700 space-y-1">
+                                        <p><strong>Bank:</strong> {bankDetails.bankName}</p>
+                                        <p><strong>Branch:</strong> {bankDetails.branch}</p>
+                                        <p><strong>Account Name:</strong> {bankDetails.accountHolder}</p>
+                                        <p><strong>Account Number:</strong> {bankDetails.accountNumber}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="block font-poppins font-semibold text-gray-700 mb-2">
+                                    Upload Payment Slip (Optional)
+                                </label>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="file"
+                                        accept="image/*,application/pdf"
+                                        onChange={handleUploadSlip}
+                                        className="block w-full text-sm text-gray-500
+                                            file:mr-4 file:py-2 file:px-4
+                                            file:rounded-lg file:border-0
+                                            file:text-sm file:font-semibold
+                                            file:bg-pink-50 file:text-pink-700
+                                            hover:file:bg-pink-100
+                                        "
+                                    />
+                                    {uploadingSlip && <Loader2 className="animate-spin text-pink-600" size={20} />}
+                                </div>
+                                {donationForm.paymentSlip && (
+                                    <p className="text-xs text-green-600 mt-1 font-semibold">
+                                        ✅ Slip uploaded successfully
+                                    </p>
+                                )}
                             </div>
 
                             <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
