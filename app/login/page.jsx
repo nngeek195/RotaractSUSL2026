@@ -4,9 +4,10 @@ import React, { useState, useEffect, Suspense } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { Loader2, AlertCircle, CheckCircle, Info } from 'lucide-react'; // Ensure lucide-react is installed
+import { useAuth } from '../contexts/AuthContext';
 
 // Firebase Imports
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -14,6 +15,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 function LoginContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { user, loading: authLoading, isAdmin } = useAuth();
 
     // UI State
     const [activeTab, setActiveTab] = useState('member');
@@ -25,6 +27,17 @@ function LoginContent() {
     const [success, setSuccess] = useState("");
     const [notice, setNotice] = useState("");
     const [loading, setLoading] = useState(false);
+
+    // Redirect if already logged in
+    useEffect(() => {
+        if (!authLoading && user) {
+            if (isAdmin) {
+                router.push('/admin');
+            } else {
+                router.push('/profile');
+            }
+        }
+    }, [user, authLoading, isAdmin, router]);
 
     // Check for verification success from URL
     useEffect(() => {
@@ -41,6 +54,9 @@ function LoginContent() {
         setNotice("");
 
         try {
+            // 0. Set Persistence
+            await setPersistence(auth, browserLocalPersistence);
+
             // 1. Firebase Auth Login
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;

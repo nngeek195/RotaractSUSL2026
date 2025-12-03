@@ -9,7 +9,7 @@ import { Html5QrcodeScanner } from 'html5-qrcode';
 import QRCode from 'react-qr-code';
 import {
     Mail, Phone, Award, LogOut, Loader2, BookOpen,
-    Calendar, QrCode as QrIcon, GraduationCap, PlayCircle, MapPin, CheckCircle, ArrowLeft, StopCircle
+    Calendar, QrCode as QrIcon, GraduationCap, PlayCircle, MapPin, CheckCircle, ArrowLeft, StopCircle, Heart
 } from 'lucide-react';
 import { images } from '../../assets/images';
 import NavBar from '../components/Navbar';
@@ -244,7 +244,7 @@ export default function Profile() {
 
     return (
         <div className="bg-white min-h-screen flex flex-col">
-            <NavBar currentPage="leadership" />
+            <NavBar currentPage="profile" />
             <br /><br /><br /><br />
 
             <main className="flex-1 px-4 py-8">
@@ -299,7 +299,7 @@ export default function Profile() {
                                     <h2 className="font-poppins font-medium text-lg text-pink-600 text-center mb-4">ExCo Actions</h2>
                                     <div className="border-t-2 border-gray-300 mb-8"></div>
 
-                                    <div className="flex justify-center">
+                                    <div className="flex flex-col md:flex-row justify-center gap-6">
                                         <button
                                             className="relative w-full max-w-md h-[140px] rounded-[22px] bg-gradient-to-r from-gray-800 to-gray-900 flex items-center justify-between px-8 overflow-hidden group hover:shadow-xl transition-all duration-300 shadow-lg"
                                             onClick={() => { setAttendanceModal(true); fetchExCoProjects(); }}
@@ -315,6 +315,22 @@ export default function Profile() {
                                             {/* Decorative Background Elements */}
                                             <div className="absolute right-0 top-0 w-32 h-32 bg-pink-600/20 rounded-full blur-2xl -mr-10 -mt-10"></div>
                                         </button>
+
+                                        <a
+                                            href="/admin/relief"
+                                            className="relative w-full max-w-md h-[140px] rounded-[22px] bg-gradient-to-r from-pink-600 to-pink-700 flex items-center justify-between px-8 overflow-hidden group hover:shadow-xl transition-all duration-300 shadow-lg"
+                                        >
+                                            <div className="flex flex-col items-start z-10">
+                                                <h3 className="font-playfair text-white text-2xl font-bold mb-1">Manage Relief</h3>
+                                                <p className="font-poppins text-pink-100 text-sm text-left">View requests & <br />donations</p>
+                                            </div>
+                                            <div className="bg-white/10 p-4 rounded-full z-10">
+                                                <Heart size={32} className="text-white" />
+                                            </div>
+
+                                            {/* Decorative Background Elements */}
+                                            <div className="absolute right-0 top-0 w-32 h-32 bg-white/20 rounded-full blur-2xl -mr-10 -mt-10"></div>
+                                        </a>
                                     </div>
                                 </div>
                             )}

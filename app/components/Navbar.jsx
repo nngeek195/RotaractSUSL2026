@@ -2,14 +2,29 @@
 import React, { useState } from 'react';
 import { images } from '../../assets/images';
 // Make sure you have lucide-react installed (npm install lucide-react)
-import { Menu, X, LogIn } from 'lucide-react';
+import { Menu, X, LogIn, User, LogOut, Loader2 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { auth } from '../../lib/firebase';
+import { useRouter } from 'next/navigation';
 
 export default function Navbar({ currentPage = 'home' }) {
     // State to toggle the mobile sidebar
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const { user, loading } = useAuth();
+    const router = useRouter();
 
     // Helper to close menu when clicking a link
     const closeMenu = () => setIsMobileMenuOpen(false);
+
+    const handleLogout = async () => {
+        try {
+            await auth.signOut();
+            router.push('/login');
+            closeMenu();
+        } catch (error) {
+            console.error("Error signing out:", error);
+        }
+    };
 
     return (
         <>
@@ -29,19 +44,45 @@ export default function Navbar({ currentPage = 'home' }) {
                         <NavLink href="/relief-requests" label="🇱🇰 Relief" active={currentPage === 'relief'} />
                         <NavLink href="/gallery" label="Gallery" active={currentPage === 'gallery'} />
                         <NavLink href="/leadership" label="Leadership" active={currentPage === 'leadership'} />
-                        <NavLink href="/join" label="Join Us" active={currentPage === 'join'} />
+                        
+                        {!user && !loading && (
+                            <NavLink href="/join" label="Join Us" active={currentPage === 'join'} />
+                        )}
 
-                        {currentPage === 'login' ? (
-                            <button className="bg-white border-2 border-pink-600 text-pink-600 px-6 py-2.5 rounded-full font-poppins font-medium text-sm hover:bg-pink-600 hover:text-white transition-colors cursor-default">
-                                Log in
-                            </button>
+                        {loading ? (
+                            <div className="w-24 h-10 flex items-center justify-center">
+                                <Loader2 className="animate-spin text-pink-600" size={20} />
+                            </div>
+                        ) : user ? (
+                            <div className="flex items-center gap-4">
+                                <a 
+                                    href="/profile" 
+                                    className={`flex items-center gap-2 font-poppins font-medium text-sm transition-colors ${currentPage === 'profile' ? 'text-pink-600' : 'text-black hover:text-pink-600'}`}
+                                >
+                                    <User size={18} />
+                                    Profile
+                                </a>
+                                <button 
+                                    onClick={handleLogout}
+                                    className="bg-white border-2 border-gray-200 text-gray-600 px-5 py-2 rounded-full font-poppins font-medium text-sm hover:border-pink-600 hover:text-pink-600 transition-all flex items-center gap-2"
+                                >
+                                    <LogOut size={16} />
+                                    Logout
+                                </button>
+                            </div>
                         ) : (
-                            <a
-                                href="/login"
-                                className="bg-pink-600 text-white px-6 py-2.5 rounded-full font-poppins font-medium text-sm hover:bg-opacity-90 shadow-md transition-transform hover:scale-105"
-                            >
-                                Log in
-                            </a>
+                            currentPage === 'login' ? (
+                                <button className="bg-white border-2 border-pink-600 text-pink-600 px-6 py-2.5 rounded-full font-poppins font-medium text-sm hover:bg-pink-600 hover:text-white transition-colors cursor-default">
+                                    Log in
+                                </button>
+                            ) : (
+                                <a
+                                    href="/login"
+                                    className="bg-pink-600 text-white px-6 py-2.5 rounded-full font-poppins font-medium text-sm hover:bg-opacity-90 shadow-md transition-transform hover:scale-105"
+                                >
+                                    Log in
+                                </a>
+                            )
                         )}
                     </div>
 
@@ -85,21 +126,41 @@ export default function Navbar({ currentPage = 'home' }) {
                     <MobileNavLink href="/relief-requests" label="🇱🇰 Relief" active={currentPage === 'relief-requests'} onClick={closeMenu} />
                     <MobileNavLink href="/gallery" label="Gallery" active={currentPage === 'gallery'} onClick={closeMenu} />
                     <MobileNavLink href="/leadership" label="Leadership" active={currentPage === 'leadership'} onClick={closeMenu} />
-                    <MobileNavLink href="/join" label="Join Us" active={currentPage === 'join'} onClick={closeMenu} />
+                    
+                    {!user && !loading && (
+                        <MobileNavLink href="/join" label="Join Us" active={currentPage === 'join'} onClick={closeMenu} />
+                    )}
+                    
+                    {user && (
+                        <MobileNavLink href="/profile" label="My Profile" active={currentPage === 'profile'} onClick={closeMenu} />
+                    )}
 
                     <div className="mt-4 border-t pt-6">
-                        {currentPage === 'login' ? (
-                            <button className="w-full bg-pink-50 text-pink-600 border border-pink-200 px-6 py-3 rounded-xl font-poppins font-bold text-sm flex items-center justify-center gap-2">
-                                <LogIn size={18} /> Currently Logged In
+                        {loading ? (
+                             <div className="w-full flex justify-center py-3">
+                                <Loader2 className="animate-spin text-pink-600" size={24} />
+                             </div>
+                        ) : user ? (
+                            <button 
+                                onClick={handleLogout}
+                                className="w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-xl font-poppins font-bold text-sm hover:bg-gray-200 transition flex items-center justify-center gap-2"
+                            >
+                                <LogOut size={18} /> Logout
                             </button>
                         ) : (
-                            <a
-                                href="/login"
-                                onClick={closeMenu}
-                                className="w-full bg-pink-600 text-white px-6 py-3 rounded-xl font-poppins font-bold text-sm hover:bg-pink-700 transition shadow-md flex items-center justify-center gap-2"
-                            >
-                                <LogIn size={18} /> Log in
-                            </a>
+                            currentPage === 'login' ? (
+                                <button className="w-full bg-pink-50 text-pink-600 border border-pink-200 px-6 py-3 rounded-xl font-poppins font-bold text-sm flex items-center justify-center gap-2">
+                                    <LogIn size={18} /> Currently Logged In
+                                </button>
+                            ) : (
+                                <a
+                                    href="/login"
+                                    onClick={closeMenu}
+                                    className="w-full bg-pink-600 text-white px-6 py-3 rounded-xl font-poppins font-bold text-sm hover:bg-pink-700 transition shadow-md flex items-center justify-center gap-2"
+                                >
+                                    <LogIn size={18} /> Log in
+                                </a>
+                            )
                         )}
                     </div>
                 </div>
