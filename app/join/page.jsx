@@ -59,7 +59,11 @@ export default function JoinUs() {
             setSuccess(true);
         } catch (err) {
             console.error(err);
-            setError(err.message);
+            if (err.code === 'auth/email-already-in-use') {
+                setError("This email is already registered. Please log in. If you haven't verified your email, you can request a new link on the login page.");
+            } else {
+                setError(err.message);
+            }
         } finally {
             setLoading(false);
         }
@@ -112,9 +116,21 @@ export default function JoinUs() {
 
                         {/* Error Message Display */}
                         {error && (
-                            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-[16px] mb-6 flex items-center gap-2">
-                                <AlertCircle size={20} />
-                                <span className="font-poppins text-sm">{error}</span>
+                            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-[16px] mb-6 flex items-start gap-2">
+                                <AlertCircle size={20} className="mt-0.5 flex-shrink-0" />
+                                <div className="font-poppins text-sm">
+                                    {error}
+                                    {error.includes("already registered") && (
+                                        <div className="mt-2">
+                                            <button 
+                                                onClick={() => router.push('/login')}
+                                                className="font-bold underline hover:text-red-900"
+                                            >
+                                                Go to Login Page
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
 

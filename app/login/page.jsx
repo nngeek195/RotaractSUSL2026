@@ -7,7 +7,7 @@ import { Loader2, AlertCircle, CheckCircle, Info } from 'lucide-react'; // Ensur
 import { useAuth } from '../contexts/AuthContext';
 
 // Firebase Imports
-import { signInWithEmailAndPassword, setPersistence, browserLocalPersistence } from "firebase/auth";
+import { signInWithEmailAndPassword, setPersistence, browserLocalPersistence, sendEmailVerification } from "firebase/auth";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -27,6 +27,8 @@ function LoginContent() {
     const [success, setSuccess] = useState("");
     const [notice, setNotice] = useState("");
     const [loading, setLoading] = useState(false);
+    const [showResendLink, setShowResendLink] = useState(false);
+    const [resendLoading, setResendLoading] = useState(false);
 
     // Redirect only when verified and approved/committee/admin
     useEffect(() => {
@@ -60,10 +62,28 @@ function LoginContent() {
         if (isVerified && !hasAccess) {
             setNotice("Your email is verified! Your application is now pending admin approval. You'll receive an email once approved.");
         }
-        if (!isVerified) {
-            setNotice("Please verify your email before logging in. If you don't see the email, check your Spam/Junk folder and mark it as Not Spam.");
-        }
+        // Removed the automatic "Please verify" notice to avoid clutter, logic handled in submit
     }, [user, authLoading, isAdmin, isCommittee, isApproved]);
+
+    const handleResendVerification = async () => {
+        if (!auth.currentUser) return;
+        setResendLoading(true);
+        try {
+            await sendEmailVerification(auth.currentUser);
+            setSuccess("Verification email resent! Please check your inbox (and spam folder).");
+            setShowResendLink(false);
+            setError("");
+        } catch (err) {
+            console.error(err);
+            if (err.code === 'auth/too-many-requests') {
+                setError("Too many requests. Please wait a while before trying again.");
+            } else {
+                setError("Failed to resend email. Please try again later.");
+            }
+        } finally {
+            setResendLoading(false);
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -71,6 +91,7 @@ function LoginContent() {
         setError("");
         setSuccess("");
         setNotice("");
+        setShowResendLink(false);
 
         try {
             // 0. Set Persistence
@@ -80,21 +101,22 @@ function LoginContent() {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
-            // 1.5. Check if email is verified (for pending users)
-            const pendingSnap = await getDoc(doc(db, "pendingRequests", user.uid));
-            if (pendingSnap.exists()) {
-                if (!user.emailVerified) {
-                    setError("Please verify your email before logging in. Check your inbox for the verification link.");
-                    await auth.signOut();
-                    return;
-                }
-                // Do not write to Firestore here; admin manages approvals.
-                setNotice("Your email is verified! Your application is now pending admin approval. You'll receive an email once approved.");
-                await auth.signOut();
+            // 1.5. Check if email is verified
+            if (!user.emailVerified) {
+                setError("Email not verified. Please check your inbox.");
+                setShowResendLink(true);
+                // Do NOT sign out here, so we can resend the email
                 return;
             }
 
             // 2. Role-Based Routing Logic
+            // Check pending requests
+            const pendingSnap = await getDoc(doc(db, "pendingRequests", user.uid));
+            if (pendingSnap.exists()) {
+                setNotice("Your email is verified! Your application is now pending admin approval. You'll receive an email once approved.");
+                await auth.signOut(); // Sign out pending users so they don't access protected routes
+                return;
+            }
 
             // Check Admin Collection
             const adminSnap = await getDoc(doc(db, "admins", user.uid));
@@ -117,15 +139,7 @@ function LoginContent() {
                 return;
             }
 
-            // If not found anywhere, check if still pending approval
-            const pendingAgain = await getDoc(doc(db, "pendingRequests", user.uid));
-            if (pendingAgain.exists()) {
-                setNotice("Your application is pending admin approval. Please wait for confirmation. You'll receive an email once approved.");
-                await auth.signOut();
-                return;
-            }
-
-            // Otherwise, show a clearer guidance message
+            // If not found anywhere
             setError("We couldn't find an active membership for this account. If you recently applied, please wait for admin approval. Otherwise, contact support.");
             await auth.signOut();
 
@@ -194,9 +208,21 @@ function LoginContent() {
 
                     {/* Error Display */}
                     {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-2xl mb-8 flex items-center gap-2 font-poppins text-sm">
-                            <AlertCircle size={18} />
-                            {error}
+                        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-2xl mb-8 flex flex-col gap-2 font-poppins text-sm">
+                            <div className="flex items-center gap-2">
+                                <AlertCircle size={18} />
+                                {error}
+                            </div>
+                            {showResendLink && (
+                                <button
+                                    type="button"
+                                    onClick={handleResendVerification}
+                                    disabled={resendLoading}
+                                    className="text-sm font-semibold underline hover:text-red-800 self-start ml-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {resendLoading ? "Sending..." : "Resend Verification Email"}
+                                </button>
+                            )}
                         </div>
                     )}
 
