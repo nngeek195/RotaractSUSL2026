@@ -135,6 +135,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </li>
           <li>
             <Link
+              href="/admin/relief-items"
+              onClick={() => setIsSidebarOpen(false)}
+              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-pink-400 transition"
+            >
+              <Gift size={20} /> Relief Items
+            </Link>
+          </li>
+          <li>
+            <Link
               href="/admin/leaderboard"
               onClick={() => setIsSidebarOpen(false)}
               className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-blue-400 transition"

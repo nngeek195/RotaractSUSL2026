@@ -1,11 +1,11 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from 'firebase/firestore'
+import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc, query, orderBy } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { Search, Filter, Download, CheckCircle, Clock, UserCheck, Trash2, Eye, X, Heart, Phone, Mail, MapPin, Package } from 'lucide-react'
+import { Search, Filter, Download, CheckCircle, Clock, UserCheck, Trash2, Eye, X, Heart, Phone, Mail, MapPin, Package, Settings, Plus, Edit2, Save, ExternalLink } from 'lucide-react'
 
 export default function ReliefAdminPage() {
-    const [activeTab, setActiveTab] = useState('requests') // 'requests' or 'donations'
+    const [activeTab, setActiveTab] = useState('requests') // 'requests', 'donations', 'items', 'settings'
 
     // Material Requests State
     const [requests, setRequests] = useState([])
@@ -27,6 +27,23 @@ export default function ReliefAdminPage() {
     const [showOfferModal, setShowOfferModal] = useState(false)
 
     const [updating, setUpdating] = useState(false)
+
+    // Relief Items State
+    const [reliefItems, setReliefItems] = useState([])
+    const [itemsLoading, setItemsLoading] = useState(true)
+    const [editingItem, setEditingItem] = useState(null)
+    const [showAddItemForm, setShowAddItemForm] = useState(false)
+    const [newItem, setNewItem] = useState({
+        id: '',
+        name: '',
+        nameSi: '',
+        category: '',
+        sortOrder: 0
+    })
+    const [googleSheetUrl, setGoogleSheetUrl] = useState('')
+    const [savingSheetUrl, setSavingSheetUrl] = useState(false)
+
+    const categories = ['Stationery', 'Books', 'Bags', 'Essentials', 'Clothing', 'Other']
 
     // Fetch Material Requests
     useEffect(() => {
@@ -55,6 +72,8 @@ export default function ReliefAdminPage() {
     // Fetch Donation Offers
     useEffect(() => {
         fetchOffers()
+        fetchReliefItems()
+        fetchGoogleSheetUrl()
     }, [])
 
     const fetchOffers = async () => {
@@ -73,6 +92,146 @@ export default function ReliefAdminPage() {
             alert('Failed to load donation offers')
         } finally {
             setOffersLoading(false)
+        }
+    }
+
+    // Fetch Relief Items
+    const fetchReliefItems = async () => {
+        setItemsLoading(true)
+        try {
+            const q = query(collection(db, 'reliefItems'), orderBy('sortOrder', 'asc'))
+            const querySnapshot = await getDocs(q)
+            const itemsData = querySnapshot.docs.map(doc => ({
+                docId: doc.id,
+                ...doc.data()
+            }))
+            setReliefItems(itemsData)
+        } catch (error) {
+            console.error('Error fetching relief items:', error)
+            alert('Failed to load relief items')
+        } finally {
+            setItemsLoading(false)
+        }
+    }
+
+    // Fetch Google Sheet URL
+    const fetchGoogleSheetUrl = async () => {
+        try {
+            const querySnapshot = await getDocs(collection(db, 'reliefConfig'))
+            if (!querySnapshot.empty) {
+                const config = querySnapshot.docs[0].data()
+                setGoogleSheetUrl(config.googleSheetUrl || '')
+            }
+        } catch (error) {
+            console.error('Error fetching Google Sheet URL:', error)
+        }
+    }
+
+    // Save Google Sheet URL
+    const saveGoogleSheetUrl = async () => {
+        if (!googleSheetUrl.trim()) {
+            alert('Please enter a valid Google Sheet URL')
+            return
+        }
+
+        setSavingSheetUrl(true)
+        try {
+            const querySnapshot = await getDocs(collection(db, 'reliefConfig'))
+            if (querySnapshot.empty) {
+                await addDoc(collection(db, 'reliefConfig'), {
+                    googleSheetUrl: googleSheetUrl.trim(),
+                    updatedAt: new Date()
+                })
+            } else {
+                const docId = querySnapshot.docs[0].id
+                await updateDoc(doc(db, 'reliefConfig', docId), {
+                    googleSheetUrl: googleSheetUrl.trim(),
+                    updatedAt: new Date()
+                })
+            }
+            alert('Google Sheet URL saved successfully!')
+        } catch (error) {
+            console.error('Error saving Google Sheet URL:', error)
+            alert('Failed to save Google Sheet URL')
+        } finally {
+            setSavingSheetUrl(false)
+        }
+    }
+
+    // Add Relief Item
+    const handleAddItem = async (e) => {
+        e.preventDefault()
+        
+        if (!newItem.id || !newItem.name || !newItem.category) {
+            alert('Please fill in all required fields')
+            return
+        }
+
+        if (reliefItems.some(item => item.id === newItem.id)) {
+            alert('Item ID already exists. Please use a unique ID.')
+            return
+        }
+
+        try {
+            await addDoc(collection(db, 'reliefItems'), {
+                id: newItem.id,
+                name: newItem.name,
+                nameSi: newItem.nameSi || '',
+                category: newItem.category,
+                sortOrder: parseInt(newItem.sortOrder) || 0,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            })
+
+            setNewItem({ id: '', name: '', nameSi: '', category: '', sortOrder: 0 })
+            setShowAddItemForm(false)
+            fetchReliefItems()
+            alert('Item added successfully!')
+        } catch (error) {
+            console.error('Error adding item:', error)
+            alert('Failed to add item')
+        }
+    }
+
+    // Update Relief Item
+    const handleUpdateItem = async (docId) => {
+        if (!editingItem.id || !editingItem.name || !editingItem.category) {
+            alert('Please fill in all required fields')
+            return
+        }
+
+        try {
+            await updateDoc(doc(db, 'reliefItems', docId), {
+                id: editingItem.id,
+                name: editingItem.name,
+                nameSi: editingItem.nameSi || '',
+                category: editingItem.category,
+                sortOrder: parseInt(editingItem.sortOrder) || 0,
+                updatedAt: new Date()
+            })
+
+            setEditingItem(null)
+            fetchReliefItems()
+            alert('Item updated successfully!')
+        } catch (error) {
+            console.error('Error updating item:', error)
+            alert('Failed to update item')
+        }
+    }
+
+    // Delete Relief Item
+    const handleDeleteItem = async (docId, itemName) => {
+        if (!confirm(`Are you sure you want to delete "${itemName}"? This may affect existing requests.`)) {
+            return
+        }
+
+        try {
+            await deleteDoc(doc(db, 'reliefItems', docId))
+            fetchReliefItems()
+            alert('Item deleted successfully!')
+        } catch (error) {
+            console.error('Error deleting item:', error)
+            alert('Failed to delete item')
         }
     }
 
@@ -227,57 +386,6 @@ export default function ReliefAdminPage() {
         }
     }
 
-    // Export to CSV
-    const exportToCSV = (data, type) => {
-        if (data.length === 0) {
-            alert('No data to export')
-            return
-        }
-
-        let csvContent = ''
-
-        if (type === 'requests') {
-            const headers = ['School Name', 'District', 'Contact Person', 'Contact Number', 'Status', 'Token', 'Created At']
-            csvContent = headers.join(',') + '\n'
-
-            data.forEach(req => {
-                const row = [
-                    req.schoolName || '',
-                    req.district || '',
-                    req.contactPerson || '',
-                    req.contactNumber || '',
-                    req.status || '',
-                    req.requestToken || '',
-                    req.createdAt?.toDate?.()?.toLocaleDateString() || ''
-                ]
-                csvContent += row.join(',') + '\n'
-            })
-        } else {
-            const headers = ['Donor Name', 'Contact Number', 'Email', 'District', 'Items Offered', 'Status', 'Created At']
-            csvContent = headers.join(',') + '\n'
-
-            data.forEach(offer => {
-                const row = [
-                    offer.donorName || '',
-                    offer.contactNumber || '',
-                    offer.email || '',
-                    offer.district || '',
-                    offer.itemsOffered || '',
-                    offer.status || '',
-                    offer.createdAt?.toDate?.()?.toLocaleDateString() || ''
-                ]
-                csvContent += row.join(',') + '\n'
-            })
-        }
-
-        const blob = new Blob([csvContent], { type: 'text/csv' })
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `${type}-${new Date().toISOString().split('T')[0]}.csv`
-        a.click()
-    }
-
     const getStatusBadge = (status) => {
         const styles = {
             pending: 'bg-yellow-100 text-yellow-800 border-yellow-300',
@@ -298,7 +406,7 @@ export default function ReliefAdminPage() {
                         🇱🇰 Flood Relief Management
                     </h1>
                     <p className="font-poppins text-gray-600">
-                        Manage material requests and donation offers
+                        Manage requests, donations, items, and Google Sheet link
                     </p>
                 </div>
 
@@ -324,6 +432,26 @@ export default function ReliefAdminPage() {
                         >
                             <Heart size={20} />
                             Donation Offers ({offerStats.total})
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('items')}
+                            className={`flex-1 px-6 py-4 font-poppins font-semibold text-base transition flex items-center justify-center gap-2 ${activeTab === 'items'
+                                    ? 'border-b-4 border-pink-600 text-pink-600 bg-pink-50'
+                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                }`}
+                        >
+                            <Package size={20} />
+                            Relief Items
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('settings')}
+                            className={`flex-1 px-6 py-4 font-poppins font-semibold text-base transition flex items-center justify-center gap-2 ${activeTab === 'settings'
+                                    ? 'border-b-4 border-pink-600 text-pink-600 bg-pink-50'
+                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                }`}
+                        >
+                            <Settings size={20} />
+                            Settings
                         </button>
                     </div>
                 </div>
@@ -399,15 +527,7 @@ export default function ReliefAdminPage() {
                                         ))}
                                     </select>
                                 </div>
-                                <div className="flex items-end">
-                                    <button
-                                        onClick={() => exportToCSV(filteredRequests, 'requests')}
-                                        className="bg-green-600 text-white px-6 py-2 rounded-lg font-poppins font-bold hover:bg-green-700 transition flex items-center gap-2"
-                                    >
-                                        <Download size={18} />
-                                        Export CSV
-                                    </button>
-                                </div>
+                                {/* CSV export removed in favor of Google Sheet workflow */}
                             </div>
                         </div>
 
@@ -549,15 +669,7 @@ export default function ReliefAdminPage() {
                                         ))}
                                     </select>
                                 </div>
-                                <div className="flex items-end">
-                                    <button
-                                        onClick={() => exportToCSV(filteredOffers, 'donations')}
-                                        className="bg-green-600 text-white px-6 py-2 rounded-lg font-poppins font-bold hover:bg-green-700 transition flex items-center gap-2"
-                                    >
-                                        <Download size={18} />
-                                        Export CSV
-                                    </button>
-                                </div>
+                                {/* CSV export removed in favor of Google Sheet workflow */}
                             </div>
                         </div>
 
@@ -641,6 +753,289 @@ export default function ReliefAdminPage() {
                                     </table>
                                 </div>
                             )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Relief Items Tab */}
+                {activeTab === 'items' && (
+                    <div className="space-y-6">
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <div>
+                                    <h2 className="font-playfair text-2xl font-bold text-gray-900">Relief Items</h2>
+                                    <p className="font-poppins text-gray-600 text-sm">
+                                        Manage the list of predefined relief items used in request forms.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setShowAddItemForm(!showAddItemForm)}
+                                    className="bg-pink-600 text-white px-4 py-2 rounded-lg font-poppins font-semibold hover:bg-pink-700 transition flex items-center gap-2"
+                                >
+                                    {showAddItemForm ? <X size={18} /> : <Plus size={18} />}
+                                    {showAddItemForm ? 'Cancel' : 'Add Item'}
+                                </button>
+                            </div>
+
+                            {showAddItemForm && (
+                                <form onSubmit={handleAddItem} className="bg-pink-50 border border-pink-200 rounded-xl p-4 mb-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div>
+                                            <label className="block font-poppins text-sm font-semibold text-gray-700 mb-1">
+                                                Item ID <span className="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={newItem.id}
+                                                onChange={(e) => setNewItem({ ...newItem, id: e.target.value.toLowerCase().replace(/\s+/g, '') })}
+                                                placeholder="notebooks (lowercase, no spaces)"
+                                                className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block font-poppins text-sm font-semibold text-gray-700 mb-1">
+                                                Name (English) <span className="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={newItem.name}
+                                                onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                                                placeholder="Notebooks"
+                                                className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block font-poppins text-sm font-semibold text-gray-700 mb-1">
+                                                Name (Sinhala)
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={newItem.nameSi}
+                                                onChange={(e) => setNewItem({ ...newItem, nameSi: e.target.value })}
+                                                placeholder="සටහන් පොත්"
+                                                className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block font-poppins text-sm font-semibold text-gray-700 mb-1">
+                                                Category <span className="text-red-500">*</span>
+                                            </label>
+                                            <select
+                                                value={newItem.category}
+                                                onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+                                                className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
+                                                required
+                                            >
+                                                <option value="">Select category</option>
+                                                {categories.map(cat => (
+                                                    <option key={cat} value={cat}>{cat}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block font-poppins text-sm font-semibold text-gray-700 mb-1">
+                                                Sort Order
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={newItem.sortOrder}
+                                                onChange={(e) => setNewItem({ ...newItem, sortOrder: e.target.value })}
+                                                placeholder="0"
+                                                className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 flex gap-3">
+                                        <button
+                                            type="submit"
+                                            className="bg-green-600 text-white px-5 py-2 rounded-lg font-poppins font-semibold hover:bg-green-700 transition flex items-center gap-2"
+                                        >
+                                            <Plus size={16} />
+                                            Save Item
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowAddItemForm(false)}
+                                            className="bg-gray-200 text-gray-700 px-5 py-2 rounded-lg font-poppins font-semibold hover:bg-gray-300 transition"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="bg-gray-50 border-b border-gray-200">
+                                            <th className="px-4 py-3 text-left font-poppins text-xs font-semibold text-gray-600 uppercase tracking-wide">Order</th>
+                                            <th className="px-4 py-3 text-left font-poppins text-xs font-semibold text-gray-600 uppercase tracking-wide">ID</th>
+                                            <th className="px-4 py-3 text-left font-poppins text-xs font-semibold text-gray-600 uppercase tracking-wide">Name (EN)</th>
+                                            <th className="px-4 py-3 text-left font-poppins text-xs font-semibold text-gray-600 uppercase tracking-wide">Name (SI)</th>
+                                            <th className="px-4 py-3 text-left font-poppins text-xs font-semibold text-gray-600 uppercase tracking-wide">Category</th>
+                                            <th className="px-4 py-3 text-left font-poppins text-xs font-semibold text-gray-600 uppercase tracking-wide">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {itemsLoading ? (
+                                            <tr>
+                                                <td colSpan={6} className="px-4 py-6 text-center font-poppins text-gray-500">
+                                                    Loading relief items...
+                                                </td>
+                                            </tr>
+                                        ) : reliefItems.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={6} className="px-4 py-6 text-center font-poppins text-gray-500">
+                                                    No relief items found. Add your first item.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            reliefItems.map((item) => (
+                                                <tr key={item.docId} className="border-b border-gray-100 hover:bg-gray-50">
+                                                    {editingItem?.docId === item.docId ? (
+                                                        <>
+                                                            <td className="px-4 py-3">
+                                                                <input
+                                                                    type="number"
+                                                                    value={editingItem.sortOrder}
+                                                                    onChange={(e) => setEditingItem({ ...editingItem, sortOrder: e.target.value })}
+                                                                    className="w-20 px-2 py-1 border-2 border-gray-300 rounded font-poppins text-sm"
+                                                                />
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <input
+                                                                    type="text"
+                                                                    value={editingItem.id}
+                                                                    onChange={(e) => setEditingItem({ ...editingItem, id: e.target.value.toLowerCase().replace(/\s+/g, '') })}
+                                                                    className="w-32 px-2 py-1 border-2 border-gray-300 rounded font-poppins text-sm"
+                                                                />
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <input
+                                                                    type="text"
+                                                                    value={editingItem.name}
+                                                                    onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
+                                                                    className="w-40 px-2 py-1 border-2 border-gray-300 rounded font-poppins text-sm"
+                                                                />
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <input
+                                                                    type="text"
+                                                                    value={editingItem.nameSi}
+                                                                    onChange={(e) => setEditingItem({ ...editingItem, nameSi: e.target.value })}
+                                                                    className="w-40 px-2 py-1 border-2 border-gray-300 rounded font-poppins text-sm"
+                                                                />
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <select
+                                                                    value={editingItem.category}
+                                                                    onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
+                                                                    className="w-32 px-2 py-1 border-2 border-gray-300 rounded font-poppins text-sm"
+                                                                >
+                                                                    {categories.map(cat => (
+                                                                        <option key={cat} value={cat}>{cat}</option>
+                                                                    ))}
+                                                                </select>
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <div className="flex gap-2">
+                                                                    <button
+                                                                        onClick={() => handleUpdateItem(item.docId)}
+                                                                        className="bg-green-600 text-white px-3 py-1 rounded-lg text-xs font-poppins hover:bg-green-700 transition flex items-center gap-1"
+                                                                    >
+                                                                        <Save size={14} />
+                                                                        Save
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => setEditingItem(null)}
+                                                                        className="bg-gray-300 text-gray-800 px-3 py-1 rounded-lg text-xs font-poppins hover:bg-gray-400 transition"
+                                                                    >
+                                                                        Cancel
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <td className="px-4 py-3 font-poppins text-sm text-gray-700">{item.sortOrder}</td>
+                                                            <td className="px-4 py-3 font-mono text-xs text-gray-600">{item.id}</td>
+                                                            <td className="px-4 py-3 font-poppins text-sm text-gray-900 font-semibold">{item.name}</td>
+                                                            <td className="px-4 py-3 font-poppins text-sm text-gray-700">{item.nameSi || '-'}</td>
+                                                            <td className="px-4 py-3">
+                                                                <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full font-poppins text-xs font-semibold">
+                                                                    {item.category}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <div className="flex gap-2">
+                                                                    <button
+                                                                        onClick={() => setEditingItem({ ...item })}
+                                                                        className="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-poppins hover:bg-blue-700 transition flex items-center gap-1"
+                                                                    >
+                                                                        <Edit2 size={14} />
+                                                                        Edit
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleDeleteItem(item.docId, item.name)}
+                                                                        className="bg-red-600 text-white px-3 py-1 rounded-lg text-xs font-poppins hover:bg-red-700 transition flex items-center gap-1"
+                                                                    >
+                                                                        <Trash2 size={14} />
+                                                                        Delete
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        </>
+                                                    )}
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Settings Tab */}
+                {activeTab === 'settings' && (
+                    <div className="space-y-6">
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                            <h2 className="font-playfair text-2xl font-bold text-gray-900 mb-2">Google Sheet Link</h2>
+                            <p className="font-poppins text-gray-600 text-sm mb-4">
+                                Store the Google Sheet URL used for managing detailed reports of requests and donations.
+                            </p>
+                            <div className="space-y-3 max-w-2xl">
+                                <input
+                                    type="url"
+                                    value={googleSheetUrl}
+                                    onChange={(e) => setGoogleSheetUrl(e.target.value)}
+                                    placeholder="https://docs.google.com/spreadsheets/..."
+                                    className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
+                                />
+                                <div className="flex flex-wrap gap-3 mt-2">
+                                    <button
+                                        onClick={saveGoogleSheetUrl}
+                                        disabled={savingSheetUrl}
+                                        className="bg-pink-600 text-white px-5 py-2 rounded-lg font-poppins font-semibold hover:bg-pink-700 disabled:opacity-60 disabled:cursor-not-allowed transition flex items-center gap-2"
+                                    >
+                                        <Save size={16} />
+                                        {savingSheetUrl ? 'Saving...' : 'Save Link'}
+                                    </button>
+                                    {googleSheetUrl && (
+                                        <a
+                                            href={googleSheetUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-2 px-5 py-2 border-2 border-gray-300 rounded-lg font-poppins text-gray-800 hover:bg-gray-50 transition"
+                                        >
+                                            <ExternalLink size={16} />
+                                            Open Google Sheet
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}

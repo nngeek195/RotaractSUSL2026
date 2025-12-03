@@ -42,7 +42,7 @@ export default function ReliefRequestsPage() {
         contactNumber: "",
         email: "",
         description: "",
-        items: [{ name: "", quantity: "" }]
+        items: {} // Changed to object: { itemId: quantity }
     });
     const [submittingRequest, setSubmittingRequest] = useState(false);
     const [generatedToken, setGeneratedToken] = useState("");
@@ -61,13 +61,77 @@ export default function ReliefRequestsPage() {
         "Monaragala", "Ratnapura", "Kegalle"
     ].sort();
 
+    // Predefined relief items - loaded from Firestore
+    const [predefinedItems, setPredefinedItems] = useState([]);
+    const [itemsLoading, setItemsLoading] = useState(true);
+
     useEffect(() => {
+        fetchPredefinedItems();
         fetchRequests();
     }, []);
 
     useEffect(() => {
         applyFilters();
     }, [requests, searchSchool, filterDistrict, filterStatus]);
+
+    // Calculate item statistics
+    const calculateItemStats = () => {
+        const stats = {};
+        
+        predefinedItems.forEach(item => {
+            stats[item.id] = {
+                name: item.name,
+                icon: item.icon,
+                totalRequested: 0,
+                totalFulfilled: 0,
+                pending: 0
+            };
+        });
+
+        requests.forEach(request => {
+            request.items?.forEach(item => {
+                const itemId = item.id || item.name?.toLowerCase().replace(/\s+/g, ''); // Handle old format
+                if (stats[itemId]) {
+                    const quantity = parseInt(item.quantity) || 0;
+                    stats[itemId].totalRequested += quantity;
+                    
+                    if (request.status === 'fulfilled') {
+                        stats[itemId].totalFulfilled += quantity;
+                    } else {
+                        stats[itemId].pending += quantity;
+                    }
+                }
+            });
+        });
+
+        return Object.values(stats).filter(stat => stat.totalRequested > 0);
+    };
+
+    const itemStats = calculateItemStats();
+
+    const fetchPredefinedItems = async () => {
+        setItemsLoading(true);
+        try {
+            const q = query(collection(db, "reliefItems"), orderBy("sortOrder", "asc"));
+            const querySnapshot = await getDocs(q);
+            const itemsList = querySnapshot.docs.map(doc => ({
+                docId: doc.id,
+                ...doc.data()
+            }));
+            setPredefinedItems(itemsList);
+        } catch (error) {
+            console.error("Error fetching predefined items:", error);
+            // Fallback to default items if fetch fails
+            setPredefinedItems([
+                { id: "notebooks", name: "Notebooks", icon: "📓", category: "Stationery" },
+                { id: "pens", name: "Pens", icon: "🖊️", category: "Stationery" },
+                { id: "pencils", name: "Pencils", icon: "✏️", category: "Stationery" },
+                { id: "schoolbags", name: "School Bags", icon: "🎒", category: "Bags" }
+            ]);
+        } finally {
+            setItemsLoading(false);
+        }
+    };
 
     const fetchRequests = async () => {
         setLoading(true);
@@ -173,9 +237,20 @@ export default function ReliefRequestsPage() {
             return;
         }
 
-        const validItems = requestForm.items.filter(item => item.name && item.quantity);
-        if (validItems.length === 0) {
-            alert("Please add at least one item");
+        // Convert items object to array format for storage
+        const selectedItems = Object.entries(requestForm.items)
+            .filter(([itemId, quantity]) => quantity && parseInt(quantity) > 0)
+            .map(([itemId, quantity]) => {
+                const item = predefinedItems.find(i => i.id === itemId);
+                return {
+                    id: itemId,
+                    name: item.name,
+                    quantity: parseInt(quantity)
+                };
+            });
+
+        if (selectedItems.length === 0) {
+            alert("Please select at least one item with quantity");
             return;
         }
 
@@ -193,7 +268,7 @@ export default function ReliefRequestsPage() {
                 contactNumber: requestForm.contactNumber,
                 email: requestForm.email,
                 description: requestForm.description,
-                items: validItems,
+                items: selectedItems,
                 requestToken: token,
                 status: "pending",
                 createdAt: new Date(),
@@ -218,7 +293,7 @@ export default function ReliefRequestsPage() {
                                 contactPerson: requestForm.contactPerson,
                                 contactNumber: requestForm.contactNumber,
                                 description: requestForm.description || "No description provided",
-                                items: validItems,
+                                items: selectedItems,
                                 token: token,
                                 trackUrl: trackUrl
                             }
@@ -243,7 +318,7 @@ export default function ReliefRequestsPage() {
                 contactNumber: "",
                 email: "",
                 description: "",
-                items: [{ name: "", quantity: "" }]
+                items: {} // Reset to empty object
             });
 
             // Refresh requests list
@@ -254,24 +329,6 @@ export default function ReliefRequestsPage() {
         } finally {
             setSubmittingRequest(false);
         }
-    };
-
-    const addItemField = () => {
-        setRequestForm({
-            ...requestForm,
-            items: [...requestForm.items, { name: "", quantity: "" }]
-        });
-    };
-
-    const removeItemField = (index) => {
-        const newItems = requestForm.items.filter((_, i) => i !== index);
-        setRequestForm({ ...requestForm, items: newItems });
-    };
-
-    const updateItem = (index, field, value) => {
-        const newItems = [...requestForm.items];
-        newItems[index][field] = value;
-        setRequestForm({ ...requestForm, items: newItems });
     };
 
     const copyToken = () => {
@@ -379,6 +436,65 @@ export default function ReliefRequestsPage() {
                     </div>
                 </div>
 
+                {/* Item Statistics Dashboard */}
+                {itemStats.length > 0 && (
+                    <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+                        <h2 className="font-playfair text-2xl font-bold text-gray-800 mb-6">
+                            📊 Materials Overview
+                        </h2>
+                        <p className="font-poppins text-sm text-gray-600 mb-6">
+                            Real-time statistics showing requested vs fulfilled quantities for each material type
+                        </p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {itemStats.map(stat => {
+                                const fulfillmentRate = stat.totalRequested > 0 
+                                    ? (stat.totalFulfilled / stat.totalRequested * 100).toFixed(1)
+                                    : 0;
+                                
+                                return (
+                                    <div key={stat.name} className="border-2 border-gray-200 rounded-xl p-4 hover:border-blue-400 transition">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <span className="text-3xl">{stat.icon}</span>
+                                            <div className="flex-1">
+                                                <h3 className="font-poppins font-bold text-gray-800">{stat.name}</h3>
+                                                <p className="font-poppins text-xs text-gray-500">
+                                                    {fulfillmentRate}% fulfilled
+                                                </p>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Progress Bar */}
+                                        <div className="mb-3">
+                                            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                                                <div 
+                                                    className="bg-gradient-to-r from-green-400 to-green-600 h-3 rounded-full transition-all duration-500"
+                                                    style={{ width: `${Math.min(fulfillmentRate, 100)}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Stats */}
+                                        <div className="grid grid-cols-3 gap-2 text-center">
+                                            <div className="bg-blue-50 rounded-lg p-2">
+                                                <p className="font-poppins text-xs text-blue-600 font-semibold">Requested</p>
+                                                <p className="font-poppins text-lg font-bold text-blue-800">{stat.totalRequested}</p>
+                                            </div>
+                                            <div className="bg-green-50 rounded-lg p-2">
+                                                <p className="font-poppins text-xs text-green-600 font-semibold">Fulfilled</p>
+                                                <p className="font-poppins text-lg font-bold text-green-800">{stat.totalFulfilled}</p>
+                                            </div>
+                                            <div className="bg-yellow-50 rounded-lg p-2">
+                                                <p className="font-poppins text-xs text-yellow-600 font-semibold">Pending</p>
+                                                <p className="font-poppins text-lg font-bold text-yellow-800">{stat.pending}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
                 {/* Filters */}
                 <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
                     <h2 className="font-playfair text-2xl font-bold text-gray-800 mb-6">
@@ -484,14 +600,7 @@ export default function ReliefRequestsPage() {
                                         <MapPin size={18} className="text-gray-400 mt-0.5 flex-shrink-0" />
                                         <span className="font-poppins text-sm">{request.district}</span>
                                     </div>
-                                    <div className="flex items-start gap-2 text-gray-600">
-                                        <User size={18} className="text-gray-400 mt-0.5 flex-shrink-0" />
-                                        <span className="font-poppins text-sm">{request.contactPerson}</span>
-                                    </div>
-                                    <div className="flex items-start gap-2 text-gray-600">
-                                        <Phone size={18} className="text-gray-400 mt-0.5 flex-shrink-0" />
-                                        <span className="font-poppins text-sm">{request.contactNumber}</span>
-                                    </div>
+                                    {/* Contact information hidden for privacy - visible only in admin panel */}
                                 </div>
 
                                 {/* Description */}
@@ -571,19 +680,17 @@ export default function ReliefRequestsPage() {
                                     <p className="font-poppins text-gray-900">{selectedRequest.district}</p>
                                 </div>
                                 <div>
-                                    <p className="font-poppins font-semibold text-gray-700 mb-1">Contact Person</p>
-                                    <p className="font-poppins text-gray-900">{selectedRequest.contactPerson}</p>
-                                </div>
-                                <div>
-                                    <p className="font-poppins font-semibold text-gray-700 mb-1">Contact Number</p>
-                                    <p className="font-poppins text-gray-900">{selectedRequest.contactNumber}</p>
-                                </div>
-                                <div>
                                     <p className="font-poppins font-semibold text-gray-700 mb-1">Submitted</p>
                                     <p className="font-poppins text-gray-900">
                                         {selectedRequest.createdAt?.toDate?.()?.toLocaleDateString()} at {selectedRequest.createdAt?.toDate?.()?.toLocaleTimeString()}
                                     </p>
                                 </div>
+                            </div>
+                            
+                            <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <p className="font-poppins text-sm text-blue-800">
+                                    <strong>Note:</strong> Contact information is private and only visible to administrators for coordination purposes. If you would like to help, please use the donation form or contact the admin.
+                                </p>
                             </div>
 
                             {selectedRequest.address && (
@@ -975,46 +1082,55 @@ export default function ReliefRequestsPage() {
                                 </div>
 
                                 <div>
-                                    <label className="block font-poppins font-semibold text-gray-700 mb-2">
-                                        Materials Needed <span className="text-red-500">*</span>
+                                    <label className="block font-poppins font-semibold text-gray-700 mb-3">
+                                        Select Materials Needed <span className="text-red-500">*</span>
                                     </label>
-                                    <div className="space-y-3">
-                                        {requestForm.items.map((item, index) => (
-                                            <div key={index} className="flex gap-2">
-                                                <input
-                                                    type="text"
-                                                    value={item.name}
-                                                    onChange={(e) => updateItem(index, 'name', e.target.value)}
-                                                    placeholder="Item name (e.g., Notebooks)"
-                                                    className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-poppins"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={item.quantity}
-                                                    onChange={(e) => updateItem(index, 'quantity', e.target.value)}
-                                                    placeholder="Quantity (e.g., 100)"
-                                                    className="w-32 px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-poppins"
-                                                />
-                                                {requestForm.items.length > 1 && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeItemField(index)}
-                                                        className="px-4 py-3 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
-                                                    >
-                                                        <X size={20} />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        ))}
-                                        <button
-                                            type="button"
-                                            onClick={addItemField}
-                                            className="w-full px-4 py-2 bg-blue-50 text-blue-600 rounded-lg font-poppins font-medium hover:bg-blue-100 transition flex items-center justify-center gap-2"
-                                        >
-                                            <Plus size={18} />
-                                            Add Another Item
-                                        </button>
-                                    </div>
+                                    {itemsLoading ? (
+                                        <div className="text-center py-8">
+                                            <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600 mx-auto mb-3"></div>
+                                            <p className="font-poppins text-gray-600">Loading available items...</p>
+                                        </div>
+                                    ) : predefinedItems.length === 0 ? (
+                                        <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-6 text-center">
+                                            <p className="font-poppins text-yellow-800 font-semibold mb-2">No items available</p>
+                                            <p className="font-poppins text-sm text-yellow-700">
+                                                Please contact the administrator to add relief items.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {predefinedItems.map(item => (
+                                                <div key={item.id} className="flex items-center gap-3 p-3 border-2 border-gray-200 rounded-lg hover:border-blue-300 transition">
+                                                    <div className="flex-1 flex items-center gap-2">
+                                                        <span className="text-2xl">{item.icon}</span>
+                                                        <label className="font-poppins font-medium text-gray-700 cursor-pointer flex-1">
+                                                            {item.name}
+                                                            <span className="text-xs text-gray-500 ml-1">({item.category})</span>
+                                                        </label>
+                                                    </div>
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        value={requestForm.items[item.id] || ""}
+                                                        onChange={(e) => {
+                                                            const newItems = { ...requestForm.items };
+                                                            if (e.target.value && parseInt(e.target.value) > 0) {
+                                                                newItems[item.id] = e.target.value;
+                                                            } else {
+                                                                delete newItems[item.id];
+                                                            }
+                                                            setRequestForm({ ...requestForm, items: newItems });
+                                                        }}
+                                                        placeholder="Qty"
+                                                        className="w-24 px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-poppins text-center"
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    <p className="font-poppins text-xs text-gray-500 mt-2">
+                                        Enter the quantity needed for each item. Leave blank if not needed.
+                                    </p>
                                 </div>
 
                                 <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
