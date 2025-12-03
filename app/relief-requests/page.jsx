@@ -77,7 +77,7 @@ export default function ReliefRequestsPage() {
     // Calculate item statistics
     const calculateItemStats = () => {
         const stats = {};
-        
+
         predefinedItems.forEach(item => {
             stats[item.id] = {
                 name: item.name,
@@ -94,7 +94,7 @@ export default function ReliefRequestsPage() {
                 if (stats[itemId]) {
                     const quantity = parseInt(item.quantity) || 0;
                     stats[itemId].totalRequested += quantity;
-                    
+
                     if (request.status === 'fulfilled') {
                         stats[itemId].totalFulfilled += quantity;
                     } else {
@@ -447,10 +447,10 @@ export default function ReliefRequestsPage() {
                         </p>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {itemStats.map(stat => {
-                                const fulfillmentRate = stat.totalRequested > 0 
+                                const fulfillmentRate = stat.totalRequested > 0
                                     ? (stat.totalFulfilled / stat.totalRequested * 100).toFixed(1)
                                     : 0;
-                                
+
                                 return (
                                     <div key={stat.name} className="border-2 border-gray-200 rounded-xl p-4 hover:border-blue-400 transition">
                                         <div className="flex items-center gap-3 mb-3">
@@ -462,17 +462,17 @@ export default function ReliefRequestsPage() {
                                                 </p>
                                             </div>
                                         </div>
-                                        
+
                                         {/* Progress Bar */}
                                         <div className="mb-3">
                                             <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                                                <div 
+                                                <div
                                                     className="bg-gradient-to-r from-green-400 to-green-600 h-3 rounded-full transition-all duration-500"
                                                     style={{ width: `${Math.min(fulfillmentRate, 100)}%` }}
                                                 />
                                             </div>
                                         </div>
-                                        
+
                                         {/* Stats */}
                                         <div className="grid grid-cols-3 gap-2 text-center">
                                             <div className="bg-blue-50 rounded-lg p-2">
@@ -686,7 +686,7 @@ export default function ReliefRequestsPage() {
                                     </p>
                                 </div>
                             </div>
-                            
+
                             <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
                                 <p className="font-poppins text-sm text-blue-800">
                                     <strong>Note:</strong> Contact information is private and only visible to administrators for coordination purposes. If you would like to help, please use the donation form or contact the admin.

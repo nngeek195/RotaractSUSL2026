@@ -161,7 +161,7 @@ export default function ReliefAdminPage() {
     // Add Relief Item
     const handleAddItem = async (e) => {
         e.preventDefault()
-        
+
         if (!newItem.id || !newItem.name || !newItem.category) {
             alert('Please fill in all required fields')
             return
@@ -416,8 +416,8 @@ export default function ReliefAdminPage() {
                         <button
                             onClick={() => setActiveTab('requests')}
                             className={`flex-1 px-6 py-4 font-poppins font-semibold text-base transition flex items-center justify-center gap-2 ${activeTab === 'requests'
-                                    ? 'border-b-4 border-pink-600 text-pink-600 bg-pink-50'
-                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                ? 'border-b-4 border-pink-600 text-pink-600 bg-pink-50'
+                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                                 }`}
                         >
                             <Package size={20} />
@@ -426,8 +426,8 @@ export default function ReliefAdminPage() {
                         <button
                             onClick={() => setActiveTab('donations')}
                             className={`flex-1 px-6 py-4 font-poppins font-semibold text-base transition flex items-center justify-center gap-2 ${activeTab === 'donations'
-                                    ? 'border-b-4 border-pink-600 text-pink-600 bg-pink-50'
-                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                ? 'border-b-4 border-pink-600 text-pink-600 bg-pink-50'
+                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                                 }`}
                         >
                             <Heart size={20} />
@@ -436,8 +436,8 @@ export default function ReliefAdminPage() {
                         <button
                             onClick={() => setActiveTab('items')}
                             className={`flex-1 px-6 py-4 font-poppins font-semibold text-base transition flex items-center justify-center gap-2 ${activeTab === 'items'
-                                    ? 'border-b-4 border-pink-600 text-pink-600 bg-pink-50'
-                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                ? 'border-b-4 border-pink-600 text-pink-600 bg-pink-50'
+                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                                 }`}
                         >
                             <Package size={20} />
@@ -446,8 +446,8 @@ export default function ReliefAdminPage() {
                         <button
                             onClick={() => setActiveTab('settings')}
                             className={`flex-1 px-6 py-4 font-poppins font-semibold text-base transition flex items-center justify-center gap-2 ${activeTab === 'settings'
-                                    ? 'border-b-4 border-pink-600 text-pink-600 bg-pink-50'
-                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                ? 'border-b-4 border-pink-600 text-pink-600 bg-pink-50'
+                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                                 }`}
                         >
                             <Settings size={20} />

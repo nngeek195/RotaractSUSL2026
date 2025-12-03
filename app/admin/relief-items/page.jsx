@@ -44,7 +44,7 @@ export default function ReliefItemsAdmin() {
 
     const handleAddItem = async (e) => {
         e.preventDefault()
-        
+
         if (!newItem.id || !newItem.name || !newItem.icon || !newItem.category) {
             alert('Please fill in all required fields')
             return
