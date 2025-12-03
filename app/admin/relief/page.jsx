@@ -5,6 +5,8 @@ import { db } from '@/lib/firebase'
 import { Search, Filter, Download, CheckCircle, Clock, UserCheck, Trash2, Eye, X, Heart, Phone, Mail, MapPin, Package, Settings, Plus, Edit2, Save, ExternalLink } from 'lucide-react'
 
 export default function ReliefAdminPage() {
+    const [activeTab, setActiveTab] = useState('requests')
+
     // Material Requests State
     const [requests, setRequests] = useState([])
     const [filteredRequests, setFilteredRequests] = useState([])
@@ -445,9 +447,53 @@ export default function ReliefAdminPage() {
                     </p>
                 </div>
 
+                {/* Tabs - Desktop Only */}
+                <div className="hidden md:flex bg-white rounded-xl shadow-sm border border-gray-200">
+                    <button
+                        onClick={() => setActiveTab('requests')}
+                        className={`flex-1 px-6 py-4 font-poppins font-semibold text-base transition flex items-center justify-center gap-2 ${activeTab === 'requests'
+                            ? 'border-b-4 border-pink-600 text-pink-600 bg-pink-50'
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                            }`}
+                    >
+                        <Package size={20} />
+                        Material Requests ({requestStats.total})
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('donations')}
+                        className={`flex-1 px-6 py-4 font-poppins font-semibold text-base transition flex items-center justify-center gap-2 ${activeTab === 'donations'
+                            ? 'border-b-4 border-pink-600 text-pink-600 bg-pink-50'
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                            }`}
+                    >
+                        <Heart size={20} />
+                        Donation Offers ({offerStats.total})
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('items')}
+                        className={`flex-1 px-6 py-4 font-poppins font-semibold text-base transition flex items-center justify-center gap-2 ${activeTab === 'items'
+                            ? 'border-b-4 border-pink-600 text-pink-600 bg-pink-50'
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                            }`}
+                    >
+                        <Package size={20} />
+                        Relief Items
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('settings')}
+                        className={`flex-1 px-6 py-4 font-poppins font-semibold text-base transition flex items-center justify-center gap-2 ${activeTab === 'settings'
+                            ? 'border-b-4 border-pink-600 text-pink-600 bg-pink-50'
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                            }`}
+                    >
+                        <Settings size={20} />
+                        Settings
+                    </button>
+                </div>
+
                 {/* Material Requests Section */}
-                <section className="space-y-6">
-                    <div className="flex items-center gap-3">
+                <section className={`space-y-6 ${activeTab === 'requests' ? '' : 'md:hidden'}`}>
+                    <div className="flex items-center gap-3 md:hidden">
                         <div className="bg-pink-100 p-3 rounded-xl text-pink-600">
                             <Package size={24} />
                         </div>
@@ -667,8 +713,8 @@ export default function ReliefAdminPage() {
                 </section>
 
                 {/* Donation Offers Section */}
-                <section className="space-y-6">
-                    <div className="flex items-center gap-3">
+                <section className={`space-y-6 ${activeTab === 'donations' ? '' : 'md:hidden'}`}>
+                    <div className="flex items-center gap-3 md:hidden">
                         <div className="bg-pink-100 p-3 rounded-xl text-pink-600">
                             <Heart size={24} />
                         </div>
@@ -883,10 +929,9 @@ export default function ReliefAdminPage() {
                     </div>
                 </section>
 
-                {/* Relief Items Section */}
-                <section className="space-y-6">
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
-                        <div className="flex items-center justify-between mb-4">
+                                {/* Relief Items Section */}
+                                <section className={`space-y-6 ${activeTab === 'items' ? '' : 'md:hidden'}`}>
+                                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">                        <div className="flex items-center justify-between mb-4">
                             <div>
                                 <h2 className="font-playfair text-2xl font-bold text-gray-900">Relief Items</h2>
                                 <p className="font-poppins text-gray-600 text-sm">
@@ -1232,10 +1277,9 @@ export default function ReliefAdminPage() {
                     </div>
                 </section>
 
-                {/* Settings Section */}
-                <section className="space-y-6">
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
-                        <h2 className="font-playfair text-2xl font-bold text-gray-900 mb-2">Google Sheet Link</h2>
+                                {/* Settings Section */}
+                                <section className={`space-y-6 ${activeTab === 'settings' ? '' : 'md:hidden'}`}>
+                                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">                        <h2 className="font-playfair text-2xl font-bold text-gray-900 mb-2">Google Sheet Link</h2>
                         <p className="font-poppins text-gray-600 text-sm mb-4">
                             Store the Google Sheet URL used for managing detailed reports of requests and donations.
                         </p>
