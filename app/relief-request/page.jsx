@@ -13,6 +13,7 @@ export default function ReliefRequestPage() {
         district: "",
         address: "",
         contact: "",
+        email: ""
     });
 
     const [items, setItems] = useState([{ itemName: "", quantity: "" }]);
@@ -80,6 +81,7 @@ export default function ReliefRequestPage() {
                 district: formData.district,
                 address: formData.address,
                 contact: formData.contact,
+                email: formData.email,
                 items: validItems,
                 status: "pending",
                 requestToken: token,
@@ -89,6 +91,25 @@ export default function ReliefRequestPage() {
 
             setRequestToken(token);
             setSubmitted(true);
+
+            // Update Google Sheet
+            fetch('/api/relief/update-sheet', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'request',
+                    data: {
+                        schoolName: formData.schoolName,
+                        district: formData.district,
+                        address: formData.address,
+                        contactNumber: formData.contact,
+                        email: formData.email,
+                        items: validItems.map(i => ({ name: i.itemName, quantity: i.quantity })),
+                        requestToken: token,
+                        status: 'pending'
+                    }
+                })
+            }).catch(err => console.error('Failed to update sheet:', err));
         } catch (err) {
             console.error("Error submitting request:", err);
             setError("Failed to submit request. Please try again.");
@@ -103,6 +124,7 @@ export default function ReliefRequestPage() {
             district: "",
             address: "",
             contact: "",
+            email: ""
         });
         setItems([{ itemName: "", quantity: "" }]);
         setSubmitted(false);

@@ -14,6 +14,8 @@
     "crypto-js": "^4.2.0",
     "firebase": "^12.6.0",
     "firebase-admin": "^13.6.0",
+    "google-auth-library": "^10.5.0",
+    "google-spreadsheet": "^5.0.2",
     "html5-qrcode": "^2.3.8",
     "lucide-react": "^0.553.0",
     "next": "16.0.3",
