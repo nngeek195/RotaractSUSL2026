@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { collection, getDocs, query, orderBy, addDoc, where } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, addDoc, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import NavBar from "../components/Navbar.jsx";
 import Footer from "../components/Footer.jsx";
@@ -74,9 +74,49 @@ export default function ReliefRequestsPage() {
     const [itemsLoading, setItemsLoading] = useState(true);
 
     useEffect(() => {
-        fetchPredefinedItems();
-        fetchRequests();
         fetchConfig();
+
+        // Real-time listener for Relief Items
+        setItemsLoading(true);
+        const qItems = query(collection(db, "reliefItems"), orderBy("sortOrder", "asc"));
+        const unsubscribeItems = onSnapshot(qItems, (snapshot) => {
+            const itemsList = snapshot.docs.map(doc => ({
+                docId: doc.id,
+                ...doc.data()
+            }));
+            setPredefinedItems(itemsList);
+            setItemsLoading(false);
+        }, (error) => {
+            console.error("Error fetching predefined items:", error);
+            setItemsLoading(false);
+            // Fallback items
+            setPredefinedItems([
+                { id: "notebooks", name: "Notebooks", icon: "📓", category: "Stationery" },
+                { id: "pens", name: "Pens", icon: "🖊️", category: "Stationery" },
+                { id: "pencils", name: "Pencils", icon: "✏️", category: "Stationery" },
+                { id: "schoolbags", name: "School Bags", icon: "🎒", category: "Bags" }
+            ]);
+        });
+
+        // Real-time listener for Requests
+        setLoading(true);
+        const qRequests = query(collection(db, "materialRequests"), orderBy("createdAt", "desc"));
+        const unsubscribeRequests = onSnapshot(qRequests, (snapshot) => {
+            const requestsList = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            setRequests(requestsList);
+            setLoading(false);
+        }, (error) => {
+            console.error("Error fetching requests:", error);
+            setLoading(false);
+        });
+
+        return () => {
+            unsubscribeItems();
+            unsubscribeRequests();
+        };
     }, []);
 
     const fetchConfig = async () => {
@@ -131,47 +171,6 @@ export default function ReliefRequestsPage() {
     };
 
     const itemStats = calculateItemStats();
-
-    const fetchPredefinedItems = async () => {
-        setItemsLoading(true);
-        try {
-            const q = query(collection(db, "reliefItems"), orderBy("sortOrder", "asc"));
-            const querySnapshot = await getDocs(q);
-            const itemsList = querySnapshot.docs.map(doc => ({
-                docId: doc.id,
-                ...doc.data()
-            }));
-            setPredefinedItems(itemsList);
-        } catch (error) {
-            console.error("Error fetching predefined items:", error);
-            // Fallback to default items if fetch fails
-            setPredefinedItems([
-                { id: "notebooks", name: "Notebooks", icon: "📓", category: "Stationery" },
-                { id: "pens", name: "Pens", icon: "🖊️", category: "Stationery" },
-                { id: "pencils", name: "Pencils", icon: "✏️", category: "Stationery" },
-                { id: "schoolbags", name: "School Bags", icon: "🎒", category: "Bags" }
-            ]);
-        } finally {
-            setItemsLoading(false);
-        }
-    };
-
-    const fetchRequests = async () => {
-        setLoading(true);
-        try {
-            const q = query(collection(db, "materialRequests"), orderBy("createdAt", "desc"));
-            const querySnapshot = await getDocs(q);
-            const requestsList = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-            setRequests(requestsList);
-        } catch (error) {
-            console.error("Error fetching requests:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const applyFilters = () => {
         let filtered = [...requests];
