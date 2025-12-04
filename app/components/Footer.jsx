@@ -6,10 +6,11 @@ import { db } from '@/lib/firebase';
 
 export default function Footer() {
     const [socialLinks, setSocialLinks] = useState({
-        facebookUrl: "https://facebook.com",
-        instagramUrl: "https://instagram.com",
-        tiktokUrl: "https://tiktok.com",
-        youtubeUrl: "https://youtube.com",
+        facebookUrl: "",
+        instagramUrl: "",
+        linkedinUrl: "",
+        tiktokUrl: "",
+        youtubeUrl: "",
         contactEmail: "info@rotaractsusl.org"
     });
 
@@ -20,14 +21,14 @@ export default function Footer() {
                 const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
                     const data = docSnap.data();
-                    setSocialLinks(prev => ({
-                        ...prev,
-                        facebookUrl: data.facebookUrl || prev.facebookUrl,
-                        instagramUrl: data.instagramUrl || prev.instagramUrl,
-                        tiktokUrl: data.tiktokUrl || prev.tiktokUrl,
-                        youtubeUrl: data.youtubeUrl || prev.youtubeUrl,
-                        contactEmail: data.contactEmail || prev.contactEmail
-                    }));
+                    setSocialLinks({
+                        facebookUrl: data.facebookUrl || "",
+                        instagramUrl: data.instagramUrl || "",
+                        linkedinUrl: data.linkedinUrl || "",
+                        tiktokUrl: data.tiktokUrl || "",
+                        youtubeUrl: data.youtubeUrl || "",
+                        contactEmail: data.contactEmail || "info@rotaractsusl.org"
+                    });
                 }
             } catch (error) {
                 console.error("Error fetching footer settings:", error);
@@ -57,6 +58,11 @@ export default function Footer() {
                         {socialLinks.instagramUrl && (
                             <a href={socialLinks.instagramUrl} target="_blank" rel="noopener noreferrer" aria-label="Instagram">
                                 <img src={images.imgIcons8Insta641} alt="Instagram" className="w-8 h-8 cursor-pointer hover:opacity-80" />
+                            </a>
+                        )}
+                        {socialLinks.linkedinUrl && (
+                            <a href={socialLinks.linkedinUrl} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                                <img src={images.imgIcons8LinkedIn501} alt="LinkedIn" className="w-8 h-8 cursor-pointer hover:opacity-80" />
                             </a>
                         )}
                         {socialLinks.tiktokUrl && (
