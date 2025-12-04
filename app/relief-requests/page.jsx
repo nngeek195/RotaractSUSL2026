@@ -222,6 +222,19 @@ export default function ReliefRequestsPage() {
         const file = e.target.files?.[0];
         if (!file) return;
 
+        // Validation: 5MB Limit
+        if (file.size > 5 * 1024 * 1024) {
+            alert("File size exceeds 5MB limit.");
+            return;
+        }
+
+        // Validation: File Type
+        const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
+        if (!allowedTypes.includes(file.type)) {
+            alert("Invalid file type. Please upload PDF, JPEG, PNG, or WEBP.");
+            return;
+        }
+
         setUploadingSlip(true);
         try {
             const formData = new FormData();
@@ -679,81 +692,105 @@ export default function ReliefRequestsPage() {
                         </p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filteredRequests.map((request) => (
-                            <div
-                                key={request.id}
-                                className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition border border-gray-100 flex flex-col"
-                            >
-                                {/* Icon and Status */}
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                                        <Package size={24} className="text-blue-600" />
+                    <div className="space-y-12">
+                        {['pending', 'assigned', 'fulfilled'].map(status => {
+                            const statusRequests = filteredRequests.filter(r => r.status === status);
+                            if (statusRequests.length === 0) return null;
+
+                            return (
+                                <div key={status}>
+                                    <div className="flex items-center gap-3 mb-6 border-b-2 border-gray-100 pb-3">
+                                        <h3 className="font-playfair text-2xl font-bold text-gray-800 capitalize">
+                                            {status} Requests
+                                        </h3>
+                                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                                            status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                            status === 'assigned' ? 'bg-blue-100 text-blue-800' :
+                                            'bg-green-100 text-green-800'
+                                        }`}>
+                                            {statusRequests.length}
+                                        </span>
                                     </div>
-                                    <span className={`px-3 py-1 rounded-full font-poppins font-bold text-xs uppercase ${getStatusBadge(request.status)}`}>
-                                        {request.status}
-                                    </span>
-                                </div>
 
-                                {/* School Name */}
-                                <h3 className="font-poppins font-semibold text-lg md:text-xl text-gray-900 mb-3 leading-snug break-words">
-                                    {request.schoolName}
-                                </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {statusRequests.map((request) => (
+                                            <div
+                                                key={request.id}
+                                                className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition border border-gray-100 flex flex-col"
+                                            >
+                                                {/* Icon and Status */}
+                                                <div className="flex items-start justify-between mb-4">
+                                                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                                        <Package size={24} className="text-blue-600" />
+                                                    </div>
+                                                    <span className={`px-3 py-1 rounded-full font-poppins font-bold text-xs uppercase ${getStatusBadge(request.status)}`}>
+                                                        {request.status}
+                                                    </span>
+                                                </div>
 
-                                {/* Details */}
-                                <div className="space-y-3 mb-4">
-                                    <div className="flex items-start gap-2 text-gray-600">
-                                        <MapPin size={18} className="text-gray-400 mt-0.5 flex-shrink-0" />
-                                        <span className="font-poppins text-sm">{request.district}</span>
-                                    </div>
-                                    {/* Contact information hidden for privacy - visible only in admin panel */}
-                                </div>
+                                                {/* School Name */}
+                                                <h3 className="font-poppins font-semibold text-lg md:text-xl text-gray-900 mb-3 leading-snug break-words">
+                                                    {request.schoolName}
+                                                </h3>
 
-                                {/* Description */}
-                                {request.description && (
-                                    <p className="text-sm text-gray-600 font-poppins mb-4 line-clamp-2">
-                                        {request.description}
-                                    </p>
-                                )}
+                                                {/* Details */}
+                                                <div className="space-y-3 mb-4">
+                                                    <div className="flex items-start gap-2 text-gray-600">
+                                                        <MapPin size={18} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                                                        <span className="font-poppins text-sm">{request.district}</span>
+                                                    </div>
+                                                    {/* Contact information hidden for privacy - visible only in admin panel */}
+                                                </div>
 
-                                {/* Materials Needed */}
-                                <div className="mb-4 flex-grow">
-                                    <p className="font-poppins font-semibold text-gray-800 text-sm mb-2">
-                                        Materials Needed:
-                                    </p>
-                                    <div className="space-y-1">
-                                        {request.items?.slice(0, 3).map((item, index) => (
-                                            <div key={index} className="flex justify-between items-center text-sm">
-                                                <span className="font-poppins text-gray-700">{item.name}</span>
-                                                <span className="font-poppins font-bold text-gray-900">×{item.quantity}</span>
+                                                {/* Description */}
+                                                {request.description && (
+                                                    <p className="text-sm text-gray-600 font-poppins mb-4 line-clamp-2">
+                                                        {request.description}
+                                                    </p>
+                                                )}
+
+                                                {/* Materials Needed */}
+                                                <div className="mb-4 flex-grow">
+                                                    <p className="font-poppins font-semibold text-gray-800 text-sm mb-2">
+                                                        Materials Needed:
+                                                    </p>
+                                                    <div className="space-y-1">
+                                                        {request.items?.slice(0, 3).map((item, index) => (
+                                                            <div key={index} className="flex justify-between items-center text-sm">
+                                                                <span className="font-poppins text-gray-700">{item.name}</span>
+                                                                <span className="font-poppins font-bold text-gray-900">×{item.quantity}</span>
+                                                            </div>
+                                                        ))}
+                                                        {request.items?.length > 3 && (
+                                                            <p className="text-xs text-gray-500 font-poppins italic">
+                                                                +{request.items.length - 3} more item(s)
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Date and Button - Always at bottom */}
+                                                <div className="mt-auto">
+                                                    <div className="flex items-center gap-2 text-gray-500 text-xs font-poppins mb-4">
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                        {request.createdAt?.toDate?.()?.toLocaleDateString() || 'N/A'}
+                                                    </div>
+
+                                                    <button
+                                                        onClick={() => setSelectedRequest(request)}
+                                                        className="w-full bg-pink-600 text-white py-3 rounded-lg font-poppins font-bold hover:bg-pink-700 transition"
+                                                    >
+                                                        View Details
+                                                    </button>
+                                                </div>
                                             </div>
                                         ))}
-                                        {request.items?.length > 3 && (
-                                            <p className="text-xs text-gray-500 font-poppins italic">
-                                                +{request.items.length - 3} more item(s)
-                                            </p>
-                                        )}
                                     </div>
                                 </div>
-
-                                {/* Date and Button - Always at bottom */}
-                                <div className="mt-auto">
-                                    <div className="flex items-center gap-2 text-gray-500 text-xs font-poppins mb-4">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        {request.createdAt?.toDate?.()?.toLocaleDateString() || 'N/A'}
-                                    </div>
-
-                                    <button
-                                        onClick={() => setSelectedRequest(request)}
-                                        className="w-full bg-pink-600 text-white py-3 rounded-lg font-poppins font-bold hover:bg-pink-700 transition"
-                                    >
-                                        View Details
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>

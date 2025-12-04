@@ -212,6 +212,13 @@ export default function Profile() {
             return;
         }
 
+        // Check file type
+        const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+        if (!allowedTypes.includes(file.type)) {
+            alert("Invalid file type. Please upload JPEG, PNG, or WEBP.");
+            return;
+        }
+
         setUploadingImage(true);
         try {
             const formData = new FormData();
