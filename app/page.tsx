@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { images } from "../assets/images";
 import ProjectCarousel from "./components/ProjectCarousel";
 // import GalleryGrid from './components/GalleryGrid'; // Unused in your snippet, but kept commented
@@ -194,6 +195,16 @@ export default function Home() {
     });
     return () => unsubscribe();
   }, []);
+
+  // Helper function to create URL-friendly slug
+  const createSlug = (project: Project) => {
+    const name = project.title || project.name || 'project';
+    const slug = name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')  // Replace non-alphanumeric with hyphens
+        .replace(/^-+|-+$/g, '');      // Remove leading/trailing hyphens
+    return `${slug}-${project.id}`;
+  };
 
   return (
     <div className="bg-white relative w-full">
@@ -728,7 +739,7 @@ export default function Home() {
           <h2 className="font-playfair font-medium text-4xl lg:text-5xl text-black text-center mb-8">
             Our Projects
           </h2>
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 max-w-5xl mx-auto mb-12">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-6 max-w-5xl mx-auto mb-12">
             <p className="font-poppins font-medium text-sm lg:text-base text-black leading-relaxed text-center lg:text-left flex-1">
               Our club is driven by impactful, student-led projects. We focus on
               key areas like Community Development, Professional Growth, and
@@ -783,32 +794,37 @@ export default function Home() {
                 )}
 
                 {upcomingProjects.map((project) => (
-                  <div
+                  <Link
+                    href={`/projects/${createSlug(project)}`}
                     key={project.id}
-                    className="bg-black rounded-[41px] h-[300px] relative overflow-hidden flex items-end group"
+                    className="block"
                   >
-                    {/* Image Background */}
-                    <img
-                      src={project.imageUrl || images.imgRectangle44}
-                      alt={project.title || project.name}
-                      className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-300"
-                    />
+                    <div
+                      className="bg-black rounded-[41px] h-[300px] relative overflow-hidden flex items-end group cursor-pointer"
+                    >
+                      {/* Image Background */}
+                      <img
+                        src={project.imageUrl || images.imgRectangle44}
+                        alt={project.title || project.name}
+                        className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-300"
+                      />
 
-                    {/* Content Overlay */}
-                    <div className="relative z-10 p-6 w-full bg-gradient-to-t from-black/90 to-transparent">
-                      <p className="font-playfair text-white text-xl mb-1 font-bold">
-                        {project.title || project.name}
-                      </p>
-                      <div className="flex justify-between items-center">
-                        <p className="font-poppins text-[12px] text-text-pink-600">
-                          {project.date}
+                      {/* Content Overlay */}
+                      <div className="relative z-10 p-6 w-full bg-gradient-to-t from-black/90 to-transparent">
+                        <p className="font-playfair text-white text-xl mb-1 font-bold">
+                          {project.title || project.name}
                         </p>
-                        <span className="text-xs text-white border border-white px-2 py-1 rounded-full">
-                          Upcoming
-                        </span>
+                        <div className="flex justify-between items-center">
+                          <p className="font-poppins text-[12px] text-text-pink-600">
+                            {project.date}
+                          </p>
+                          <span className="text-xs text-white border border-white px-2 py-1 rounded-full">
+                            Upcoming
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
 
                 {/* Fillers if less than 3 projects, just to keep layout nice (Optional) */}
