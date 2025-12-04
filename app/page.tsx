@@ -383,7 +383,7 @@ export default function Home() {
       {/* Xmasora Promotional Banner */}
       <section className="bg-gradient-to-r from-green-900 via-red-800 to-green-900 text-white shadow-md relative z-20 border-b border-white/10 mt-4">
         <a
-          href="https://xmasora.vercel.app"
+          href="https://xmasora.rotaractsusl.org"
           target="_blank"
           rel="noopener noreferrer"
           className="block max-w-7xl mx-auto px-4 py-6 flex flex-wrap items-center justify-center gap-4 hover:opacity-95 transition-opacity group"
