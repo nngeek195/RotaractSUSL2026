@@ -63,7 +63,7 @@ export default function Gallery() {
             <section className="px-4 lg:px-14 pt-4 lg:pt-8 pb-12">
                 <div className="max-w-[1440px] mx-auto">
                     <div className="relative rounded-[43px] overflow-hidden h-[300px] lg:h-[396px]">
-                        <img src={images.imgRectangle66} alt="Gallery Hero" className="absolute inset-0 w-full h-full object-cover" />
+                        <img src={images.imgRectangle78} alt="Gallery Hero" className="absolute inset-0 w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-center px-6">
                             <h1 className="font-playfair font-medium text-3xl lg:text-[47px] text-white mb-4 lg:mb-6 leading-tight">
                                 <span className="text-pink-600">Moments</span> of Impact
