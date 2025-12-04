@@ -11,13 +11,14 @@ export default function AdminSettings() {
 
     // Form State
     const [settings, setSettings] = useState({
-        // WhatsApp Notification
-        whatsappPhone: "",
-        callMeBotApiKey: "",
-        
         // General Site Info
         siteName: "Rotaract Club of SUSL",
         contactEmail: "info@rotaractsusl.org",
+        whatsappPhone: "", // Now purely for public contact display
+        
+        // Telegram Notification
+        telegramBotToken: "",
+        telegramChatId: "",
         
         // Social Media
         facebookUrl: "",
@@ -34,19 +35,20 @@ export default function AdminSettings() {
     const fetchSettings = async () => {
         setLoading(true);
         try {
-            // Fetch Settings from reliefConfig (Publicly readable, Admin writable)
-            const docRef = doc(db, "reliefConfig", "website_settings");
-            const docSnap = await getDoc(docRef);
+            // 1. Fetch Public Settings (reliefConfig)
+            const publicDocRef = doc(db, "reliefConfig", "website_settings");
+            const publicSnap = await getDoc(publicDocRef);
             
-            if (docSnap.exists()) {
-                setSettings(prev => ({ ...prev, ...docSnap.data() }));
-            } else {
-                // Fallback to old 'general' doc for migration
-                const generalDoc = await getDoc(doc(db, "adminSettings", "general"));
-                if (generalDoc.exists()) {
-                    setSettings(prev => ({ ...prev, ...generalDoc.data() }));
-                }
-            }
+            // 2. Fetch Secure Settings (adminSettings/secure) - Admin only
+            const secureDocRef = doc(db, "adminSettings", "secure");
+            const secureSnap = await getDoc(secureDocRef);
+
+            // Fallback logic (migration) could be handled here if needed, but simpler to just merge what we find.
+            setSettings(prev => ({
+                ...prev,
+                ...(publicSnap.exists() ? publicSnap.data() : {}),
+                ...(secureSnap.exists() ? secureSnap.data() : {})
+            }));
         } catch (error) {
             console.error("Error fetching settings:", error);
         }
@@ -62,8 +64,25 @@ export default function AdminSettings() {
         e.preventDefault();
         setSaving(true);
         try {
-            // Save all settings to reliefConfig/website_settings
-            await setDoc(doc(db, "reliefConfig", "website_settings"), settings);
+            // 1. Save Public Data to reliefConfig/website_settings
+            const publicData = {
+                siteName: settings.siteName,
+                contactEmail: settings.contactEmail,
+                whatsappPhone: settings.whatsappPhone, // Public contact phone
+                facebookUrl: settings.facebookUrl,
+                instagramUrl: settings.instagramUrl,
+                linkedinUrl: settings.linkedinUrl,
+                tiktokUrl: settings.tiktokUrl,
+                youtubeUrl: settings.youtubeUrl
+            };
+            await setDoc(doc(db, "reliefConfig", "website_settings"), publicData, { merge: true });
+
+            // 2. Save Secure Data to adminSettings/secure
+            const secureData = {
+                telegramBotToken: settings.telegramBotToken,
+                telegramChatId: settings.telegramChatId
+            };
+            await setDoc(doc(db, "adminSettings", "secure"), secureData, { merge: true });
             
             alert("Settings saved successfully!");
         } catch (error) {
@@ -90,14 +109,14 @@ export default function AdminSettings() {
             ) : (
                 <form onSubmit={handleSave} className="space-y-8">
                     
-                    {/* 1. WhatsApp Notification Settings */}
+                    {/* 1. Telegram Notification Settings */}
                     <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
                         <div className="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
-                            <div className="bg-green-100 p-3 rounded-lg text-green-600">
+                            <div className="bg-blue-100 p-3 rounded-lg text-blue-600">
                                 <Smartphone size={24} />
                             </div>
                             <div>
-                                <h2 className="text-xl font-bold text-gray-900">WhatsApp Notifications</h2>
+                                <h2 className="text-xl font-bold text-gray-900">Telegram Notifications</h2>
                                 <p className="text-sm text-gray-500">Configure admin alerts for new membership requests.</p>
                             </div>
                         </div>
@@ -105,44 +124,49 @@ export default function AdminSettings() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Admin Phone Number
+                                    Telegram Bot Token
                                 </label>
                                 <input
                                     type="text"
-                                    name="whatsappPhone"
-                                    value={settings.whatsappPhone}
+                                    name="telegramBotToken"
+                                    value={settings.telegramBotToken}
                                     onChange={handleChange}
-                                    placeholder="+9471XXXXXXX"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    placeholder="123456789:AbC..."
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
                                 />
                                 <p className="text-xs text-gray-500 mt-1">
-                                    Include country code (e.g., +94). This number will receive alerts.
+                                    From @BotFather.
                                 </p>
                             </div>
 
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    CallMeBot API Key
+                                    Telegram Chat ID
                                 </label>
                                 <input
                                     type="text"
-                                    name="callMeBotApiKey"
-                                    value={settings.callMeBotApiKey}
+                                    name="telegramChatId"
+                                    value={settings.telegramChatId}
                                     onChange={handleChange}
-                                    placeholder="123456"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent font-mono"
+                                    placeholder="-100xxxxxxxx"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
                                 />
                                 <p className="text-xs text-gray-500 mt-1">
-                                    Get your free API key from <a href="https://www.callmebot.com/blog/free-api-whatsapp-messages/" target="_blank" rel="noreferrer" className="text-blue-600 underline">CallMeBot</a>.
+                                    User or Group ID to receive alerts.
                                 </p>
                             </div>
+                        </div>
+                        <div className="mt-4 pt-4 border-t border-gray-100">
+                            <a href="/admin/test-notification" target="_blank" className="text-blue-600 hover:underline text-sm flex items-center gap-1">
+                                Test Notification Flow &rarr;
+                            </a>
                         </div>
                     </div>
 
                     {/* 2. General Site Information */}
                     <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
                         <div className="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
-                            <div className="bg-blue-100 p-3 rounded-lg text-blue-600">
+                            <div className="bg-purple-100 p-3 rounded-lg text-purple-600">
                                 <Globe size={24} />
                             </div>
                             <div>
@@ -161,7 +185,7 @@ export default function AdminSettings() {
                                     name="siteName"
                                     value={settings.siteName}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                 />
                             </div>
 
@@ -178,9 +202,26 @@ export default function AdminSettings() {
                                         name="contactEmail"
                                         value={settings.contactEmail}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                     />
                                 </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Public Phone Number
+                                </label>
+                                <input
+                                    type="text"
+                                    name="whatsappPhone"
+                                    value={settings.whatsappPhone}
+                                    onChange={handleChange}
+                                    placeholder="+9471XXXXXXX"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Displayed on the Contact Us page.
+                                </p>
                             </div>
                         </div>
                     </div>
