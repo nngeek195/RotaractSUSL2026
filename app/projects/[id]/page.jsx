@@ -121,7 +121,7 @@ export default function ProjectDetailsPage() {
             <NavBar currentPage="projects" />
 
             {/* Back to Projects Button */}
-            <div className="pt-32 px-4 lg:px-8 max-w-7xl mx-auto">
+            <div className="pt-8 px-4 lg:px-8 max-w-7xl mx-auto">
                 <button
                     onClick={() => router.push('/projects')}
                     className="flex items-center gap-2 text-[#cd215e] font-poppins font-medium text-sm hover:opacity-80 transition-opacity mb-6"

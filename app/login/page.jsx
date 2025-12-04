@@ -162,7 +162,7 @@ function LoginContent() {
             <Navbar currentPage="login" />
 
             {/* Login Form Section */}
-            <main className="flex-1 flex items-center justify-center px-4 pt-32 pb-20">
+            <main className="flex-1 flex items-center justify-center px-4 pt-12 pb-20">
                 <div className="w-full max-w-[732px]">
 
                     {/* Tabs */}
