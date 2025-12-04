@@ -206,6 +206,12 @@ export default function Profile() {
         const file = e.target.files?.[0];
         if (!file) return;
 
+        // Check file size (5MB limit)
+        if (file.size > 5 * 1024 * 1024) {
+            alert("File size exceeds 5MB limit.");
+            return;
+        }
+
         setUploadingImage(true);
         try {
             const formData = new FormData();
@@ -583,9 +589,11 @@ export default function Profile() {
 // --- HELPER COMPONENTS ---
 
 const InfoRow = ({ label, value }: any) => (
-    <div className="flex items-center gap-4 justify-between border-b border-gray-200/50 last:border-0 pb-2 last:pb-0">
-        <p className="font-poppins font-medium text-[14px] text-pink-600">{label}</p>
-        <p className="font-poppins text-[14px] text-gray-600 text-right truncate max-w-[200px]">{value}</p>
+    <div className="flex items-start gap-4 justify-between border-b border-gray-200/50 last:border-0 pb-2 last:pb-0">
+        <p className="font-poppins font-medium text-[14px] text-pink-600 whitespace-nowrap flex-shrink-0">{label}</p>
+        <p className="font-poppins text-[14px] text-gray-600 text-right flex-1 break-words">
+            {value}
+        </p>
     </div>
 );
 
