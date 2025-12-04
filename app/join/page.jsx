@@ -95,7 +95,7 @@ export default function JoinUs() {
             <Navbar currentPage="join" />
 
             {/* Hero Banner */}
-            <section className="relative w-full max-w-[1440px] mx-auto px-4 pt-24 lg:pt-28">
+            <section className="relative w-full max-w-[1440px] mx-auto px-4 pt-4 lg:pt-8">
                 <div className="relative rounded-[43px] overflow-hidden h-[220px] md:h-[300px]">
                     <img src={images.imgRectangle66} alt="Hands united" className="absolute inset-0 w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-center px-6">

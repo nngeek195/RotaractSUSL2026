@@ -10,7 +10,7 @@ export default function About() {
             <Navbar currentPage="about" />
 
             {/* Foundation banner - Figma design */}
-            <section id="foundation" className="px-4 py-8 lg:py-12 pt-24 lg:pt-28">
+            <section id="foundation" className="px-4 py-8 lg:py-12 pt-4 lg:pt-8">
                 <div className="max-w-[1440px] mx-auto px-8">
                     <div className="rounded-[43px] overflow-hidden relative h-[280px] md:h-[339px]">
                         <img src={images.imgRectangle66} alt="Hands united" className="w-full h-full object-cover" />

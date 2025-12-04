@@ -48,10 +48,9 @@ export default function Leadership() {
         <div className="bg-white min-h-screen flex flex-col">
             {/* Nav */}
             <NavBar currentPage="leadership" />
-            <br /><br />
-
+            
             {/* Hero banner */}
-            <section className="px-4 pt-10">
+            <section className="px-4 pt-4">
                 <div className="max-w-[1440px] mx-auto">
                     <div className="relative rounded-[43px] overflow-hidden h-[240px] md:h-[300px]">
                         <img src={images.imgRectangle44} alt="Hero leadership" className="absolute inset-0 w-full h-full object-cover" />

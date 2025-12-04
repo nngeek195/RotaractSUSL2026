@@ -60,7 +60,7 @@ export default function Gallery() {
             <Navbar currentPage="gallery" />
 
             {/* Hero Banner */}
-            <section className="px-4 lg:px-14 pt-24 lg:pt-28 pb-12">
+            <section className="px-4 lg:px-14 pt-4 lg:pt-8 pb-12">
                 <div className="max-w-[1440px] mx-auto">
                     <div className="relative rounded-[43px] overflow-hidden h-[300px] lg:h-[396px]">
                         <img src={images.imgRectangle66} alt="Gallery Hero" className="absolute inset-0 w-full h-full object-cover" />

@@ -66,8 +66,7 @@ export default function ProjectsPage() {
     return (
         <><div className="bg-gray-100">
             <NavBar currentPage="projects" />
-            <br /><br />
-
+            
             {/* Hero banner - Preserved your Exact CSS */}
             <section className="px-4 pt-6 md:pt-10 bg-gray-100" >
                 <div className="max-w-[1440px] mx-auto px-2 md:px-[54px]">

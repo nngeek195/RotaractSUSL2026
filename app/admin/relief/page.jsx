@@ -2,9 +2,11 @@
 import { useState, useEffect } from 'react'
 import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc, query, orderBy } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { Search, Filter, Download, CheckCircle, Clock, UserCheck, Trash2, Eye, X, Heart, Phone, Mail, MapPin, Package, Settings, Plus, Edit2, Save, ExternalLink, ClipboardList } from 'lucide-react'
+import { Search, Filter, Download, CheckCircle, Clock, UserCheck, Trash2, Eye, X, Heart, Phone, Mail, MapPin, Package, Settings, Plus, Edit2, Save, ExternalLink, ClipboardList, Shield } from 'lucide-react'
+import { useAuth } from '@/app/contexts/AuthContext'
 
 export default function ReliefAdminPage() {
+    const { isAdmin, isCommittee } = useAuth()
     const [activeTab, setActiveTab] = useState('requests')
 
     // Material Requests State
@@ -488,9 +490,21 @@ export default function ReliefAdminPage() {
             <div className="max-w-7xl mx-auto space-y-16">
                 {/* Header */}
                 <div>
-                    <h1 className="font-playfair text-4xl font-bold text-gray-900 mb-2">
-                        🇱🇰 Flood Relief Management
-                    </h1>
+                    <div className="flex items-center gap-3 mb-2">
+                        <h1 className="font-playfair text-4xl font-bold text-gray-900">
+                            🇱🇰 Flood Relief Management
+                        </h1>
+                        {isAdmin && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold font-poppins uppercase tracking-wide">
+                                <Shield size={12} /> Admin
+                            </span>
+                        )}
+                        {isCommittee && !isAdmin && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold font-poppins uppercase tracking-wide">
+                                <Shield size={12} /> Committee
+                            </span>
+                        )}
+                    </div>
                     <p className="font-poppins text-gray-600">
                         Manage requests, donations, items, and Google Sheet link
                     </p>

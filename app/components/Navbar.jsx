@@ -12,7 +12,8 @@ export default function Navbar({ currentPage = 'home' }) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const { user, loading, isApproved, isCommittee, isAdmin } = useAuth();
     const isVerified = !!(user && user.emailVerified);
-    const canShowAccount = isVerified && (isApproved || isCommittee || isAdmin);
+    // Allow account access if verified OR if the user is an admin (admins bypass verification)
+    const canShowAccount = (isVerified && (isApproved || isCommittee)) || isAdmin;
     const router = useRouter();
 
     // Helper to close menu when clicking a link
