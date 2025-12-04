@@ -103,7 +103,7 @@ export default function ContactPage() {
             <section className="px-4 py-8 lg:py-12 pt-4 lg:pt-8">
                 <div className="max-w-[1440px] mx-auto px-8">
                     <div className="rounded-[43px] overflow-hidden relative h-[280px] md:h-[339px]">
-                        <img src={images.imgRectangle66} alt="Contact Us" className="w-full h-full object-cover" />
+                        <img src={images.imgRectangle15} alt="Contact Us" className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-center px-6">
                             <h1 className="font-playfair font-medium text-3xl md:text-[47px] text-white mb-4 leading-tight">
                                 Get in <span className="text-pink-600">Touch</span>
