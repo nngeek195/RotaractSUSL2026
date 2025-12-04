@@ -65,8 +65,8 @@ function VerifyEmailContent() {
                     We sent a verification link to your email. Please click it to verify your email. 
                     <br/>After verification, our admin team will review your membership application.
                 </p>
-                <p className="text-sm text-gray-500 mt-4">
-                    If you don’t see the email, check your <strong>Spam/Junk</strong> folder.
+                <p className="text-sm mt-4 text-red-600 font-bold">
+                    If you don’t see the email, please check your Spam or Junk folder.
                 </p>
                 <div className="mt-6">
                     <a href="/" className="inline-flex items-center gap-2 rounded-full bg-pink-600 px-5 py-2.5 text-white font-medium shadow hover:bg-pink-700 transition-colors">

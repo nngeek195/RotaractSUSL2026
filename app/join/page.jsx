@@ -71,20 +71,35 @@ export default function JoinUs() {
 
     if (success) {
         return (
-            <div className="bg-white min-h-screen flex flex-col relative">
+            <div className="bg-gray-50 min-h-screen flex flex-col relative">
                 <Navbar currentPage="join" />
                 <div className="flex-1 flex flex-col items-center justify-center px-4 text-center">
-                    <div className="bg-pink-50 p-6 rounded-full mb-6">
-                        <Mail className="text-pink-600 w-16 h-16" />
+                    <div className="bg-white p-10 rounded-[40px] shadow-2xl border border-gray-100 max-w-xl w-full">
+                        <div className="bg-pink-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <Mail className="text-pink-600 w-12 h-12" />
+                        </div>
+                        <h2 className="text-3xl font-playfair font-bold mb-4 text-gray-900">Check your Email!</h2>
+                        <p className="text-gray-600 font-poppins mb-6 leading-relaxed">
+                            We sent a verification link to <span className="font-bold text-gray-900">{formData.email}</span>.
+                            <br />
+                            Please click it to verify your email, then our admin team will review your application.
+                        </p>
+                        <div className="bg-red-50 border border-red-100 rounded-xl p-4 mb-8">
+                            <p className="text-red-600 font-bold font-poppins text-sm">
+                                Please check your Spam or Junk folder if you don't see the email.
+                            </p>
+                        </div>
+                        <button 
+                            onClick={() => router.push('/')} 
+                            className="w-full bg-gray-900 text-white py-4 rounded-xl font-poppins font-bold hover:bg-gray-800 transition shadow-lg"
+                        >
+                            Back to Home
+                        </button>
                     </div>
-                    <h2 className="text-3xl font-bold mb-4">Check your Email!</h2>
-                    <p className="text-gray-600 max-w-md">
-                        We sent a verification link to <span className="font-bold">{formData.email}</span>.
-                        Please click it to verify your email, then our admin team will review your application.
-                    </p>
-                    <button onClick={() => router.push('/')} className="mt-8 text-pink-600 font-bold">Back to Home</button>
                 </div>
-                <Footer />
+                <div className="py-6 text-center text-gray-400 text-xs font-poppins">
+                    © 2025 Rotaract Club of Sabaragamuwa University of Sri Lanka.
+                </div>
             </div>
         );
     }
