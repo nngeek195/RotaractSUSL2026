@@ -36,15 +36,25 @@ export async function POST(request) {
     let ADMIN_PHONE = process.env.ADMIN_WHATSAPP_PHONE || "";
     let API_KEY = process.env.CALLMEBOT_API_KEY || "";
 
-    // Try fetching from Firestore Settings first
+    // Try fetching from Firestore Settings (reliefConfig/website_settings)
     try {
       const db = getAdminDb();
-      const settingsDoc = await db.collection("adminSettings").doc("general").get();
+      
+      const settingsDoc = await db.collection("reliefConfig").doc("website_settings").get();
       if (settingsDoc.exists) {
         const data = settingsDoc.data();
         if (data.whatsappPhone) ADMIN_PHONE = data.whatsappPhone;
         if (data.callMeBotApiKey) API_KEY = data.callMeBotApiKey;
+      } else {
+        // Last resort fallback to old 'general' doc if migration hasn't happened
+        const generalDoc = await db.collection("adminSettings").doc("general").get();
+        if (generalDoc.exists) {
+             const data = generalDoc.data();
+             if (data.whatsappPhone) ADMIN_PHONE = data.whatsappPhone;
+             if (data.callMeBotApiKey) API_KEY = data.callMeBotApiKey;
+        }
       }
+
     } catch (dbError) {
       console.warn("Failed to fetch admin settings from Firestore (using env vars fallback):", dbError.message);
     }

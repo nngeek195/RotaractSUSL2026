@@ -1,8 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { images } from '../../assets/images';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 
 export default function Footer() {
     const [socialLinks, setSocialLinks] = useState({
@@ -17,10 +15,9 @@ export default function Footer() {
     useEffect(() => {
         const fetchSettings = async () => {
             try {
-                const docRef = doc(db, "adminSettings", "general");
-                const docSnap = await getDoc(docRef);
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
+                const res = await fetch('/api/settings/public');
+                if (res.ok) {
+                    const data = await res.json();
                     setSocialLinks({
                         facebookUrl: data.facebookUrl || "",
                         instagramUrl: data.instagramUrl || "",

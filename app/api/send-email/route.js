@@ -18,6 +18,8 @@ export async function POST(request) {
       loginUrl: origin ? `${origin}/login` : body.loginUrl,
     };
 
+    const replyTo = body.replyTo;
+
     if (!to || !template) {
       return NextResponse.json(
         { error: "Missing required fields: to/email and template/type" },
@@ -32,9 +34,57 @@ export async function POST(request) {
     let htmlContent = "";
 
     /* ======================================================
-       🩷  MEMBERSHIP APPROVED TEMPLATE  (ROTARACT PINK)
+       📩  CONTACT US TEMPLATE
        ====================================================== */
-    if (template === "membership_approved") {
+    if (template === "contact_us") {
+      subject = `New Message: ${data.subject || "General Inquiry"}`;
+      htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charSet="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <style>
+            body { font-family: Arial, sans-serif; color: #333; line-height: 1.6; }
+            .container { max-width: 600px; margin: 20px auto; border: 1px solid #eee; border-radius: 8px; overflow: hidden; }
+            .header { background-color: #f8f9fa; padding: 20px; border-bottom: 1px solid #eee; }
+            .content { padding: 30px; }
+            .field { margin-bottom: 15px; }
+            .label { font-weight: bold; color: #555; font-size: 12px; text-transform: uppercase; }
+            .value { font-size: 16px; color: #000; }
+            .message-box { background-color: #f9f9f9; padding: 15px; border-radius: 4px; margin-top: 5px; white-space: pre-wrap; }
+            .footer { padding: 15px; text-align: center; color: #888; font-size: 12px; border-top: 1px solid #eee; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h2 style="margin:0; color:#333;">New Contact Message</h2>
+            </div>
+            <div class="content">
+              <div class="field">
+                <div class="label">From</div>
+                <div class="value">${data.name} (<a href="mailto:${data.email}">${data.email}</a>)</div>
+              </div>
+              
+              <div class="field">
+                <div class="label">Subject</div>
+                <div class="value">${data.subject}</div>
+              </div>
+
+              <div class="field">
+                <div class="label">Message</div>
+                <div class="value message-box">${data.message}</div>
+              </div>
+            </div>
+            <div class="footer">
+              Sent from Rotaract SUSL Website Contact Form
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+    } else if (template === "membership_approved") {
       subject = "🎉 Your Rotaract SUSL Membership Has Been Approved!";
       htmlContent = `
       <!DOCTYPE html>
@@ -432,6 +482,7 @@ export async function POST(request) {
     const { data: sendData, error } = await resend.emails.send({
       from,
       to: toList,
+      reply_to: replyTo,
       subject,
       html: htmlContent,
     });

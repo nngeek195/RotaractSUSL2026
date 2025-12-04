@@ -47,6 +47,7 @@ export default function Navbar({ currentPage = 'home' }) {
                         <NavLink href="/relief-requests" label="🇱🇰 Relief" active={currentPage === 'relief'} />
                         <NavLink href="/gallery" label="Gallery" active={currentPage === 'gallery'} />
                         <NavLink href="/leadership" label="Leadership" active={currentPage === 'leadership'} />
+                        <NavLink href="/contact" label="Contact" active={currentPage === 'contact'} />
 
                         {!user && !loading && (
                             <NavLink href="/join" label="Join Us" active={currentPage === 'join'} />
@@ -129,6 +130,7 @@ export default function Navbar({ currentPage = 'home' }) {
                     <MobileNavLink href="/relief-requests" label="🇱🇰 Relief" active={currentPage === 'relief-requests'} onClick={closeMenu} />
                     <MobileNavLink href="/gallery" label="Gallery" active={currentPage === 'gallery'} onClick={closeMenu} />
                     <MobileNavLink href="/leadership" label="Leadership" active={currentPage === 'leadership'} onClick={closeMenu} />
+                    <MobileNavLink href="/contact" label="Contact" active={currentPage === 'contact'} onClick={closeMenu} />
 
                     {!user && !loading && (
                         <MobileNavLink href="/join" label="Join Us" active={currentPage === 'join'} onClick={closeMenu} />

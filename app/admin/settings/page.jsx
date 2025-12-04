@@ -34,11 +34,18 @@ export default function AdminSettings() {
     const fetchSettings = async () => {
         setLoading(true);
         try {
-            const docRef = doc(db, "adminSettings", "general");
+            // Fetch Settings from reliefConfig (Publicly readable, Admin writable)
+            const docRef = doc(db, "reliefConfig", "website_settings");
             const docSnap = await getDoc(docRef);
             
             if (docSnap.exists()) {
                 setSettings(prev => ({ ...prev, ...docSnap.data() }));
+            } else {
+                // Fallback to old 'general' doc for migration
+                const generalDoc = await getDoc(doc(db, "adminSettings", "general"));
+                if (generalDoc.exists()) {
+                    setSettings(prev => ({ ...prev, ...generalDoc.data() }));
+                }
             }
         } catch (error) {
             console.error("Error fetching settings:", error);
@@ -55,16 +62,13 @@ export default function AdminSettings() {
         e.preventDefault();
         setSaving(true);
         try {
-            await setDoc(doc(db, "adminSettings", "general"), settings);
-            
-            // Also try to update the environment variables if possible via an API call 
-            // (Note: Changing .env at runtime isn't standard for Next.js production, 
-            // so we'll rely on our API routes reading from Firestore instead of env vars now)
+            // Save all settings to reliefConfig/website_settings
+            await setDoc(doc(db, "reliefConfig", "website_settings"), settings);
             
             alert("Settings saved successfully!");
         } catch (error) {
             console.error("Error saving settings:", error);
-            alert("Failed to save settings.");
+            alert("Failed to save settings. Ensure you are an admin.");
         } finally {
             setSaving(false);
         }

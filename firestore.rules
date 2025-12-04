@@ -28,31 +28,26 @@ service cloud.firestore {
 
     // 1. Admins (Strict Access)
     match /admins/{userId} {
-      // Only signed-in users can read (to check their own role)
-      // Only admins can write (add/remove admins)
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
 
-    // 2. Executive Committee (Public Read for "Our Team", Privileged Write)
+    // 2. Executive Committee
     match /executiveCommittee/{userId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // 3. Users (General Members)
+    // 3. Users
     match /users/{userId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
     }
 
-    // 4. Pending Requests (Join Flow)
+    // 4. Pending Requests
     match /pendingRequests/{userId} {
-      // Anyone can create a request (public signup)
       allow create: if true;
-      // Users can read/delete their own request; Admins can manage all
       allow read, delete: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
-      // Admins can update status
       allow update: if isAdmin();
     }
 
@@ -64,46 +59,57 @@ service cloud.firestore {
 
     // 6. Events / Projects
     match /events/{eventId} {
-      allow read: if true; // Publicly visible
-      allow write: if isPrivileged(); // Admins/Committee manage events
+      allow read: if true;
+      allow write: if isPrivileged();
     }
 
-    // 7. Relief Items (Predefined list)
+    // 7. Relief Items
     match /reliefItems/{itemId} {
       allow read: if true;
       allow write: if isPrivileged();
     }
 
-    // 8. Relief Config (Bank details)
+    // 8. Relief Config
     match /reliefConfig/{configId} {
       allow read: if true;
       allow write: if isPrivileged();
     }
 
-    // 9. Material Requests (Flood Relief)
+    // 9. Material Requests
     match /materialRequests/{requestId} {
-      allow create: if true; // Public submission
-      allow read: if true; // Public list (for stats/transparency)
-      // Updates restricted to Privileged users
-      // (Public tracking updates via token should be handled via API if strict security is needed,
-      // currently relying on Admin dashboard for status updates)
+      allow create: if true;
+      allow read: if true;
       allow update, delete: if isPrivileged();
     }
 
     // 10. Donation Offers
     match /donationOffers/{offerId} {
-      allow create: if true; // Public submission
-      allow read: if isPrivileged(); // Private donor info
+      allow create: if true;
+      allow read: if isPrivileged();
       allow write: if isPrivileged();
     }
 
     // 11. Admin Settings
+    match /adminSettings/public {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    // Allow public read for 'general' temporarily for migration/fallback
+    match /adminSettings/general {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /adminSettings/secure {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+    // Fallback for other settings
     match /adminSettings/{settingId} {
       allow read: if isPrivileged();
       allow write: if isAdmin();
     }
 
-    // 12. Leaderboard (If exists as collection)
+    // 12. Leaderboard
     match /leaderboard/{docId} {
       allow read: if true;
       allow write: if isPrivileged();
