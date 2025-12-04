@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { collection, getDocs, query, orderBy, addDoc, where } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, addDoc, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import NavBar from "../components/Navbar.jsx";
 import Footer from "../components/Footer.jsx";
@@ -33,6 +33,7 @@ export default function ReliefRequestsPage() {
         contactNumber: "",
         email: "",
         itemsOffered: "",
+        items: {},
         district: "",
         message: "",
         paymentSlip: ""
@@ -74,9 +75,49 @@ export default function ReliefRequestsPage() {
     const [itemsLoading, setItemsLoading] = useState(true);
 
     useEffect(() => {
-        fetchPredefinedItems();
-        fetchRequests();
         fetchConfig();
+
+        // Real-time listener for Relief Items
+        setItemsLoading(true);
+        const qItems = query(collection(db, "reliefItems"), orderBy("sortOrder", "asc"));
+        const unsubscribeItems = onSnapshot(qItems, (snapshot) => {
+            const itemsList = snapshot.docs.map(doc => ({
+                docId: doc.id,
+                ...doc.data()
+            }));
+            setPredefinedItems(itemsList);
+            setItemsLoading(false);
+        }, (error) => {
+            console.error("Error fetching predefined items:", error);
+            setItemsLoading(false);
+            // Fallback items
+            setPredefinedItems([
+                { id: "notebooks", name: "Notebooks", icon: "📓", category: "Stationery" },
+                { id: "pens", name: "Pens", icon: "🖊️", category: "Stationery" },
+                { id: "pencils", name: "Pencils", icon: "✏️", category: "Stationery" },
+                { id: "schoolbags", name: "School Bags", icon: "🎒", category: "Bags" }
+            ]);
+        });
+
+        // Real-time listener for Requests
+        setLoading(true);
+        const qRequests = query(collection(db, "materialRequests"), orderBy("createdAt", "desc"));
+        const unsubscribeRequests = onSnapshot(qRequests, (snapshot) => {
+            const requestsList = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            setRequests(requestsList);
+            setLoading(false);
+        }, (error) => {
+            console.error("Error fetching requests:", error);
+            setLoading(false);
+        });
+
+        return () => {
+            unsubscribeItems();
+            unsubscribeRequests();
+        };
     }, []);
 
     const fetchConfig = async () => {
@@ -131,47 +172,6 @@ export default function ReliefRequestsPage() {
     };
 
     const itemStats = calculateItemStats();
-
-    const fetchPredefinedItems = async () => {
-        setItemsLoading(true);
-        try {
-            const q = query(collection(db, "reliefItems"), orderBy("sortOrder", "asc"));
-            const querySnapshot = await getDocs(q);
-            const itemsList = querySnapshot.docs.map(doc => ({
-                docId: doc.id,
-                ...doc.data()
-            }));
-            setPredefinedItems(itemsList);
-        } catch (error) {
-            console.error("Error fetching predefined items:", error);
-            // Fallback to default items if fetch fails
-            setPredefinedItems([
-                { id: "notebooks", name: "Notebooks", icon: "📓", category: "Stationery" },
-                { id: "pens", name: "Pens", icon: "🖊️", category: "Stationery" },
-                { id: "pencils", name: "Pencils", icon: "✏️", category: "Stationery" },
-                { id: "schoolbags", name: "School Bags", icon: "🎒", category: "Bags" }
-            ]);
-        } finally {
-            setItemsLoading(false);
-        }
-    };
-
-    const fetchRequests = async () => {
-        setLoading(true);
-        try {
-            const q = query(collection(db, "materialRequests"), orderBy("createdAt", "desc"));
-            const querySnapshot = await getDocs(q);
-            const requestsList = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-            setRequests(requestsList);
-        } catch (error) {
-            console.error("Error fetching requests:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const applyFilters = () => {
         let filtered = [...requests];
@@ -271,8 +271,20 @@ export default function ReliefRequestsPage() {
             return;
         }
 
-        if (!donationForm.itemsOffered && !donationForm.paymentSlip) {
-             alert("Please either offer items or upload a payment slip.");
+        // Convert items object to array format for storage
+        const selectedItems = Object.entries(donationForm.items)
+            .filter(([itemId, quantity]) => quantity && parseInt(quantity) > 0)
+            .map(([itemId, quantity]) => {
+                const item = predefinedItems.find(i => i.id === itemId);
+                return {
+                    id: itemId,
+                    name: item.name,
+                    quantity: parseInt(quantity)
+                };
+            });
+
+        if (selectedItems.length === 0 && !donationForm.itemsOffered && !donationForm.paymentSlip) {
+             alert("Please either select items from the list, type a description, or upload a payment slip.");
              return;
         }
 
@@ -290,6 +302,7 @@ export default function ReliefRequestsPage() {
         try {
             const docRef = await addDoc(collection(db, "donationOffers"), {
                 ...donationForm,
+                items: selectedItems,
                 createdAt: new Date(),
                 status: "pending"
             });
@@ -302,6 +315,7 @@ export default function ReliefRequestsPage() {
                     type: 'donation',
                     data: {
                         ...donationForm,
+                        items: selectedItems,
                         id: docRef.id, // Pass the ID for future updates
                         status: 'pending'
                     }
@@ -315,6 +329,7 @@ export default function ReliefRequestsPage() {
                 contactNumber: "",
                 email: "",
                 itemsOffered: "",
+                items: {},
                 district: "",
                 message: "",
                 paymentSlip: ""
@@ -954,14 +969,55 @@ export default function ReliefRequestsPage() {
                             </div>
 
                             <div>
+                                <label className="block font-poppins font-semibold text-gray-700 mb-3">
+                                    Select Items to Donate (Optional)
+                                </label>
+                                {itemsLoading ? (
+                                    <div className="text-center py-4">
+                                        <Loader2 className="animate-spin text-pink-600 mx-auto" size={24} />
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        {predefinedItems.map(item => (
+                                            <div key={item.id} className="flex items-center gap-3 p-3 border-2 border-gray-200 rounded-lg hover:border-pink-300 transition">
+                                                <div className="flex-1 flex items-center gap-2">
+                                                    <span className="text-2xl">{item.icon}</span>
+                                                    <label className="font-poppins font-medium text-gray-700 cursor-pointer flex-1">
+                                                        {item.name}
+                                                        <span className="text-xs text-gray-500 ml-1">({item.category})</span>
+                                                    </label>
+                                                </div>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    value={donationForm.items[item.id] || ""}
+                                                    onChange={(e) => {
+                                                        const newItems = { ...donationForm.items };
+                                                        if (e.target.value && parseInt(e.target.value) > 0) {
+                                                            newItems[item.id] = e.target.value;
+                                                        } else {
+                                                            delete newItems[item.id];
+                                                        }
+                                                        setDonationForm({ ...donationForm, items: newItems });
+                                                    }}
+                                                    placeholder="Qty"
+                                                    className="w-24 px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins text-center"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
                                 <label className="block font-poppins font-semibold text-gray-700 mb-2">
-                                    Items You Can Donate (Optional)
+                                    Other Items / Description
                                 </label>
                                 <textarea
                                     value={donationForm.itemsOffered}
                                     onChange={(e) => setDonationForm({ ...donationForm, itemsOffered: e.target.value })}
-                                    placeholder="E.g., 50 notebooks, 100 pens, 20 water bottles"
-                                    rows={4}
+                                    placeholder="E.g., 50 notebooks, 100 pens, 20 water bottles (if not in list above)"
+                                    rows={3}
                                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
                                 />
                             </div>

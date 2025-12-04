@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc, query, orderBy } from 'firebase/firestore'
+import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc, query, orderBy, onSnapshot } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { Search, Filter, Download, CheckCircle, Clock, UserCheck, Trash2, Eye, X, Heart, Phone, Mail, MapPin, Package, Settings, Plus, Edit2, Save, ExternalLink, ClipboardList, Shield } from 'lucide-react'
 import { useAuth } from '@/app/contexts/AuthContext'
@@ -54,74 +54,61 @@ export default function ReliefAdminPage() {
 
     const categories = ['Stationery', 'Books', 'Bags', 'Essentials', 'Clothing', 'Other']
 
-    // Fetch Material Requests
+    // Real-time Data Fetching
     useEffect(() => {
-        fetchRequests()
-    }, [])
+        fetchConfig()
 
-    const fetchRequests = async () => {
+        // Material Requests Listener
         setRequestsLoading(true)
-        try {
-            const q = query(collection(db, 'materialRequests'), orderBy('createdAt', 'desc'))
-            const querySnapshot = await getDocs(q)
-            const requestsData = querySnapshot.docs.map(doc => ({
+        const qRequests = query(collection(db, 'materialRequests'), orderBy('createdAt', 'desc'))
+        const unsubscribeRequests = onSnapshot(qRequests, (snapshot) => {
+            const requestsData = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }))
             setRequests(requestsData)
-            setFilteredRequests(requestsData)
-        } catch (error) {
-            console.error('Error fetching requests:', error)
-            alert('Failed to load requests')
-        } finally {
             setRequestsLoading(false)
-        }
-    }
+        }, (error) => {
+            console.error('Error fetching requests:', error)
+            setRequestsLoading(false)
+        })
 
-    // Fetch Donation Offers
-    useEffect(() => {
-        fetchOffers()
-        fetchReliefItems()
-        fetchConfig()
-    }, [])
-
-    const fetchOffers = async () => {
+        // Donation Offers Listener
         setOffersLoading(true)
-        try {
-            const q = query(collection(db, 'donationOffers'), orderBy('createdAt', 'desc'))
-            const querySnapshot = await getDocs(q)
-            const offersData = querySnapshot.docs.map(doc => ({
+        const qOffers = query(collection(db, 'donationOffers'), orderBy('createdAt', 'desc'))
+        const unsubscribeOffers = onSnapshot(qOffers, (snapshot) => {
+            const offersData = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }))
             setOffers(offersData)
-            setFilteredOffers(offersData)
-        } catch (error) {
-            console.error('Error fetching offers:', error)
-            alert('Failed to load donation offers')
-        } finally {
             setOffersLoading(false)
-        }
-    }
+        }, (error) => {
+            console.error('Error fetching offers:', error)
+            setOffersLoading(false)
+        })
 
-    // Fetch Relief Items
-    const fetchReliefItems = async () => {
+        // Relief Items Listener
         setItemsLoading(true)
-        try {
-            const q = query(collection(db, 'reliefItems'), orderBy('sortOrder', 'asc'))
-            const querySnapshot = await getDocs(q)
-            const itemsData = querySnapshot.docs.map(doc => ({
+        const qItems = query(collection(db, 'reliefItems'), orderBy('sortOrder', 'asc'))
+        const unsubscribeItems = onSnapshot(qItems, (snapshot) => {
+            const itemsData = snapshot.docs.map(doc => ({
                 docId: doc.id,
                 ...doc.data()
             }))
             setReliefItems(itemsData)
-        } catch (error) {
-            console.error('Error fetching relief items:', error)
-            alert('Failed to load relief items')
-        } finally {
             setItemsLoading(false)
+        }, (error) => {
+            console.error('Error fetching relief items:', error)
+            setItemsLoading(false)
+        })
+
+        return () => {
+            unsubscribeRequests()
+            unsubscribeOffers()
+            unsubscribeItems()
         }
-    }
+    }, [])
 
     // Fetch Config (Google Sheet URL & Bank Details)
     const fetchConfig = async () => {
@@ -196,7 +183,7 @@ export default function ReliefAdminPage() {
 
             setNewItem({ id: '', name: '', nameSi: '', category: '', sortOrder: 0, globalFulfilled: 0 })
             setShowAddItemForm(false)
-            fetchReliefItems()
+            // fetchReliefItems() - handled by onSnapshot
             alert('Item added successfully!')
         } catch (error) {
             console.error('Error adding item:', error)
@@ -223,7 +210,7 @@ export default function ReliefAdminPage() {
             })
 
             setEditingItem(null)
-            fetchReliefItems()
+            // fetchReliefItems() - handled by onSnapshot
             alert('Item updated successfully!')
         } catch (error) {
             console.error('Error updating item:', error)
@@ -255,7 +242,7 @@ export default function ReliefAdminPage() {
 
         try {
             await deleteDoc(doc(db, 'reliefItems', docId))
-            fetchReliefItems()
+            // fetchReliefItems() - handled by onSnapshot
             alert('Item deleted successfully!')
         } catch (error) {
             console.error('Error deleting item:', error)
@@ -1797,8 +1784,22 @@ export default function ReliefAdminPage() {
                                     </div>
                                 ) : (
                                     <div>
-                                        <p className="font-poppins font-semibold text-gray-700 text-sm">Items Offered</p>
-                                        <p className="font-poppins text-gray-900">{selectedOffer.itemsOffered}</p>
+                                        <p className="font-poppins font-semibold text-gray-700 text-sm mb-2">Items Offered</p>
+                                        {selectedOffer.items && selectedOffer.items.length > 0 ? (
+                                            <div className="space-y-2 mb-3">
+                                                {selectedOffer.items.map((item, index) => (
+                                                    <div key={index} className="flex justify-between items-center bg-blue-50 p-3 rounded-lg border border-blue-100">
+                                                        <span className="font-poppins text-gray-900 font-medium">{item.name}</span>
+                                                        <span className="font-poppins font-bold text-blue-700">{item.quantity}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : null}
+                                        {selectedOffer.itemsOffered && (
+                                            <p className="font-poppins text-gray-900 bg-gray-50 p-3 rounded-lg border border-gray-200 text-sm">
+                                                {selectedOffer.itemsOffered}
+                                            </p>
+                                        )}
                                     </div>
                                 )}
 

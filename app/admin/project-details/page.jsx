@@ -16,6 +16,11 @@ export default function ProjectDetailsManagement() {
     const [saving, setSaving] = useState(false);
 
     // Form states
+    const [title, setTitle] = useState("");
+    const [date, setDate] = useState("");
+    const [location, setLocation] = useState("");
+    const [status, setStatus] = useState("upcoming");
+    const [description, setDescription] = useState("");
     const [mainImage, setMainImage] = useState("");
     const [galleryImages, setGalleryImages] = useState([]);
     const [newGalleryUrl, setNewGalleryUrl] = useState("");
@@ -54,6 +59,11 @@ export default function ProjectDetailsManagement() {
         setEditingProject(project);
 
         // Populate form with existing data or defaults
+        setTitle(project.title || project.name || "");
+        setDate(project.date || "");
+        setLocation(project.location || "");
+        setStatus((project.status || "upcoming").toLowerCase());
+        setDescription(project.description || "");
         setMainImage(project.imageUrl || project.image || "");
         setGalleryImages(project.galleryImages || []);
         setTestimonials(project.testimonials || []);
@@ -69,6 +79,12 @@ export default function ProjectDetailsManagement() {
         setSaving(true);
         try {
             const updateData = {
+                title,
+                name: title, // Keep both for compatibility
+                date,
+                location,
+                status,
+                description,
                 imageUrl: mainImage,
                 galleryImages,
                 testimonials,
@@ -95,6 +111,11 @@ export default function ProjectDetailsManagement() {
     };
 
     const resetForm = () => {
+        setTitle("");
+        setDate("");
+        setLocation("");
+        setStatus("upcoming");
+        setDescription("");
         setMainImage("");
         setGalleryImages([]);
         setNewGalleryUrl("");
@@ -309,6 +330,66 @@ export default function ProjectDetailsManagement() {
                             >
                                 <X size={24} />
                             </button>
+                        </div>
+                    </div>
+
+                    {/* Core Details */}
+                    <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+                        <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <Edit className="text-indigo-600" />
+                            Core Details
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
+                                <input
+                                    type="text"
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                                <select
+                                    value={status}
+                                    onChange={(e) => setStatus(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                >
+                                    <option value="upcoming">Upcoming</option>
+                                    <option value="completed">Completed</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                                <input
+                                    type="date"
+                                    value={date}
+                                    onChange={(e) => setDate(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                                <input
+                                    type="text"
+                                    value={location}
+                                    onChange={(e) => setLocation(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Short Description</label>
+                            <textarea
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                placeholder="Brief summary of the project..."
+                                rows={3}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                            />
                         </div>
                     </div>
 
