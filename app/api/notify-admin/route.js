@@ -33,35 +33,26 @@ export async function POST(request) {
     }
 
     // --- CONFIGURATION ---
-    let ADMIN_PHONE = process.env.ADMIN_WHATSAPP_PHONE || "";
-    let API_KEY = process.env.CALLMEBOT_API_KEY || "";
+    let TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
+    let TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "";
 
-    // Try fetching from Firestore Settings (reliefConfig/website_settings)
+    // Try fetching from Firestore Secure Settings (adminSettings/secure)
     try {
       const db = getAdminDb();
+      const secureDoc = await db.collection("adminSettings").doc("secure").get();
       
-      const settingsDoc = await db.collection("reliefConfig").doc("website_settings").get();
-      if (settingsDoc.exists) {
-        const data = settingsDoc.data();
-        if (data.whatsappPhone) ADMIN_PHONE = data.whatsappPhone;
-        if (data.callMeBotApiKey) API_KEY = data.callMeBotApiKey;
-      } else {
-        // Last resort fallback to old 'general' doc if migration hasn't happened
-        const generalDoc = await db.collection("adminSettings").doc("general").get();
-        if (generalDoc.exists) {
-             const data = generalDoc.data();
-             if (data.whatsappPhone) ADMIN_PHONE = data.whatsappPhone;
-             if (data.callMeBotApiKey) API_KEY = data.callMeBotApiKey;
-        }
+      if (secureDoc.exists) {
+        const data = secureDoc.data();
+        if (data.telegramBotToken) TELEGRAM_BOT_TOKEN = data.telegramBotToken;
+        if (data.telegramChatId) TELEGRAM_CHAT_ID = data.telegramChatId;
       }
-
     } catch (dbError) {
       console.warn("Failed to fetch admin settings from Firestore (using env vars fallback):", dbError.message);
     }
     
     // 2. Check if configured
-    if (!ADMIN_PHONE || !API_KEY) {
-      console.warn("WhatsApp Notification Skipped: WhatsApp Phone or API Key not set in Settings or Env.");
+    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+      console.warn("Notification Skipped: Telegram Bot Token or Chat ID not set.");
       return NextResponse.json({ message: "Skipped" }, { status: 200 });
     }
 
@@ -78,22 +69,27 @@ export async function POST(request) {
 _Please check the Admin Dashboard to approve/reject._
     `.trim();
 
-    // 4. Encode Message
-    const encodedMessage = encodeURIComponent(message);
+    // 4. Send Request to Telegram
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
 
-    // 5. Send Request
-    // Using CallMeBot API (Simple/Free)
-    const url = `https://api.callmebot.com/whatsapp.php?phone=${ADMIN_PHONE}&text=${encodedMessage}&apikey=${API_KEY}`;
-    
-    const res = await fetch(url);
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            chat_id: TELEGRAM_CHAT_ID,
+            text: message,
+            parse_mode: 'Markdown'
+        })
+    });
     
     if (!res.ok) {
-        throw new Error(`WhatsApp API responded with ${res.status}`);
+        const errText = await res.text();
+        throw new Error(`Telegram API responded with ${res.status}: ${errText}`);
     }
 
     return NextResponse.json({ message: "Notification sent" });
   } catch (error) {
-    console.error("Error sending WhatsApp notification:", error);
+    console.error("Error sending notification:", error);
     return NextResponse.json({ error: "Failed to notify" }, { status: 500 });
   }
 }
