@@ -200,28 +200,6 @@ export default function Home() {
       {/* Navigation */}
       <Navbar currentPage="home" />
 
-      {/* Xmasora Promotional Banner */}
-      <section className="bg-gradient-to-r from-green-900 via-red-800 to-green-900 text-white shadow-md relative z-20 border-b border-white/10">
-        <a
-          href="https://xmasora.vercel.app"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-center gap-3 hover:opacity-95 transition-opacity group"
-        >
-          <span className="text-xl animate-pulse">🎄</span>
-          <p className="font-poppins font-medium text-sm sm:text-base text-center">
-            <span className="font-playfair font-bold text-yellow-400 tracking-wider mr-1">Xmasora:</span>
-            Discover the magic of the season!
-          </p>
-          <div className="flex items-center gap-1 text-yellow-400 text-sm font-bold group-hover:translate-x-1 transition-transform">
-            <span>Visit Now</span>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-            </svg>
-          </div>
-        </a>
-      </section>
-
       {/* Flood Relief Emergency Banner Section */}
       <section
         className="relative text-white py-16 px-4 overflow-hidden"
@@ -400,6 +378,28 @@ export default function Home() {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* Xmasora Promotional Banner */}
+      <section className="bg-gradient-to-r from-green-900 via-red-800 to-green-900 text-white shadow-md relative z-20 border-b border-white/10 mt-4">
+        <a
+          href="https://xmasora.vercel.app"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block max-w-7xl mx-auto px-4 py-6 flex flex-wrap items-center justify-center gap-4 hover:opacity-95 transition-opacity group"
+        >
+          <span className="text-3xl animate-pulse">🎄</span>
+          <p className="font-poppins font-medium text-lg sm:text-xl text-center">
+            <span className="font-playfair font-bold text-yellow-400 tracking-wider mr-2">Xmasora:</span>
+            Discover the magic of the season!
+          </p>
+          <div className="flex items-center gap-2 text-yellow-400 text-lg font-bold group-hover:translate-x-1 transition-transform">
+            <span>Visit Now</span>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </div>
+        </a>
       </section>
 
       {/* Hero Section */}

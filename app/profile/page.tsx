@@ -9,11 +9,14 @@ import { Html5QrcodeScanner } from 'html5-qrcode';
 import QRCode from 'react-qr-code';
 import {
     Mail, Phone, Award, LogOut, Loader2, BookOpen,
-    Calendar, QrCode as QrIcon, GraduationCap, PlayCircle, MapPin, CheckCircle, ArrowLeft, StopCircle, Heart
+    Calendar, QrCode as QrIcon, GraduationCap, PlayCircle, MapPin, CheckCircle, ArrowLeft, StopCircle, Heart, Camera
 } from 'lucide-react';
 import { images } from '../../assets/images';
 import NavBar from '../components/Navbar';
 import Footer from '../components/Footer';
+
+const CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/dvqoiqzxe/image/upload";
+const CLOUDINARY_UPLOAD_PRESET = "projects";
 
 export default function Profile() {
     const router = useRouter();
@@ -22,6 +25,7 @@ export default function Profile() {
     const [loading, setLoading] = useState<boolean>(true);
     const [profile, setProfile] = useState<any>(null);
     const [contributions, setContributions] = useState<any[]>([]);
+    const [uploadingImage, setUploadingImage] = useState<boolean>(false);
 
     // Exec Dashboard States
     const [isExec, setIsExec] = useState<boolean>(false);
@@ -60,6 +64,7 @@ export default function Profile() {
 
                 if (data) {
                     setProfile({
+                        uid: user.uid, // Store UID for updates
                         fullName: data.fullName,
                         email: data.email,
                         studentId: data.studentId,
@@ -197,6 +202,43 @@ export default function Profile() {
         }
     };
 
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploadingImage(true);
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+            formData.append("folder", "Profiles");
+
+            const res = await fetch(CLOUDINARY_UPLOAD_URL, {
+                method: "POST",
+                body: formData,
+            });
+
+            const data = await res.json();
+
+            if (data.secure_url) {
+                // Update Firestore
+                const userRef = doc(db, profile.collection, profile.uid);
+                await updateDoc(userRef, { imageUrl: data.secure_url });
+
+                // Update Local State
+                setProfile((prev: any) => ({ ...prev, imageUrl: data.secure_url }));
+                alert("Profile picture updated successfully!");
+            } else {
+                throw new Error("Upload failed");
+            }
+        } catch (err) {
+            console.error("Error uploading image:", err);
+            alert("Failed to upload profile picture. Please try again.");
+        } finally {
+            setUploadingImage(false);
+        }
+    };
+
     const startQrScanner = () => {
         const emailForm = document.getElementById("email-form");
         const qrScannerDiv = document.getElementById("qr-scanner");
@@ -257,22 +299,44 @@ export default function Profile() {
                                 <div className="border-t-2 border-gray-300 mb-8"></div>
                             </div>
 
-                            {isExec && (
-                                <div className="flex flex-col items-center mb-8">
-                                    <div className="relative mb-4">
+                            {/* Profile Image Section */}
+                            <div className="flex flex-col items-center mb-8">
+                                <div className="relative mb-4 group">
+                                    <div className="w-[296px] h-[296px] rounded-[38px] overflow-hidden bg-gray-200 shadow-lg relative">
                                         <img
                                             src={profile.imageUrl || "https://via.placeholder.com/296"}
                                             alt="Profile"
-                                            className="w-[296px] h-[296px] rounded-[38px] object-cover bg-gray-200 shadow-lg"
+                                            className="w-full h-full object-cover"
                                             onError={(e) => (e.target as HTMLImageElement).src = "https://via.placeholder.com/296?text=No+Image"}
                                         />
-                                        <br /><br /><br />
-                                        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-pink-600 text-white px-8 py-3 rounded-[32px] shadow-md whitespace-nowrap">
+                                        {/* Upload Overlay */}
+                                        <label className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                                            {uploadingImage ? (
+                                                <Loader2 className="animate-spin text-white" size={48} />
+                                            ) : (
+                                                <>
+                                                    <Camera className="text-white mb-2" size={48} />
+                                                    <span className="text-white font-poppins font-medium text-sm">Change Photo</span>
+                                                </>
+                                            )}
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={handleImageUpload}
+                                                disabled={uploadingImage}
+                                            />
+                                        </label>
+                                    </div>
+                                    
+                                    {isExec && (
+                                        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-pink-600 text-white px-8 py-3 rounded-[32px] shadow-md whitespace-nowrap z-10">
                                             <p className="font-playfair font-medium text-[19px]">{profile.position}</p>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
-                            )}
+                                {isExec && <><br /><br /><br /></>}
+                            </div>
 
                             {/* User Details */}
                             <div className="space-y-4 mb-8 bg-gray-50 p-6 rounded-[22px] border border-gray-100">

@@ -101,7 +101,14 @@ function LoginContent() {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
-            // 1.5. Check if email is verified
+            // Check Admin Collection FIRST to bypass verification if admin
+            const adminSnap = await getDoc(doc(db, "admins", user.uid));
+            if (adminSnap.exists()) {
+                router.push("/admin");
+                return;
+            }
+
+            // 1.5. Check if email is verified (Only for non-admins)
             if (!user.emailVerified) {
                 setError("Email not verified. Please check your inbox.");
                 setShowResendLink(true);
@@ -111,19 +118,6 @@ function LoginContent() {
 
             // 2. Role-Based Routing Logic
             // Check pending requests
-            const pendingSnap = await getDoc(doc(db, "pendingRequests", user.uid));
-            if (pendingSnap.exists()) {
-                setNotice("Your email is verified! Your application is now pending admin approval. You'll receive an email once approved.");
-                await auth.signOut(); // Sign out pending users so they don't access protected routes
-                return;
-            }
-
-            // Check Admin Collection
-            const adminSnap = await getDoc(doc(db, "admins", user.uid));
-            if (adminSnap.exists()) {
-                router.push("/admin");
-                return;
-            }
 
             // Check Executive Committee Collection
             const execSnap = await getDoc(doc(db, "executiveCommittee", user.uid));
