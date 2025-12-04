@@ -33,6 +33,7 @@ export default function ReliefRequestsPage() {
         contactNumber: "",
         email: "",
         itemsOffered: "",
+        items: {},
         district: "",
         message: "",
         paymentSlip: ""
@@ -270,8 +271,20 @@ export default function ReliefRequestsPage() {
             return;
         }
 
-        if (!donationForm.itemsOffered && !donationForm.paymentSlip) {
-             alert("Please either offer items or upload a payment slip.");
+        // Convert items object to array format for storage
+        const selectedItems = Object.entries(donationForm.items)
+            .filter(([itemId, quantity]) => quantity && parseInt(quantity) > 0)
+            .map(([itemId, quantity]) => {
+                const item = predefinedItems.find(i => i.id === itemId);
+                return {
+                    id: itemId,
+                    name: item.name,
+                    quantity: parseInt(quantity)
+                };
+            });
+
+        if (selectedItems.length === 0 && !donationForm.itemsOffered && !donationForm.paymentSlip) {
+             alert("Please either select items from the list, type a description, or upload a payment slip.");
              return;
         }
 
@@ -289,6 +302,7 @@ export default function ReliefRequestsPage() {
         try {
             const docRef = await addDoc(collection(db, "donationOffers"), {
                 ...donationForm,
+                items: selectedItems,
                 createdAt: new Date(),
                 status: "pending"
             });
@@ -301,6 +315,7 @@ export default function ReliefRequestsPage() {
                     type: 'donation',
                     data: {
                         ...donationForm,
+                        items: selectedItems,
                         id: docRef.id, // Pass the ID for future updates
                         status: 'pending'
                     }
@@ -314,6 +329,7 @@ export default function ReliefRequestsPage() {
                 contactNumber: "",
                 email: "",
                 itemsOffered: "",
+                items: {},
                 district: "",
                 message: "",
                 paymentSlip: ""
@@ -953,14 +969,55 @@ export default function ReliefRequestsPage() {
                             </div>
 
                             <div>
+                                <label className="block font-poppins font-semibold text-gray-700 mb-3">
+                                    Select Items to Donate (Optional)
+                                </label>
+                                {itemsLoading ? (
+                                    <div className="text-center py-4">
+                                        <Loader2 className="animate-spin text-pink-600 mx-auto" size={24} />
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        {predefinedItems.map(item => (
+                                            <div key={item.id} className="flex items-center gap-3 p-3 border-2 border-gray-200 rounded-lg hover:border-pink-300 transition">
+                                                <div className="flex-1 flex items-center gap-2">
+                                                    <span className="text-2xl">{item.icon}</span>
+                                                    <label className="font-poppins font-medium text-gray-700 cursor-pointer flex-1">
+                                                        {item.name}
+                                                        <span className="text-xs text-gray-500 ml-1">({item.category})</span>
+                                                    </label>
+                                                </div>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    value={donationForm.items[item.id] || ""}
+                                                    onChange={(e) => {
+                                                        const newItems = { ...donationForm.items };
+                                                        if (e.target.value && parseInt(e.target.value) > 0) {
+                                                            newItems[item.id] = e.target.value;
+                                                        } else {
+                                                            delete newItems[item.id];
+                                                        }
+                                                        setDonationForm({ ...donationForm, items: newItems });
+                                                    }}
+                                                    placeholder="Qty"
+                                                    className="w-24 px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins text-center"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
                                 <label className="block font-poppins font-semibold text-gray-700 mb-2">
-                                    Items You Can Donate (Optional)
+                                    Other Items / Description
                                 </label>
                                 <textarea
                                     value={donationForm.itemsOffered}
                                     onChange={(e) => setDonationForm({ ...donationForm, itemsOffered: e.target.value })}
-                                    placeholder="E.g., 50 notebooks, 100 pens, 20 water bottles"
-                                    rows={4}
+                                    placeholder="E.g., 50 notebooks, 100 pens, 20 water bottles (if not in list above)"
+                                    rows={3}
                                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
                                 />
                             </div>

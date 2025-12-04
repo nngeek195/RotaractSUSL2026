@@ -1784,8 +1784,22 @@ export default function ReliefAdminPage() {
                                     </div>
                                 ) : (
                                     <div>
-                                        <p className="font-poppins font-semibold text-gray-700 text-sm">Items Offered</p>
-                                        <p className="font-poppins text-gray-900">{selectedOffer.itemsOffered}</p>
+                                        <p className="font-poppins font-semibold text-gray-700 text-sm mb-2">Items Offered</p>
+                                        {selectedOffer.items && selectedOffer.items.length > 0 ? (
+                                            <div className="space-y-2 mb-3">
+                                                {selectedOffer.items.map((item, index) => (
+                                                    <div key={index} className="flex justify-between items-center bg-blue-50 p-3 rounded-lg border border-blue-100">
+                                                        <span className="font-poppins text-gray-900 font-medium">{item.name}</span>
+                                                        <span className="font-poppins font-bold text-blue-700">{item.quantity}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : null}
+                                        {selectedOffer.itemsOffered && (
+                                            <p className="font-poppins text-gray-900 bg-gray-50 p-3 rounded-lg border border-gray-200 text-sm">
+                                                {selectedOffer.itemsOffered}
+                                            </p>
+                                        )}
                                     </div>
                                 )}
 
