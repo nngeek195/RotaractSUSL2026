@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Save, Loader2, Smartphone, Globe, Mail, Facebook, Instagram, Linkedin, Youtube, Music } from "lucide-react";
+import { Save, Loader2, Smartphone, Globe, Mail, Facebook, Instagram, Linkedin, Youtube, Music, MessageSquare } from "lucide-react";
 
 export default function AdminSettings() {
     const [loading, setLoading] = useState(true);
@@ -38,16 +38,32 @@ export default function AdminSettings() {
             // 1. Fetch Public Settings (reliefConfig)
             const publicDocRef = doc(db, "reliefConfig", "website_settings");
             const publicSnap = await getDoc(publicDocRef);
+            const publicData = publicSnap.exists() ? publicSnap.data() : {};
             
             // 2. Fetch Secure Settings (adminSettings/secure) - Admin only
             const secureDocRef = doc(db, "adminSettings", "secure");
             const secureSnap = await getDoc(secureDocRef);
+            const secureData = secureSnap.exists() ? secureSnap.data() : {};
 
-            // Fallback logic (migration) could be handled here if needed, but simpler to just merge what we find.
             setSettings(prev => ({
                 ...prev,
-                ...(publicSnap.exists() ? publicSnap.data() : {}),
-                ...(secureSnap.exists() ? secureSnap.data() : {})
+                // Public
+                siteName: publicData.siteName || "",
+                contactEmail: publicData.contactEmail || "",
+                whatsappPhone: publicData.whatsappPhone || "",
+                facebookUrl: publicData.facebookUrl || "",
+                instagramUrl: publicData.instagramUrl || "",
+                linkedinUrl: publicData.linkedinUrl || "",
+                tiktokUrl: publicData.tiktokUrl || "",
+                youtubeUrl: publicData.youtubeUrl || "",
+                
+                // Secure
+                telegramBotToken: secureData.telegramBotToken || "",
+                telegramChatId: secureData.telegramChatId || "",
+                twilioAccountSid: secureData.twilioAccountSid || "",
+                twilioAuthToken: secureData.twilioAuthToken || "",
+                twilioFromPhone: secureData.twilioFromPhone || "",
+                twilioToPhone: secureData.twilioToPhone || ""
             }));
         } catch (error) {
             console.error("Error fetching settings:", error);
@@ -80,7 +96,11 @@ export default function AdminSettings() {
             // 2. Save Secure Data to adminSettings/secure
             const secureData = {
                 telegramBotToken: settings.telegramBotToken,
-                telegramChatId: settings.telegramChatId
+                telegramChatId: settings.telegramChatId,
+                twilioAccountSid: settings.twilioAccountSid,
+                twilioAuthToken: settings.twilioAuthToken,
+                twilioFromPhone: settings.twilioFromPhone,
+                twilioToPhone: settings.twilioToPhone
             };
             await setDoc(doc(db, "adminSettings", "secure"), secureData, { merge: true });
             
@@ -163,7 +183,84 @@ export default function AdminSettings() {
                         </div>
                     </div>
 
-                    {/* 2. General Site Information */}
+                    {/* 2. Twilio Notification Settings */}
+                    <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
+                        <div className="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
+                            <div className="bg-indigo-100 p-3 rounded-lg text-indigo-600">
+                                <MessageSquare size={24} />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-gray-900">Twilio Notifications (WhatsApp/SMS)</h2>
+                                <p className="text-sm text-gray-500">Configure WhatsApp alerts via Twilio API.</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Account SID
+                                </label>
+                                <input
+                                    type="text"
+                                    name="twilioAccountSid"
+                                    value={settings.twilioAccountSid}
+                                    onChange={handleChange}
+                                    placeholder="ACxxxxxxxx..."
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Auth Token
+                                </label>
+                                <input
+                                    type="password"
+                                    name="twilioAuthToken"
+                                    value={settings.twilioAuthToken}
+                                    onChange={handleChange}
+                                    placeholder="••••••••"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    From Number (WhatsApp)
+                                </label>
+                                <input
+                                    type="text"
+                                    name="twilioFromPhone"
+                                    value={settings.twilioFromPhone}
+                                    onChange={handleChange}
+                                    placeholder="whatsapp:+14155238886"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Use 'whatsapp:+...' for WhatsApp.
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    To Number (Admin)
+                                </label>
+                                <input
+                                    type="text"
+                                    name="twilioToPhone"
+                                    value={settings.twilioToPhone}
+                                    onChange={handleChange}
+                                    placeholder="whatsapp:+9471XXXXXXX"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Format: whatsapp:+94...
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 3. General Site Information */}
                     <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
                         <div className="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
                             <div className="bg-purple-100 p-3 rounded-lg text-purple-600">

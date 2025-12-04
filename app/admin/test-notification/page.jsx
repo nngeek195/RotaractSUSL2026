@@ -7,7 +7,7 @@ export default function TestNotification() {
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
 
-    const handleTest = async () => {
+    const handleTest = async (provider) => {
         setLoading(true);
         setResult(null);
         try {
@@ -19,7 +19,8 @@ export default function TestNotification() {
                     email: "test@example.com",
                     contact: "0771234567",
                     faculty: "Testing Faculty",
-                    department: "Debug Dept"
+                    department: "Debug Dept",
+                    provider
                 })
             });
 
@@ -27,7 +28,7 @@ export default function TestNotification() {
             if (res.ok) {
                 setResult({ success: true, message: data.message });
             } else {
-                setResult({ success: false, message: data.error || "Unknown error" });
+                setResult({ success: false, message: data.error || (data.details ? JSON.stringify(data.details) : "Unknown error") });
             }
         } catch (error) {
             setResult({ success: false, message: error.message });
@@ -38,20 +39,29 @@ export default function TestNotification() {
 
     return (
         <div className="p-8 max-w-md mx-auto bg-white rounded-xl shadow-md border border-gray-200 mt-10">
-            <h1 className="text-xl font-bold text-gray-800 mb-4">Test Telegram Notification</h1>
+            <h1 className="text-xl font-bold text-gray-800 mb-4">Test Notifications</h1>
             <p className="text-sm text-gray-600 mb-6">
-                Click the button below to send a test message to the configured Telegram Chat. 
-                This helps verify if your Bot Token and Chat ID are correct without creating a new user.
+                Send a test message to verify your configuration. Ensure you have saved your settings in the Admin Panel first.
             </p>
 
-            <button
-                onClick={handleTest}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
-            >
-                {loading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
-                Send Test Message
-            </button>
+            <div className="grid grid-cols-1 gap-3">
+                <button
+                    onClick={() => handleTest('telegram')}
+                    disabled={loading}
+                    className="w-full flex items-center justify-center gap-2 bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition disabled:opacity-50"
+                >
+                    {loading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
+                    Test Telegram
+                </button>
+                <button
+                    onClick={() => handleTest('twilio')}
+                    disabled={loading}
+                    className="w-full flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50"
+                >
+                    {loading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
+                    Test Twilio (WhatsApp)
+                </button>
+            </div>
 
             {result && (
                 <div className={`mt-4 p-4 rounded-lg flex items-start gap-3 ${result.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>

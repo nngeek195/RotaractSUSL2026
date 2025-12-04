@@ -4,7 +4,7 @@ import { getAdminDb } from "../../../lib/firebaseAdmin";
 export async function POST(request) {
   try {
     const body = await request.json();
-    let { fullName, email, contact, faculty, department } = body;
+    let { fullName, email, contact, faculty, department, provider } = body;
 
     if (!email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
@@ -35,6 +35,12 @@ export async function POST(request) {
     // --- CONFIGURATION ---
     let TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
     let TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "";
+    
+    // Twilio Config
+    let TWILIO_SID = "";
+    let TWILIO_TOKEN = "";
+    let TWILIO_FROM = "";
+    let TWILIO_TO = "";
 
     // Try fetching from Firestore Secure Settings (adminSettings/secure)
     try {
@@ -45,16 +51,17 @@ export async function POST(request) {
         const data = secureDoc.data();
         if (data.telegramBotToken) TELEGRAM_BOT_TOKEN = data.telegramBotToken;
         if (data.telegramChatId) TELEGRAM_CHAT_ID = data.telegramChatId;
+        
+        if (data.twilioAccountSid) TWILIO_SID = data.twilioAccountSid;
+        if (data.twilioAuthToken) TWILIO_TOKEN = data.twilioAuthToken;
+        if (data.twilioFromPhone) TWILIO_FROM = data.twilioFromPhone;
+        if (data.twilioToPhone) TWILIO_TO = data.twilioToPhone;
       }
     } catch (dbError) {
       console.warn("Failed to fetch admin settings from Firestore (using env vars fallback):", dbError.message);
     }
     
-    // 2. Check if configured
-    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-      console.warn("Notification Skipped: Telegram Bot Token or Chat ID not set.");
-      return NextResponse.json({ message: "Skipped" }, { status: 200 });
-    }
+    const results = [];
 
     // 3. Construct Message
     const message = `
@@ -69,22 +76,69 @@ export async function POST(request) {
 _Please check the Admin Dashboard to approve/reject._
     `.trim();
 
-    // 4. Send Request to Telegram
-    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+    // --- 1. Telegram Notification ---
+    if ((!provider || provider === 'telegram') && TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
+        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        const promise = fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: TELEGRAM_CHAT_ID,
+                text: message,
+                parse_mode: 'Markdown'
+            })
+        }).then(async res => {
+            if (!res.ok) throw new Error(`Telegram Error: ${await res.text()}`);
+            return "Telegram sent";
+        });
+        results.push(promise);
+    }
 
-    const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            chat_id: TELEGRAM_CHAT_ID,
-            text: message,
-            parse_mode: 'Markdown'
-        })
-    });
-    
-    if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`Telegram API responded with ${res.status}: ${errText}`);
+    // --- 2. Twilio Notification (WhatsApp) ---
+    if ((!provider || provider === 'twilio') && TWILIO_SID && TWILIO_TOKEN && TWILIO_FROM && TWILIO_TO) {
+        const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`;
+        const auth = Buffer.from(`${TWILIO_SID}:${TWILIO_TOKEN}`).toString('base64');
+        
+        // Ensure numbers are formatted for WhatsApp
+        const fromNumber = TWILIO_FROM.startsWith('whatsapp:') ? TWILIO_FROM : `whatsapp:${TWILIO_FROM}`;
+        const toNumber = TWILIO_TO.startsWith('whatsapp:') ? TWILIO_TO : `whatsapp:${TWILIO_TO}`;
+
+        const formData = new URLSearchParams();
+        formData.append('From', fromNumber);
+        formData.append('To', toNumber);
+        formData.append('Body', message); // WhatsApp supports Markdown
+
+        const promise = fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Basic ${auth}`,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: formData
+        }).then(async res => {
+            if (!res.ok) throw new Error(`Twilio WhatsApp Error: ${await res.text()}`);
+            return "Twilio WhatsApp sent";
+        });
+        results.push(promise);
+    }
+
+    if (results.length === 0) {
+        console.warn("Notification Skipped: No providers configured.");
+        return NextResponse.json({ message: "Skipped - No Config" }, { status: 200 });
+    }
+
+    // Wait for all results
+    const outcomes = await Promise.allSettled(results);
+    const errors = outcomes.filter(r => r.status === 'rejected').map(r => r.reason.message);
+
+    if (errors.length > 0) {
+        console.error("Notification Errors:", errors);
+        // Only fail if ALL failed
+        if (!outcomes.some(r => r.status === 'fulfilled')) {
+            return NextResponse.json({ error: "Failed to notify", details: errors }, { status: 500 });
+        }
+        // Partial success is still success for the client
+        return NextResponse.json({ message: "Notification sent (partial success)", errors });
     }
 
     return NextResponse.json({ message: "Notification sent" });
