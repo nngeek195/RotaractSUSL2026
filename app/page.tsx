@@ -328,21 +328,10 @@ export default function Home() {
                       </div>
                       <div>
                         <p className="font-poppins font-bold">
-                          Notebooks & Books
+                          Exercise Books
                         </p>
-                        <p className="font-poppins text-sm text-blue-100">
-                          Most needed items
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4 bg-white/10 p-4 rounded-lg">
-                      <div className="w-12 h-12 bg-green-400 rounded-full flex items-center justify-center text-2xl">
-                        ✏️
-                      </div>
-                      <div>
-                        <p className="font-poppins font-bold">Stationery</p>
-                        <p className="font-poppins text-sm text-blue-100">
-                          Pens, pencils, erasers
+                        <p className="font-poppins text-xs text-blue-100 leading-tight">
+                          A5 & CR (80, 120, 160+ pgs)
                         </p>
                       </div>
                     </div>
@@ -352,19 +341,30 @@ export default function Home() {
                       </div>
                       <div>
                         <p className="font-poppins font-bold">School Bags</p>
-                        <p className="font-poppins text-sm text-blue-100">
-                          Replace damaged bags
+                        <p className="font-poppins text-xs text-blue-100 leading-tight">
+                          For students of all ages
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 bg-white/10 p-4 rounded-lg">
+                      <div className="w-12 h-12 bg-green-400 rounded-full flex items-center justify-center text-2xl">
+                        ✏️
+                      </div>
+                      <div>
+                        <p className="font-poppins font-bold">Stationery</p>
+                        <p className="font-poppins text-xs text-blue-100 leading-tight">
+                          Pens, pencils, math sets, rulers
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4 bg-white/10 p-4 rounded-lg">
                       <div className="w-12 h-12 bg-purple-400 rounded-full flex items-center justify-center text-2xl">
-                        💧
+                        🍱
                       </div>
                       <div>
-                        <p className="font-poppins font-bold">Water Bottles</p>
-                        <p className="font-poppins text-sm text-blue-100">
-                          Clean drinking water
+                        <p className="font-poppins font-bold">Other Essentials</p>
+                        <p className="font-poppins text-xs text-blue-100 leading-tight">
+                          Water bottles, lunch boxes
                         </p>
                       </div>
                     </div>
@@ -381,22 +381,71 @@ export default function Home() {
       </section>
 
       {/* Xmasora Promotional Banner */}
-      <section className="bg-gradient-to-r from-green-900 via-red-800 to-green-900 text-white shadow-md relative z-20 border-b border-white/10 mt-4">
+      <section className="relative bg-gradient-to-r from-[#0f172a] via-[#312e81] to-[#0f172a] text-white shadow-xl relative z-20 border-b border-white/10 mt-4 overflow-hidden">
+        {/* Snow Animation Styles */}
+        <style jsx>{`
+          @keyframes snowfall {
+            0% {
+              transform: translateY(-10px) translateX(0) rotate(0deg);
+              opacity: 1;
+            }
+            100% {
+              transform: translateY(100vh) translateX(20px) rotate(360deg);
+              opacity: 0;
+            }
+          }
+          .snowflake {
+            position: absolute;
+            top: -10px;
+            color: white;
+            opacity: 0.8;
+            pointer-events: none;
+            animation-name: snowfall;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+          }
+        `}</style>
+
+        {/* Snowflakes */}
+        <div className="absolute inset-0 pointer-events-none">
+          {[...Array(30)].map((_, i) => (
+            <div
+              key={i}
+              className="snowflake"
+              style={{
+                left: `${Math.random() * 100}%`,
+                animationDuration: `${Math.random() * 5 + 5}s`,
+                animationDelay: `${Math.random() * 5}s`,
+                fontSize: `${Math.random() * 15 + 10}px`,
+                opacity: Math.random() * 0.5 + 0.3,
+              }}
+            >
+              ❄
+            </div>
+          ))}
+        </div>
+
         <a
           href="https://xmasora.rotaractsusl.org"
           target="_blank"
           rel="noopener noreferrer"
-          className="block max-w-7xl mx-auto px-4 py-6 flex flex-wrap items-center justify-center gap-4 hover:opacity-95 transition-opacity group"
+          className="relative z-10 block max-w-7xl mx-auto px-4 py-16 flex flex-col md:flex-row items-center justify-center gap-6 hover:opacity-95 transition-opacity group text-center md:text-left"
         >
-          <span className="text-3xl animate-pulse">🎄</span>
-          <p className="font-poppins font-medium text-lg sm:text-xl text-center">
-            <span className="font-playfair font-bold text-yellow-400 tracking-wider mr-2">Xmasora:</span>
-            Discover the magic of the season!
-          </p>
-          <div className="flex items-center gap-2 text-yellow-400 text-lg font-bold group-hover:translate-x-1 transition-transform">
-            <span>Visit Now</span>
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          <span className="text-5xl md:text-6xl animate-bounce shadow-lg drop-shadow-2xl">🎄</span>
+          
+          <div className="flex flex-col items-center md:items-start">
+            <h3 className="font-playfair font-bold text-3xl md:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-200 mb-8 pb-2 leading-relaxed drop-shadow-md">
+              Xmasora 2025
+            </h3>
+            <p className="font-poppins font-medium text-lg md:text-xl text-blue-100 max-w-2xl">
+              Experience the magic of the season! Join our Flyer Designing Competition & more.
+            </p>
+          </div>
+
+          <div className="mt-4 md:mt-0 flex items-center gap-3 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 px-8 py-4 rounded-full transition-all group-hover:scale-105 shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+            <span className="font-bold text-yellow-300 text-lg tracking-wide">Visit Website</span>
+            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
             </svg>
           </div>
         </a>

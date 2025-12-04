@@ -1,8 +1,42 @@
 'use client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { images } from '../../assets/images';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function Footer() {
+    const [socialLinks, setSocialLinks] = useState({
+        facebookUrl: "https://facebook.com",
+        instagramUrl: "https://instagram.com",
+        tiktokUrl: "https://tiktok.com",
+        youtubeUrl: "https://youtube.com",
+        contactEmail: "info@rotaractsusl.org"
+    });
+
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const docRef = doc(db, "adminSettings", "general");
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    setSocialLinks(prev => ({
+                        ...prev,
+                        facebookUrl: data.facebookUrl || prev.facebookUrl,
+                        instagramUrl: data.instagramUrl || prev.instagramUrl,
+                        tiktokUrl: data.tiktokUrl || prev.tiktokUrl,
+                        youtubeUrl: data.youtubeUrl || prev.youtubeUrl,
+                        contactEmail: data.contactEmail || prev.contactEmail
+                    }));
+                }
+            } catch (error) {
+                console.error("Error fetching footer settings:", error);
+            }
+        };
+
+        fetchSettings();
+    }, []);
+
     return (
         <footer className="bg-[#3a3a3a] py-12 px-6 lg:px-16">
             <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
@@ -15,18 +49,26 @@ export default function Footer() {
                         Empowering youth to create positive change through service, leadership, and fellowship in our community.
                     </p>
                     <div className="flex gap-4">
-                        <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
-                            <img src={images.imgIcons8Fb481} alt="Facebook" className="w-8 h-8 cursor-pointer hover:opacity-80" />
-                        </a>
-                        <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-                            <img src={images.imgIcons8Insta641} alt="Instagram" className="w-8 h-8 cursor-pointer hover:opacity-80" />
-                        </a>
-                        <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" aria-label="TikTok">
-                            <img src={images.imgIcons8Tiktok501} alt="TikTok" className="w-8 h-8 cursor-pointer hover:opacity-80" />
-                        </a>
-                        <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
-                            <img src={images.imgIcons8Youtube501} alt="YouTube" className="w-8 h-8 cursor-pointer hover:opacity-80" />
-                        </a>
+                        {socialLinks.facebookUrl && (
+                            <a href={socialLinks.facebookUrl} target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                                <img src={images.imgIcons8Fb481} alt="Facebook" className="w-8 h-8 cursor-pointer hover:opacity-80" />
+                            </a>
+                        )}
+                        {socialLinks.instagramUrl && (
+                            <a href={socialLinks.instagramUrl} target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                                <img src={images.imgIcons8Insta641} alt="Instagram" className="w-8 h-8 cursor-pointer hover:opacity-80" />
+                            </a>
+                        )}
+                        {socialLinks.tiktokUrl && (
+                            <a href={socialLinks.tiktokUrl} target="_blank" rel="noopener noreferrer" aria-label="TikTok">
+                                <img src={images.imgIcons8Tiktok501} alt="TikTok" className="w-8 h-8 cursor-pointer hover:opacity-80" />
+                            </a>
+                        )}
+                        {socialLinks.youtubeUrl && (
+                            <a href={socialLinks.youtubeUrl} target="_blank" rel="noopener noreferrer" aria-label="YouTube">
+                                <img src={images.imgIcons8Youtube501} alt="YouTube" className="w-8 h-8 cursor-pointer hover:opacity-80" />
+                            </a>
+                        )}
                     </div>
                 </div>
 
@@ -53,8 +95,8 @@ export default function Footer() {
                         </div>
                         <div className="flex items-center gap-3">
                             <img src={images.imgIcons8Mail481} alt="Email" className="w-6 h-6" />
-                            <a href="mailto:info@rotaractsusl.org" className="hover:text-pink-600">
-                                info@rotaractsusl.org
+                            <a href={`mailto:${socialLinks.contactEmail}`} className="hover:text-pink-600">
+                                {socialLinks.contactEmail}
                             </a>
                         </div>
                     </div>

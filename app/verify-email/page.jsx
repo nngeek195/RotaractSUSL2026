@@ -2,8 +2,9 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { auth } from '../../lib/firebase';
-import { applyActionCode } from 'firebase/auth';
+import { auth, db } from '../../lib/firebase';
+import { applyActionCode, checkActionCode } from 'firebase/auth';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Mail, CheckCircle, XCircle, Loader } from 'lucide-react';
 
 function VerifyEmailContent() {
@@ -18,10 +19,23 @@ function VerifyEmailContent() {
 
             if (mode === 'verifyEmail' && oobCode) {
                 try {
-                    // Apply the verification code (marks email as verified in Firebase Auth)
+                    // 1. Check the code first to get the email address
+                    const info = await checkActionCode(auth, oobCode);
+                    const email = info['data']['email'];
+
+                    // 2. Apply the verification code
                     await applyActionCode(auth, oobCode);
 
                     setStatus('success');
+
+                    // 3. Trigger WhatsApp Notification (API handles data fetch)
+                    if (email) {
+                        fetch('/api/notify-admin', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email })
+                        }).catch(err => console.error("Notification trigger failed:", err));
+                    }
 
                     // Redirect to login after 3 seconds
                     setTimeout(() => {
@@ -32,7 +46,7 @@ function VerifyEmailContent() {
                     setStatus('error');
                 }
             } else {
-                // If no code is present, show the "Check your email" message (default state for manual navigation)
+                // If no code is present, show the "Check your email" message
                 setStatus('check-email');
             }
         };

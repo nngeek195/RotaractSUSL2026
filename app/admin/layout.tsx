@@ -16,6 +16,7 @@ import {
   FileText,
   Heart,
   Gift,
+  Settings,
 } from "lucide-react";
 import { auth } from "@/lib/firebase";
 
@@ -157,6 +158,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-yellow-400 transition"
                 >
                   <Calendar size={20} /> Monthly Stars
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/admin/settings"
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-gray-400 transition"
+                >
+                  <Settings size={20} /> Settings
                 </Link>
               </li>
             </>
