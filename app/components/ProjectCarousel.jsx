@@ -3,7 +3,7 @@
 import React from 'react';
 import { images } from '../../assets/images';
 
-export function ProjectCarousel({ variant = "default", projects = [] }) {
+export function ProjectCarousel({ projects = [] }) {
     const defaultProjects = [
         {
             image: images.imgRectangle20,
@@ -38,21 +38,37 @@ export function ProjectCarousel({ variant = "default", projects = [] }) {
     ];
 
     // Use passed projects if available, otherwise use defaults
-    const displayProjects = projects.length > 0 ? projects : defaultProjects;
+    const baseProjects = projects.length > 0 ? projects : defaultProjects;
+    
+    // Duplicate the list to ensure seamless looping
+    const displayProjects = [...baseProjects, ...baseProjects];
 
     return (
         <div className="relative w-full overflow-hidden py-8">
-            {/* Scroll container */}
-            <div className="flex gap-8 overflow-x-auto pb-4 px-8 scrollbar-hide">
-                {displayProjects.map((project, index) => {
+            {/* CSS Animation Styles */}
+            <style>{`
+                @keyframes scroll {
+                    0% { transform: translateX(0); }
+                    100% { transform: translateX(-50%); }
+                }
+                .animate-scroll {
+                    animation: scroll 40s linear infinite;
+                }
+                .animate-scroll:hover {
+                    animation-play-state: paused;
+                }
+            `}</style>
 
+            {/* Animated Container */}
+            <div className="flex gap-8 w-max animate-scroll hover:cursor-grab active:cursor-grabbing">
+                {displayProjects.map((project, index) => {
                     // Logic: If hasOverlay is undefined (like from Firebase), default to TRUE for readability
                     const shouldShowOverlay = project.hasOverlay !== undefined ? project.hasOverlay : true;
 
                     return (
                         <div
-                            key={project.id || index} // Use Firebase ID if available
-                            className="relative flex-none w-[300px] h-[448px] rounded-[41px] shadow-[0px_0px_9px_3px_rgba(0,0,0,0.25)] overflow-hidden cursor-pointer transition-transform hover:scale-105 group"
+                            key={`${project.id || index}-${index}`} // Unique key for duplicates
+                            className="relative flex-none w-[300px] h-[448px] rounded-[41px] shadow-[0px_0px_9px_3px_rgba(0,0,0,0.25)] overflow-hidden transition-transform hover:scale-105 group"
                         >
                             {/* Project Image */}
                             <div className="absolute inset-0">
@@ -81,19 +97,6 @@ export function ProjectCarousel({ variant = "default", projects = [] }) {
                     );
                 })}
             </div>
-
-            {/* Fixed: Replaced styled-jsx with standard style tag to avoid Next.js Build Errors.
-                This hides the scrollbar for a cleaner look.
-            */}
-            <style>{`
-                .scrollbar-hide::-webkit-scrollbar {
-                    display: none;
-                }
-                .scrollbar-hide {
-                    -ms-overflow-style: none;
-                    scrollbar-width: none;
-                }
-            `}</style>
         </div>
     );
 }
