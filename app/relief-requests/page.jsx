@@ -570,64 +570,7 @@ export default function ReliefRequestsPage() {
                     </div>
                 </div>
 
-                {/* Item Statistics Dashboard */}
-                {itemStats.length > 0 && (
-                    <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-                        <h2 className="font-playfair text-2xl font-bold text-gray-800 mb-6">
-                            📊 Materials Overview
-                        </h2>
-                        <p className="font-poppins text-sm text-gray-600 mb-6">
-                            Real-time statistics showing requested vs fulfilled quantities for each material type
-                        </p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {itemStats.map(stat => {
-                                const fulfillmentRate = stat.totalRequested > 0
-                                    ? (stat.totalFulfilled / stat.totalRequested * 100).toFixed(1)
-                                    : 0;
 
-                                return (
-                                    <div key={stat.name} className="border-2 border-gray-200 rounded-xl p-4 hover:border-blue-400 transition">
-                                        <div className="flex items-center gap-3 mb-3">
-                                            <span className="text-3xl">{stat.icon}</span>
-                                            <div className="flex-1">
-                                                <h3 className="font-poppins font-bold text-gray-800">{stat.name}</h3>
-                                                <p className="font-poppins text-xs text-gray-500">
-                                                    {fulfillmentRate}% fulfilled
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {/* Progress Bar */}
-                                        <div className="mb-3">
-                                            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                                                <div
-                                                    className="bg-gradient-to-r from-green-400 to-green-600 h-3 rounded-full transition-all duration-500"
-                                                    style={{ width: `${Math.min(fulfillmentRate, 100)}%` }}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {/* Stats */}
-                                        <div className="grid grid-cols-3 gap-2 text-center">
-                                            <div className="bg-blue-50 rounded-lg p-2">
-                                                <p className="font-poppins text-xs text-blue-600 font-semibold">Requested</p>
-                                                <p className="font-poppins text-lg font-bold text-blue-800">{stat.totalRequested}</p>
-                                            </div>
-                                            <div className="bg-green-50 rounded-lg p-2">
-                                                <p className="font-poppins text-xs text-green-600 font-semibold">Fulfilled</p>
-                                                <p className="font-poppins text-lg font-bold text-green-800">{stat.totalFulfilled}</p>
-                                            </div>
-                                            <div className="bg-yellow-50 rounded-lg p-2">
-                                                <p className="font-poppins text-xs text-yellow-600 font-semibold">Pending</p>
-                                                <p className="font-poppins text-lg font-bold text-yellow-800">{stat.pending}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
 
                 {/* Filters */}
                 <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
@@ -806,6 +749,65 @@ export default function ReliefRequestsPage() {
                                 </div>
                             );
                         })}
+                    </div>
+                )}
+
+                {/* Item Statistics Dashboard */}
+                {itemStats.length > 0 && (
+                    <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+                        <h2 className="font-playfair text-2xl font-bold text-gray-800 mb-6">
+                            📊 Materials Overview
+                        </h2>
+                        <p className="font-poppins text-sm text-gray-600 mb-6">
+                            Real-time statistics showing requested vs fulfilled quantities for each material type
+                        </p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {itemStats.map(stat => {
+                                const fulfillmentRate = stat.totalRequested > 0
+                                    ? (stat.totalFulfilled / stat.totalRequested * 100).toFixed(1)
+                                    : 0;
+
+                                return (
+                                    <div key={stat.name} className="border-2 border-gray-200 rounded-xl p-4 hover:border-blue-400 transition">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <span className="text-3xl">{stat.icon}</span>
+                                            <div className="flex-1">
+                                                <h3 className="font-poppins font-bold text-gray-800">{stat.name}</h3>
+                                                <p className="font-poppins text-xs text-gray-500">
+                                                    {fulfillmentRate}% fulfilled
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Progress Bar */}
+                                        <div className="mb-3">
+                                            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                                                <div
+                                                    className="bg-gradient-to-r from-green-400 to-green-600 h-3 rounded-full transition-all duration-500"
+                                                    style={{ width: `${Math.min(fulfillmentRate, 100)}%` }}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Stats */}
+                                        <div className="grid grid-cols-3 gap-2 text-center">
+                                            <div className="bg-blue-50 rounded-lg p-2">
+                                                <p className="font-poppins text-xs text-blue-600 font-semibold">Requested</p>
+                                                <p className="font-poppins text-lg font-bold text-blue-800">{stat.totalRequested}</p>
+                                            </div>
+                                            <div className="bg-green-50 rounded-lg p-2">
+                                                <p className="font-poppins text-xs text-green-600 font-semibold">Fulfilled</p>
+                                                <p className="font-poppins text-lg font-bold text-green-800">{stat.totalFulfilled}</p>
+                                            </div>
+                                            <div className="bg-yellow-50 rounded-lg p-2">
+                                                <p className="font-poppins text-xs text-yellow-600 font-semibold">Pending</p>
+                                                <p className="font-poppins text-lg font-bold text-yellow-800">{stat.pending}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
                 )}
             </div>
