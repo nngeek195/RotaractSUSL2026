@@ -697,7 +697,12 @@ export default function ReliefRequestsPage() {
                                                         <MapPin size={18} className="text-gray-400 mt-0.5 flex-shrink-0" />
                                                         <span className="font-poppins text-sm">{request.district}</span>
                                                     </div>
-                                                    {/* Contact information hidden for privacy - visible only in admin panel */}
+                                                    {request.contactPerson && (
+                                                        <div className="flex items-start gap-2 text-gray-600">
+                                                            <User size={18} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                                                            <span className="font-poppins text-sm">{request.contactPerson}</span>
+                                                        </div>
+                                                    )}
                                                 </div>
 
                                                 {/* Description */}
