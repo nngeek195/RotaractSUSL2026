@@ -844,6 +844,12 @@ export default function ReliefRequestsPage() {
                                     <p className="font-poppins font-semibold text-gray-700 mb-1">District</p>
                                     <p className="font-poppins text-gray-900">{selectedRequest.district}</p>
                                 </div>
+                                {selectedRequest.contactPerson && (
+                                    <div>
+                                        <p className="font-poppins font-semibold text-gray-700 mb-1">Contact Person</p>
+                                        <p className="font-poppins text-gray-900">{selectedRequest.contactPerson}</p>
+                                    </div>
+                                )}
                                 <div>
                                     <p className="font-poppins font-semibold text-gray-700 mb-1">Submitted</p>
                                     <p className="font-poppins text-gray-900">
