@@ -551,115 +551,7 @@ export default function ReliefAdminPage() {
                     </button>
                 </div>
 
-                {/* Fulfillment Section */}
-                <section className={`space-y-6 ${activeTab === 'fulfillment' ? '' : 'md:hidden'}`}>
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="bg-purple-100 p-3 rounded-xl text-purple-600">
-                                    <ClipboardList size={24} />
-                                </div>
-                                <div>
-                                    <h2 className="font-playfair text-3xl font-bold text-gray-900">Fulfillment Status</h2>
-                                    <p className="font-poppins text-gray-600 text-sm">
-                                        Track overall demand and update fulfilled quantities.
-                                    </p>
-                                </div>
-                            </div>
 
-                            {/* Mobile Card View */}
-                            <div className="block md:hidden space-y-4">
-                                {itemStats.map((stat) => (
-                                    <div key={stat.docId} className="bg-white p-4 rounded-xl border-2 border-gray-100">
-                                        <div className="flex justify-between items-start mb-3">
-                                            <div>
-                                                <h3 className="font-poppins font-bold text-gray-900">{stat.name}</h3>
-                                                <span className="text-xs font-poppins text-gray-500">{stat.category}</span>
-                                            </div>
-                                            <span className={`px-2 py-1 rounded text-xs font-bold font-poppins ${stat.progress >= 100 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                                {stat.progress.toFixed(0)}%
-                                            </span>
-                                        </div>
-                                        
-                                        <div className="grid grid-cols-2 gap-4 mb-4">
-                                            <div className="bg-blue-50 p-2 rounded-lg text-center">
-                                                <p className="text-xs font-poppins text-blue-600 font-semibold">Requested</p>
-                                                <p className="text-lg font-playfair font-bold text-blue-800">{stat.totalRequested}</p>
-                                            </div>
-                                            <div className="bg-purple-50 p-2 rounded-lg text-center">
-                                                <p className="text-xs font-poppins text-purple-600 font-semibold">Pending</p>
-                                                <p className="text-lg font-playfair font-bold text-purple-800">{Math.max(0, stat.totalRequested - (stat.globalFulfilled || 0))}</p>
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-xs font-poppins font-semibold text-gray-600 mb-1">
-                                                Total Fulfilled (Update Here)
-                                            </label>
-                                            <input 
-                                                type="number"
-                                                value={stat.globalFulfilled || 0}
-                                                onChange={(e) => handleUpdateFulfilled(stat.docId, e.target.value)}
-                                                className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg font-poppins focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition"
-                                            />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Desktop Table View */}
-                            <div className="hidden md:block overflow-x-auto">
-                                <table className="w-full">
-                                    <thead>
-                                        <tr className="bg-gray-50 border-b border-gray-200">
-                                            <th className="px-6 py-4 text-left font-poppins font-semibold text-gray-700">Item Name</th>
-                                            <th className="px-6 py-4 text-left font-poppins font-semibold text-gray-700">Category</th>
-                                            <th className="px-6 py-4 text-center font-poppins font-semibold text-gray-700">Requested</th>
-                                            <th className="px-6 py-4 text-center font-poppins font-semibold text-gray-700">Fulfilled (Editable)</th>
-                                            <th className="px-6 py-4 text-center font-poppins font-semibold text-gray-700">Pending</th>
-                                            <th className="px-6 py-4 text-center font-poppins font-semibold text-gray-700">Progress</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-200">
-                                        {itemStats.map((stat) => (
-                                            <tr key={stat.docId} className="hover:bg-gray-50">
-                                                <td className="px-6 py-4 font-poppins text-gray-900 font-medium">{stat.name}</td>
-                                                <td className="px-6 py-4">
-                                                    <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold uppercase font-poppins">
-                                                        {stat.category}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-center font-playfair text-lg font-bold text-blue-600">
-                                                    {stat.totalRequested}
-                                                </td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <input 
-                                                        type="number"
-                                                        value={stat.globalFulfilled || 0}
-                                                        onChange={(e) => handleUpdateFulfilled(stat.docId, e.target.value)}
-                                                        className="w-24 px-3 py-1 border-2 border-gray-300 rounded-lg font-poppins text-center focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition"
-                                                    />
-                                                </td>
-                                                <td className="px-6 py-4 text-center font-playfair text-lg font-bold text-purple-600">
-                                                    {Math.max(0, stat.totalRequested - (stat.globalFulfilled || 0))}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="flex-1 bg-gray-200 rounded-full h-2 w-24">
-                                                            <div 
-                                                                className={`h-2 rounded-full ${stat.progress >= 100 ? 'bg-green-500' : 'bg-yellow-500'}`}
-                                                                style={{ width: `${Math.min(stat.progress, 100)}%` }}
-                                                            ></div>
-                                                        </div>
-                                                        <span className="text-xs font-bold font-poppins text-gray-600">{stat.progress.toFixed(0)}%</span>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                </section>
 
                 {/* Material Requests Section */}
                 <section className={`space-y-6 ${activeTab === 'requests' ? '' : 'md:hidden'}`}>
@@ -1112,6 +1004,116 @@ export default function ReliefAdminPage() {
                             </>
                         )}
                     </div>
+                </section>
+
+                {/* Fulfillment Section */}
+                <section className={`space-y-6 ${activeTab === 'fulfillment' ? '' : 'md:hidden'}`}>
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="bg-purple-100 p-3 rounded-xl text-purple-600">
+                                    <ClipboardList size={24} />
+                                </div>
+                                <div>
+                                    <h2 className="font-playfair text-3xl font-bold text-gray-900">Fulfillment Status</h2>
+                                    <p className="font-poppins text-gray-600 text-sm">
+                                        Track overall demand and update fulfilled quantities.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Mobile Card View */}
+                            <div className="block md:hidden space-y-4">
+                                {itemStats.map((stat) => (
+                                    <div key={stat.docId} className="bg-white p-4 rounded-xl border-2 border-gray-100">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div>
+                                                <h3 className="font-poppins font-bold text-gray-900">{stat.name}</h3>
+                                                <span className="text-xs font-poppins text-gray-500">{stat.category}</span>
+                                            </div>
+                                            <span className={`px-2 py-1 rounded text-xs font-bold font-poppins ${stat.progress >= 100 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                {stat.progress.toFixed(0)}%
+                                            </span>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-2 gap-4 mb-4">
+                                            <div className="bg-blue-50 p-2 rounded-lg text-center">
+                                                <p className="text-xs font-poppins text-blue-600 font-semibold">Requested</p>
+                                                <p className="text-lg font-playfair font-bold text-blue-800">{stat.totalRequested}</p>
+                                            </div>
+                                            <div className="bg-purple-50 p-2 rounded-lg text-center">
+                                                <p className="text-xs font-poppins text-purple-600 font-semibold">Pending</p>
+                                                <p className="text-lg font-playfair font-bold text-purple-800">{Math.max(0, stat.totalRequested - (stat.globalFulfilled || 0))}</p>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs font-poppins font-semibold text-gray-600 mb-1">
+                                                Total Fulfilled (Update Here)
+                                            </label>
+                                            <input 
+                                                type="number"
+                                                value={stat.globalFulfilled || 0}
+                                                onChange={(e) => handleUpdateFulfilled(stat.docId, e.target.value)}
+                                                className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg font-poppins focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition"
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Desktop Table View */}
+                            <div className="hidden md:block overflow-x-auto">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="bg-gray-50 border-b border-gray-200">
+                                            <th className="px-6 py-4 text-left font-poppins font-semibold text-gray-700">Item Name</th>
+                                            <th className="px-6 py-4 text-left font-poppins font-semibold text-gray-700">Category</th>
+                                            <th className="px-6 py-4 text-center font-poppins font-semibold text-gray-700">Requested</th>
+                                            <th className="px-6 py-4 text-center font-poppins font-semibold text-gray-700">Fulfilled (Editable)</th>
+                                            <th className="px-6 py-4 text-center font-poppins font-semibold text-gray-700">Pending</th>
+                                            <th className="px-6 py-4 text-center font-poppins font-semibold text-gray-700">Progress</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200">
+                                        {itemStats.map((stat) => (
+                                            <tr key={stat.docId} className="hover:bg-gray-50">
+                                                <td className="px-6 py-4 font-poppins text-gray-900 font-medium">{stat.name}</td>
+                                                <td className="px-6 py-4">
+                                                    <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold uppercase font-poppins">
+                                                        {stat.category}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-center font-playfair text-lg font-bold text-blue-600">
+                                                    {stat.totalRequested}
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <input 
+                                                        type="number"
+                                                        value={stat.globalFulfilled || 0}
+                                                        onChange={(e) => handleUpdateFulfilled(stat.docId, e.target.value)}
+                                                        className="w-24 px-3 py-1 border-2 border-gray-300 rounded-lg font-poppins text-center focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition"
+                                                    />
+                                                </td>
+                                                <td className="px-6 py-4 text-center font-playfair text-lg font-bold text-purple-600">
+                                                    {Math.max(0, stat.totalRequested - (stat.globalFulfilled || 0))}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex-1 bg-gray-200 rounded-full h-2 w-24">
+                                                            <div 
+                                                                className={`h-2 rounded-full ${stat.progress >= 100 ? 'bg-green-500' : 'bg-yellow-500'}`}
+                                                                style={{ width: `${Math.min(stat.progress, 100)}%` }}
+                                                            ></div>
+                                                        </div>
+                                                        <span className="text-xs font-bold font-poppins text-gray-600">{stat.progress.toFixed(0)}%</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                 </section>
 
                                 {/* Relief Items Section */}

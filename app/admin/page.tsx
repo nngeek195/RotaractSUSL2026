@@ -32,12 +32,55 @@ export default function AdminDashboard() {
                 const totalMembers = usersSnap.size + execSnap.size;
                 const execMembers = execSnap.size;
 
-                // 2. Fetch Pending Requests (Count + Recent 5)
+                // 2. Fetch Pending Requests (Count + Recent 5) - WITH VERIFICATION CHECK
                 const requestsRef = collection(db, "pendingRequests");
-                const requestsSnap = await getDocs(requestsRef); // Get all to count
-                // For recent list, we sort in memory or use simple slice if timestamp is missing
-                const requestsList = requestsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                setRecentRequests(requestsList.slice(0, 5)); // Take first 5
+                const requestsSnap = await getDocs(requestsRef);
+                
+                const allRequests = requestsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const pendingUids = allRequests.filter(r => r.status === 'pending').map(r => r.id);
+
+                let verifiedRequestsCount = 0;
+                let verificationStatus: Record<string, boolean> = {};
+
+                if (pendingUids.length > 0) {
+                    try {
+                        // Check email verification status via API
+                        const response = await fetch('/api/check-verification', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ uids: pendingUids })
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            verificationStatus = data.verificationStatus || {};
+                            
+                            // Count verified users
+                            verifiedRequestsCount = allRequests.filter(req => 
+                                verificationStatus[req.id] === true && req.status === 'pending'
+                            ).length;
+                        } else {
+                            console.error("Failed to check verification status");
+                        }
+                    } catch (err) {
+                        console.error("Error checking verification:", err);
+                    }
+                }
+
+                // Recent Requests: Show ALL (verified or not), sorted by date, enriched with verification status
+                const sortedRequests = allRequests
+                    .map(req => ({
+                        ...req,
+                        isVerified: verificationStatus[req.id] === true
+                    }))
+                    .sort((a: any, b: any) => {
+                        const dateA = a.submittedAt?.toDate ? a.submittedAt.toDate() : new Date(0);
+                        const dateB = b.submittedAt?.toDate ? b.submittedAt.toDate() : new Date(0);
+                        return dateB.getTime() - dateA.getTime();
+                    })
+                    .slice(0, 5);
+
+                setRecentRequests(sortedRequests);
 
                 // 3. Fetch Events (Count + Next Upcoming)
                 const eventsSnap = await getDocs(collection(db, "events"));
@@ -61,7 +104,7 @@ export default function AdminDashboard() {
 
                 setStats({
                     totalMembers,
-                    pendingRequests: requestsSnap.size,
+                    pendingRequests: verifiedRequestsCount,
                     upcomingEvents: upcomingCount,
                     completedEvents: completedCount,
                     execMembers
@@ -186,9 +229,15 @@ export default function AdminDashboard() {
                                         <div className="flex-1">
                                             <div className="flex justify-between items-start">
                                                 <h4 className="font-medium text-gray-900">{req.fullName}</h4>
-                                                <Link href="/admin/requests" className="px-3 py-1 bg-white border border-gray-200 text-gray-600 text-xs rounded-md hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition">
-                                                    Review
-                                                </Link>
+                                                {req.isVerified ? (
+                                                    <Link href="/admin/requests" className="px-3 py-1 bg-white border border-gray-200 text-gray-600 text-xs rounded-md hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition">
+                                                        Review
+                                                    </Link>
+                                                ) : (
+                                                    <span className="px-3 py-1 bg-gray-100 border border-gray-200 text-gray-400 text-xs rounded-md cursor-not-allowed" title="Email not verified yet">
+                                                        Unverified
+                                                    </span>
+                                                )}
                                             </div>
                                             
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 mt-2 text-sm text-gray-600">
