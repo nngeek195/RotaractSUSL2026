@@ -12,6 +12,65 @@ import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/
 import { doc, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
+const facultyData = {
+    "Faculty of Agricultural Sciences": [
+        "Department of Export Agriculture",
+        "Department of Livestock Production",
+        "Department of Agribusiness Management"
+    ],
+    "Faculty of Applied Sciences": [
+        "Department of Food Science and Technology",
+        "Department of Natural Resources",
+        "Department of Physical Sciences and Technology",
+        "Department of Sport Sciences and Physical Education"
+    ],
+    "Faculty of Computing": [
+        "Department of Computing and Information Systems",
+        "Department of Software Engineering",
+        "Department of Data Science"
+    ],
+    "Faculty of Geomatics": [
+        "Department of Remote Sensing and GIS",
+        "Department of Surveying and Geodesy"
+    ],
+    "Faculty of Management Studies": [
+        "Department of Accountancy & Finance",
+        "Department of Business Management",
+        "Department of Marketing Management",
+        "Department of Tourism Management"
+    ],
+    "Faculty of Medicine": [
+        "Department of Anatomy",
+        "Department of Biochemistry",
+        "Department of Physiology",
+        "Department of Microbiology",
+        "Department of Parasitology",
+        "Department of Pharmacology",
+        "Department of Community Medicine",
+        "Department of Forensic Medicine and Toxicology",
+        "Department of Pathology",
+        "Department of Primary Care and Family Medicine",
+        "Department of Medicine",
+        "Department of Paediatrics",
+        "Department of Surgery",
+        "Department of Psychiatry",
+        "Department of Obstetrics and Gynecology",
+        "Medical Education Unit"
+    ],
+    "Faculty of Social Sciences and Languages": [
+        "Department of Economics and Statistics",
+        "Department of English Language Teaching",
+        "Department of Geography and Environmental Management",
+        "Department of Information Technology",
+        "Department of Languages",
+        "Department of Social Sciences"
+    ],
+    "Faculty of Technology": [
+        "Department of Biosystems Technology",
+        "Department of Engineering Technology"
+    ]
+};
+
 export default function JoinUs() {
     const router = useRouter();
 
@@ -23,7 +82,15 @@ export default function JoinUs() {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState(false);
 
-    const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => {
+            if (name === "faculty") {
+                return { ...prev, [name]: value, department: "" };
+            }
+            return { ...prev, [name]: value };
+        });
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -189,14 +256,9 @@ export default function JoinUs() {
                                         className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-white px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
                                     >
                                         <option value="" disabled hidden>Choose faculty</option>
-                                        <option value="Computing">Faculty of Computing</option>
-                                        <option value="Applied Sciences">Applied Sciences</option>
-                                        <option value="Management Studies">Management Studies</option>
-                                        <option value="Social Sciences">Social Sciences & Languages</option>
-                                        <option value="Agricultural Sciences">Agricultural Sciences</option>
-                                        <option value="Geomatics">Geomatics</option>
-                                        <option value="Medicine">Medicine</option>
-                                        <option value="Technology">Technology</option>
+                                        {Object.keys(facultyData).map((faculty) => (
+                                            <option key={faculty} value={faculty}>{faculty}</option>
+                                        ))}
                                     </select>
                                 </div>
                             </div>
@@ -204,11 +266,19 @@ export default function JoinUs() {
                             {/* Department */}
                             <div>
                                 <label htmlFor="department" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">Department</label>
-                                <input
-                                    id="department" name="department" type="text" placeholder="e.g. Computing and Information System"
+                                <select
+                                    id="department" name="department" required
                                     value={formData.department} onChange={handleChange}
-                                    className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
-                                />
+                                    disabled={!formData.faculty}
+                                    className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-white px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <option value="" disabled hidden>
+                                        {formData.faculty ? "Choose department" : "Select a faculty first"}
+                                    </option>
+                                    {formData.faculty && facultyData[formData.faculty]?.map((dept) => (
+                                        <option key={dept} value={dept}>{dept}</option>
+                                    ))}
+                                </select>
                             </div>
 
                             {/* Contact No */}
