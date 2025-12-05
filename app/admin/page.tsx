@@ -178,19 +178,36 @@ export default function AdminDashboard() {
                             </div>
                         ) : (
                             recentRequests.map((req) => (
-                                <div key={req.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold">
+                                <div key={req.id} className="p-4 hover:bg-gray-50 transition border-b border-gray-100 last:border-0">
+                                    <div className="flex items-start gap-4">
+                                        <div className="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold shrink-0 mt-1">
                                             {req.fullName?.charAt(0)}
                                         </div>
-                                        <div>
-                                            <p className="font-medium text-sm text-gray-900">{req.fullName}</p>
-                                            <p className="text-xs text-gray-500">{req.faculty} • {req.studentId}</p>
+                                        <div className="flex-1">
+                                            <div className="flex justify-between items-start">
+                                                <h4 className="font-medium text-gray-900">{req.fullName}</h4>
+                                                <Link href="/admin/requests" className="px-3 py-1 bg-white border border-gray-200 text-gray-600 text-xs rounded-md hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition">
+                                                    Review
+                                                </Link>
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 mt-2 text-sm text-gray-600">
+                                                <p><span className="font-semibold">Initials:</span> {req.nameWithInitials}</p>
+                                                <p><span className="font-semibold">Student ID:</span> {req.studentId}</p>
+                                                <p><span className="font-semibold">Faculty:</span> {req.faculty}</p>
+                                                <p><span className="font-semibold">Department:</span> {req.department}</p>
+                                                <p><span className="font-semibold">Email:</span> {req.email}</p>
+                                                <p><span className="font-semibold">WhatsApp:</span> {req.whatsapp}</p>
+                                                <p className="md:col-span-2"><span className="font-semibold">Submitted:</span> {req.submittedAt?.toDate ? req.submittedAt.toDate().toLocaleString() : 'N/A'}</p>
+                                            </div>
+                                            
+                                            {req.reason && (
+                                                <div className="mt-2 bg-gray-50 p-2 rounded text-xs text-gray-700 border border-gray-100">
+                                                    <span className="font-semibold">Reason:</span> {req.reason}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
-                                    <Link href="/admin/requests" className="px-3 py-1 bg-white border border-gray-200 text-gray-600 text-xs rounded-md hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition">
-                                        Review
-                                    </Link>
                                 </div>
                             ))
                         )}
