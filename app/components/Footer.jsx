@@ -76,7 +76,7 @@ export default function Footer() {
                 </div>
 
                 {/* Quick Links */}
-                <div>
+                <div className="md:justify-self-center">
                     <h3 className="font-poppins font-bold text-xl text-white mb-4">Quick Links</h3>
                     <ul className="space-y-2 font-poppins text-base text-white">
                         <li><a href="/" className="hover:text-pink-600">Home</a></li>
@@ -89,7 +89,7 @@ export default function Footer() {
                 </div>
 
                 {/* Contact */}
-                <div>
+                <div className="md:justify-self-end">
                     <h3 className="font-poppins font-bold text-xl text-white mb-4">Contact Us</h3>
                     <div className="space-y-4 font-poppins text-base text-white">
                         <div className="flex items-start gap-3">
