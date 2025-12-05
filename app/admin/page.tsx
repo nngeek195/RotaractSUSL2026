@@ -36,8 +36,8 @@ export default function AdminDashboard() {
                 const requestsRef = collection(db, "pendingRequests");
                 const requestsSnap = await getDocs(requestsRef);
                 
-                const allRequests = requestsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                const pendingUids = allRequests.filter(r => r.status === 'pending').map(r => r.id);
+                const allRequests = requestsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+                const pendingUids = allRequests.filter((r: any) => r.status === 'pending').map((r: any) => r.id);
 
                 let verifiedRequestsCount = 0;
                 let verificationStatus: Record<string, boolean> = {};
