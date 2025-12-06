@@ -5,6 +5,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { Mail, Phone, MapPin, Send, Loader2, Clock, CheckCircle } from 'lucide-react';
 import { images } from '../../assets/images';
+import MotionWrapper from '../components/MotionWrapper';
 
 export default function ContactPage() {
     const [formData, setFormData] = useState({
@@ -101,7 +102,7 @@ export default function ContactPage() {
 
             {/* Hero Header - Matching Other Pages */}
             <section className="px-4 py-8 lg:py-12 pt-4 lg:pt-8">
-                <div className="max-w-[1440px] mx-auto px-8">
+                <MotionWrapper className="max-w-[1440px] mx-auto px-8">
                     <div className="rounded-[43px] overflow-hidden relative h-[280px] md:h-[339px]">
                         <img src={images.imgRectangle15} alt="Contact Us" className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-center px-6">
@@ -113,14 +114,18 @@ export default function ContactPage() {
                             </p>
                         </div>
                     </div>
-                </div>
+                </MotionWrapper>
             </section>
 
             <div className="flex-1 max-w-7xl mx-auto px-4 py-12 w-full">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
-                    
+
                     {/* Contact Info Sidebar */}
-                    <div className="lg:col-span-1 flex flex-col gap-6 h-full">
+                    <MotionWrapper
+                        className="lg:col-span-1 flex flex-col gap-6 h-full"
+                        variant="fadeInLeft"
+                        delay={0.2}
+                    >
                         {/* Email */}
                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-start gap-4 hover:shadow-md transition">
                             <div className="bg-blue-50 p-3 rounded-xl text-blue-600">
@@ -146,8 +151,8 @@ export default function ContactPage() {
                                     Rotaract Club of Sabaragamuwa University of Sri Lanka
                                 </p>
                                 <p className="font-poppins text-sm text-gray-600">
-                                    Sabaragamuwa University of Sri Lanka,<br/>
-                                    P.O. Box 02, Belihuloya,<br/>
+                                    Sabaragamuwa University of Sri Lanka,<br />
+                                    P.O. Box 02, Belihuloya,<br />
                                     70140, Sri Lanka.
                                 </p>
                             </div>
@@ -192,23 +197,27 @@ export default function ContactPage() {
 
                         {/* Map - Fills remaining space */}
                         <div className="w-full bg-gray-200 relative rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex-1 min-h-[250px]">
-                            <iframe 
-                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3960.7984671282624!2d80.78719671477285!3d6.713104995147055!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ae38a0000000001%3A0x1c04c473337032!2sSabaragamuwa%20University%20of%20Sri%20Lanka!5e0!3m2!1sen!2slk!4v1635747654321!5m2!1sen!2slk" 
-                                width="100%" 
-                                height="100%" 
-                                style={{border:0}} 
-                                allowFullScreen="" 
+                            <iframe
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3960.7984671282624!2d80.78719671477285!3d6.713104995147055!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ae38a0000000001%3A0x1c04c473337032!2sSabaragamuwa%20University%20of%20Sri%20Lanka!5e0!3m2!1sen!2slk!4v1635747654321!5m2!1sen!2slk"
+                                width="100%"
+                                height="100%"
+                                style={{ border: 0 }}
+                                allowFullScreen=""
                                 loading="lazy"
                                 className="grayscale hover:grayscale-0 transition-all duration-500 absolute inset-0"
                             ></iframe>
                         </div>
-                    </div>
+                    </MotionWrapper>
 
                     {/* Contact Form */}
-                    <div className="lg:col-span-2 flex flex-col h-full">
+                    <MotionWrapper
+                        className="lg:col-span-2 flex flex-col h-full"
+                        variant="fadeInRight"
+                        delay={0.4}
+                    >
                         <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8 md:p-10 h-full flex flex-col justify-center">
                             <h2 className="font-playfair font-bold text-3xl text-gray-900 mb-6">Send a Message</h2>
-                            
+
                             {success ? (
                                 <div className="bg-green-50 border border-green-200 rounded-xl p-8 text-center animate-in fade-in zoom-in duration-300">
                                     <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -218,7 +227,7 @@ export default function ContactPage() {
                                     <p className="font-poppins text-gray-600">
                                         Thank you for reaching out. We will get back to you as soon as possible.
                                     </p>
-                                    <button 
+                                    <button
                                         onClick={() => setSuccess(false)}
                                         className="mt-6 text-pink-600 font-semibold hover:underline"
                                     >
@@ -304,7 +313,7 @@ export default function ContactPage() {
                                 </form>
                             )}
                         </div>
-                    </div>
+                    </MotionWrapper>
                 </div>
             </div>
 

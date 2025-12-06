@@ -3,6 +3,8 @@ import { images } from '../../assets/images';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
+import MotionWrapper from '../components/MotionWrapper';
+
 export default function About() {
     return (
         <div className="bg-white min-h-screen relative">
@@ -10,7 +12,7 @@ export default function About() {
 
             {/* Hero Header */}
             <section className="px-4 py-8 lg:py-12 pt-4 lg:pt-8">
-                <div className="max-w-[1440px] mx-auto px-8">
+                <MotionWrapper className="max-w-[1440px] mx-auto px-8">
                     <div className="rounded-[43px] overflow-hidden relative h-[280px] md:h-[339px]">
                         <img src={images.imgRectangle66} alt="About Us" className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-center px-6">
@@ -22,24 +24,24 @@ export default function About() {
                             </p>
                         </div>
                     </div>
-                </div>
+                </MotionWrapper>
             </section>
 
             {/* What is Rotaract? */}
             <section className="px-4 py-12 lg:py-16">
-                <div className="max-w-5xl mx-auto text-center">
+                <MotionWrapper className="max-w-5xl mx-auto text-center">
                     <h2 className="font-playfair font-bold text-3xl md:text-4xl text-gray-900 mb-6">
                         What is Rotaract?
                     </h2>
                     <p className="font-poppins text-gray-600 leading-relaxed text-base md:text-lg text-justify md:text-center">
                         Rotaract is a global movement of young leaders (ages 18-30) who are dedicated to making a positive impact in their communities and developing their own leadership and professional skills. Sponsored by Rotary International, Rotaract clubs are non-political, non-religious, and open to all. We organize service projects, professional development workshops, and social events to foster fellowship and create sustainable change. Whether it’s through community service, international understanding, or personal growth, Rotaract provides a platform for young adults to "Self-Development - Fellowship through Service."
                     </p>
-                </div>
+                </MotionWrapper>
             </section>
 
             {/* Motto & 4-Way Test Split */}
             <section className="bg-gray-50 px-4 py-16">
-                <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12">
+                <MotionWrapper className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12">
                     {/* Motto */}
                     <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col items-center justify-center text-center h-full">
                         <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mb-6">
@@ -68,12 +70,12 @@ export default function About() {
                             </ol>
                         </div>
                     </div>
-                </div>
+                </MotionWrapper>
             </section>
 
             {/* Goals */}
             <section className="px-4 py-16 lg:py-24">
-                <div className="max-w-5xl mx-auto">
+                <MotionWrapper className="max-w-5xl mx-auto">
                     <h2 className="font-playfair font-bold text-3xl md:text-4xl text-gray-900 mb-12 text-center">
                         Rotaract Goals
                     </h2>
@@ -96,7 +98,7 @@ export default function About() {
                             </div>
                         ))}
                     </div>
-                </div>
+                </MotionWrapper>
             </section>
 
             <Footer />

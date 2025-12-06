@@ -9,6 +9,7 @@ import Footer from "../components/Footer.jsx";
 import NavBar from "../components/Navbar.jsx";
 // Installing icons: npm install lucide-react
 import { Calendar, MapPin, Clock, CheckCircle, Loader2, CircleDashed } from 'lucide-react';
+import MotionWrapper from '../components/MotionWrapper';
 
 export default function ProjectsPage() {
     const router = useRouter();
@@ -66,10 +67,10 @@ export default function ProjectsPage() {
     return (
         <><div className="bg-gray-100">
             <NavBar currentPage="projects" />
-            
+
             {/* Hero banner - Preserved your Exact CSS */}
             <section className="px-4 pt-6 md:pt-10 bg-gray-100" >
-                <div className="max-w-[1440px] mx-auto px-2 md:px-[54px]">
+                <MotionWrapper className="max-w-[1440px] mx-auto px-2 md:px-[54px]">
                     <div className="relative rounded-[43px] overflow-hidden h-[280px] md:h-[396px]">
                         <img src={images.imgRectangle44} alt="Hero projects" className="absolute inset-0 w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-center px-6 md:px-12">
@@ -87,12 +88,12 @@ export default function ProjectsPage() {
                             </p>
                         </div>
                     </div>
-                </div>
+                </MotionWrapper>
             </section>
 
             {/* Logic: View Toggle Buttons (Added to fit your style) */}
             <section className="px-4 pt-8 bg-gray-100">
-                <div className="max-w-[1440px] mx-auto px-2 md:px-[54px] flex justify-center gap-4">
+                <MotionWrapper className="max-w-[1440px] mx-auto px-2 md:px-[54px] flex justify-center gap-4">
                     <button
                         onClick={() => setView('upcoming')}
                         className={`flex items-center gap-2 px-6 py-2 rounded-[26px] font-poppins font-medium transition-all
@@ -111,7 +112,7 @@ export default function ProjectsPage() {
                     >
                         <CheckCircle size={18} /> Completed
                     </button>
-                </div>
+                </MotionWrapper>
             </section>
 
             {/* Project Cards - Two Column Grid (Your Exact CSS) */}
@@ -138,7 +139,7 @@ export default function ProjectsPage() {
                             {/* Left Column - Image on Left */}
                             <div className="space-y-6 md:space-y-8">
                                 {leftColumnProjects.map((project) => (
-                                    <div key={project.id} className="bg-white rounded-[22px] shadow-[0_0_26px_2px_rgba(0,0,0,0.25)] overflow-hidden flex flex-col sm:flex-row h-auto sm:h-[254px]">
+                                    <MotionWrapper key={project.id} className="bg-white rounded-[22px] shadow-[0_0_26px_2px_rgba(0,0,0,0.25)] overflow-hidden flex flex-col sm:flex-row h-auto sm:h-[254px]">
                                         {/* Image */}
                                         <div className="w-full sm:w-[254px] h-[254px] flex-shrink-0 bg-[#d9d9d9] rounded-tl-[22px] rounded-bl-none sm:rounded-bl-[22px]">
                                             <img src={project.imageUrl || images.imgRectangle44} alt={project.name} className="w-full h-full object-cover rounded-tl-[22px] rounded-bl-none sm:rounded-bl-[22px]" />
@@ -182,14 +183,14 @@ export default function ProjectsPage() {
                                                 </button>
                                             </div>
                                         </div>
-                                    </div>
+                                    </MotionWrapper>
                                 ))}
                             </div>
 
                             {/* Right Column - Image on Right (Your exact CSS for reverse layout) */}
                             <div className="space-y-6 md:space-y-8">
                                 {rightColumnProjects.map((project) => (
-                                    <div key={project.id} className="bg-white rounded-[22px] shadow-[0_0_26px_2px_rgba(0,0,0,0.25)] overflow-hidden flex flex-col sm:flex-row-reverse h-auto sm:h-[254px]">
+                                    <MotionWrapper key={project.id} className="bg-white rounded-[22px] shadow-[0_0_26px_2px_rgba(0,0,0,0.25)] overflow-hidden flex flex-col sm:flex-row-reverse h-auto sm:h-[254px]">
                                         {/* Image */}
                                         <div className="w-full sm:w-[254px] h-[254px] flex-shrink-0 bg-[#d9d9d9] rounded-tl-[22px] rounded-bl-none sm:rounded-bl-[22px] sm:rounded-tl-none sm:rounded-tr-[22px]">
                                             <img src={project.imageUrl || images.imgRectangle44} alt={project.name} className="w-full h-full object-cover rounded-tl-[22px] rounded-bl-none sm:rounded-bl-[22px] sm:rounded-tl-none sm:rounded-tr-[22px]" />
@@ -233,7 +234,7 @@ export default function ProjectsPage() {
                                                 </button>
                                             </div>
                                         </div>
-                                    </div>
+                                    </MotionWrapper>
                                 ))}
                             </div>
                         </div>

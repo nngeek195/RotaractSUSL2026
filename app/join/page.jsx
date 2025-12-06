@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { images } from '../../assets/images';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import MotionWrapper from '../components/MotionWrapper';
 import { Loader2, AlertCircle, Mail } from 'lucide-react';
 
 import { auth, db } from "../../lib/firebase";
@@ -141,7 +142,10 @@ export default function JoinUs() {
             <div className="bg-gray-50 min-h-screen flex flex-col relative">
                 <Navbar currentPage="join" />
                 <div className="flex-1 flex flex-col items-center justify-center px-4 text-center">
-                    <div className="bg-white p-10 rounded-[40px] shadow-2xl border border-gray-100 max-w-xl w-full">
+                    <MotionWrapper
+                        className="bg-white p-10 rounded-[40px] shadow-2xl border border-gray-100 max-w-xl w-full"
+                        variant="scaleUp"
+                    >
                         <div className="bg-pink-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
                             <Mail className="text-pink-600 w-12 h-12" />
                         </div>
@@ -156,13 +160,13 @@ export default function JoinUs() {
                                 Please check your Spam or Junk folder if you don't see the email.
                             </p>
                         </div>
-                        <button 
-                            onClick={() => router.push('/')} 
+                        <button
+                            onClick={() => router.push('/')}
                             className="w-full bg-gray-900 text-white py-4 rounded-xl font-poppins font-bold hover:bg-gray-800 transition shadow-lg"
                         >
                             Back to Home
                         </button>
-                    </div>
+                    </MotionWrapper>
                 </div>
                 <div className="py-6 text-center text-gray-400 text-xs font-poppins">
                     © 2025 Rotaract Club of Sabaragamuwa University of Sri Lanka.
@@ -178,7 +182,7 @@ export default function JoinUs() {
 
             {/* Hero Banner */}
             <section className="relative w-full max-w-[1440px] mx-auto px-4 pt-4 lg:pt-8">
-                <div className="relative rounded-[43px] overflow-hidden h-[220px] md:h-[300px]">
+                <MotionWrapper className="relative rounded-[43px] overflow-hidden h-[220px] md:h-[300px]">
                     <img src={images.imgRectangle66} alt="Hands united" className="absolute inset-0 w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-center px-6">
                         <h1 className="font-playfair font-medium text-2xl md:text-[47px] text-white mb-4 leading-tight">
@@ -188,13 +192,17 @@ export default function JoinUs() {
                             Ready to find your purpose, develop professional skills, and create real, lasting impact in the Sabaragamuwa community? Fill out the application below to start your journey with us.
                         </p>
                     </div>
-                </div>
+                </MotionWrapper>
             </section>
 
             {/* Form Panel */}
             <section className="py-10 md:py-16 flex-1 px-4">
                 <div className="max-w-[1140px] mx-auto">
-                    <div className="bg-[#eeeeee] rounded-[43px] shadow-[0_0_16px_5px_rgba(0,0,0,0.25)] px-6 md:px-14 py-10 md:py-14">
+                    <MotionWrapper
+                        className="bg-[#eeeeee] rounded-[43px] shadow-[0_0_16px_5px_rgba(0,0,0,0.25)] px-6 md:px-14 py-10 md:py-14"
+                        variant="fadeInUp"
+                        delay={0.2}
+                    >
 
                         {/* Error Message Display */}
                         {error && (
@@ -204,7 +212,7 @@ export default function JoinUs() {
                                     {error}
                                     {error.includes("already registered") && (
                                         <div className="mt-2">
-                                            <button 
+                                            <button
                                                 onClick={() => router.push('/login')}
                                                 className="font-bold underline hover:text-red-900"
                                             >
@@ -340,11 +348,11 @@ export default function JoinUs() {
                                 </button>
                             </div>
                         </form>
-                    </div>
+                    </MotionWrapper>
                 </div>
             </section>
 
             <Footer />
-        </div>
+        </div >
     );
 }

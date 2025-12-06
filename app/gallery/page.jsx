@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { images } from '../../assets/images';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import MotionWrapper from '../components/MotionWrapper';
 
 // Gallery page - Figma node 161-233 ("Moments of Impact")
 export default function Gallery() {
@@ -63,7 +64,7 @@ export default function Gallery() {
 
             {/* Hero Banner */}
             <section className="px-4 lg:px-14 pt-4 lg:pt-8 pb-12">
-                <div className="max-w-[1440px] mx-auto">
+                <MotionWrapper className="max-w-[1440px] mx-auto">
                     <div className="relative rounded-[43px] overflow-hidden h-[300px] lg:h-[396px]">
                         <Image src={images.imgRectangle78} alt="Gallery Hero" fill className="object-cover" priority />
                         <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-center px-6">
@@ -75,7 +76,7 @@ export default function Gallery() {
                             </p>
                         </div>
                     </div>
-                </div>
+                </MotionWrapper>
             </section>
 
             {/* Gallery Grid */}
@@ -111,8 +112,10 @@ export default function Gallery() {
                     {!loading && !error && galleryItems.length > 0 && (
                         <div className="grid grid-cols-12 gap-4 lg:gap-6">
                             {galleryItems.map(item => (
-                                <div
+                                <MotionWrapper
                                     key={item.id}
+                                    variant="scaleUp"
+                                    delay={0.1}
                                     className={`col-span-12 ${item.span} relative rounded-[39px] overflow-hidden bg-[#d9d9d9] h-[250px] lg:h-[321px] group cursor-pointer`}
                                     onClick={() => setSelectedImage(item.src)}
                                 >
@@ -126,14 +129,14 @@ export default function Gallery() {
                                     {/* Hover Overlay with Icon */}
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                                         <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                                            <img 
-                                                src={images.imgIcons8ExpandArrow481} 
-                                                alt="View" 
-                                                className="w-6 h-6 brightness-0 invert" 
+                                            <img
+                                                src={images.imgIcons8ExpandArrow481}
+                                                alt="View"
+                                                className="w-6 h-6 brightness-0 invert"
                                             />
                                         </div>
                                     </div>
-                                </div>
+                                </MotionWrapper>
                             ))}
                         </div>
                     )}
@@ -142,11 +145,11 @@ export default function Gallery() {
 
             {/* Image Modal */}
             {selectedImage && (
-                <div 
+                <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
                     onClick={() => setSelectedImage(null)}
                 >
-                    <button 
+                    <button
                         className="absolute top-6 right-6 text-white hover:text-gray-300 transition-colors z-50"
                         onClick={() => setSelectedImage(null)}
                     >
@@ -154,15 +157,15 @@ export default function Gallery() {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
-                    
-                    <div 
+
+                    <div
                         className="relative w-full max-w-6xl max-h-[90vh] rounded-2xl overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <img 
-                            src={selectedImage} 
-                            alt="Full view" 
-                            className="w-full h-full object-contain max-h-[90vh]" 
+                        <img
+                            src={selectedImage}
+                            alt="Full view"
+                            className="w-full h-full object-contain max-h-[90vh]"
                         />
                     </div>
                 </div>

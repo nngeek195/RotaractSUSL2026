@@ -7,6 +7,8 @@ import ProjectCarousel from "./components/ProjectCarousel";
 // import GalleryGrid from './components/GalleryGrid'; // Unused in your snippet, but kept commented
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import MotionWrapper from "./components/MotionWrapper"; // Added animation wrapper
+import { motion } from "framer-motion";
 
 // Firebase Imports
 import { db } from "@/lib/firebase";
@@ -464,7 +466,7 @@ export default function Home() {
 
       {/* Hero Section */}
       <section className="relative min-h-[600px] lg:min-h-[750px] flex items-center px-4 lg:px-16 pt-24 pb-16">
-        <div className="max-w-[1440px] mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+        <MotionWrapper className="max-w-[1440px] mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Left Content */}
           <div className="space-y-6">
             <h1 className="font-playfair font-medium text-4xl lg:text-5xl leading-tight">
@@ -546,14 +548,14 @@ export default function Home() {
               className="absolute top-10 right-10 w-2.5 h-2.5 z-5"
             />
           </div>
-        </div>
+        </MotionWrapper>
       </section>
 
       {/* Values Banner */}
       <section className="bg-pink-600 py-12 lg:py-16">
         <div className="max-w-[1300px] mx-auto px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
           {/* Service */}
-          <div className="bg-white rounded-[33px] shadow-lg p-6 flex flex-col min-h-[220px] transition-transform duration-300 hover:-translate-y-2 hover:shadow-2xl">
+          <MotionWrapper delay={0.1} whileHover={{ y: -10, transition: { duration: 0.2 } }} className="bg-white rounded-[33px] shadow-lg p-6 flex flex-col min-h-[220px] hover:shadow-2xl">
             <img
               src={images.imgIcons8Heart601}
               alt="Service"
@@ -566,10 +568,10 @@ export default function Home() {
             <p className="font-poppins text-[15px] text-[#625f5f] leading-relaxed">
               Dedicated to serving our community and making a positive impact.
             </p>
-          </div>
+          </MotionWrapper>
 
           {/* Fellowship */}
-          <div className="bg-white rounded-[33px] shadow-lg p-6 flex flex-col min-h-[220px] transition-transform duration-300 hover:-translate-y-2 hover:shadow-2xl">
+          <MotionWrapper delay={0.2} whileHover={{ y: -10, transition: { duration: 0.2 } }} className="bg-white rounded-[33px] shadow-lg p-6 flex flex-col min-h-[220px] hover:shadow-2xl">
             <img
               src={images.imgIcons8UserAccount641}
               alt="Fellowship"
@@ -582,10 +584,10 @@ export default function Home() {
             <p className="font-poppins text-[15px] text-[#625f5f] leading-relaxed">
               Building lasting friendships and professional networks.
             </p>
-          </div>
+          </MotionWrapper>
 
           {/* Leadership */}
-          <div className="bg-white rounded-[33px] shadow-lg p-6 flex flex-col min-h-[220px] transition-transform duration-300 hover:-translate-y-2 hover:shadow-2xl">
+          <MotionWrapper delay={0.3} whileHover={{ y: -10, transition: { duration: 0.2 } }} className="bg-white rounded-[33px] shadow-lg p-6 flex flex-col min-h-[220px] hover:shadow-2xl">
             <img
               src={images.imgIcons8Leadership481}
               alt="Leadership"
@@ -598,10 +600,10 @@ export default function Home() {
             <p className="font-poppins text-[15px] text-[#625f5f] leading-relaxed">
               Developing future leaders through hands-on experience.
             </p>
-          </div>
+          </MotionWrapper>
 
           {/* Excellence */}
-          <div className="bg-white rounded-[33px] shadow-lg p-6 flex flex-col min-h-[220px] transition-transform duration-300 hover:-translate-y-2 hover:shadow-2xl">
+          <MotionWrapper delay={0.4} whileHover={{ y: -10, transition: { duration: 0.2 } }} className="bg-white rounded-[33px] shadow-lg p-6 flex flex-col min-h-[220px] hover:shadow-2xl">
             <img
               src={images.imgIcons8Badge501}
               alt="Excellence"
@@ -614,13 +616,13 @@ export default function Home() {
             <p className="font-poppins text-[15px] text-[#625f5f] leading-relaxed">
               Striving for excellence in everything we do.
             </p>
-          </div>
+          </MotionWrapper>
         </div>
       </section>
 
       {/* Who are we Section */}
       <section id="about" className="bg-[#e9e9e9] py-16 lg:py-24">
-        <div className="max-w-7xl mx-auto px-4 lg:px-16">
+        <MotionWrapper className="max-w-7xl mx-auto px-4 lg:px-16">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div>
               <h2 className="font-playfair font-medium text-4xl lg:text-5xl text-black mb-6">
@@ -667,12 +669,12 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </div>
+        </MotionWrapper>
       </section>
 
       {/* Statistics */}
       <section className="bg-[#e9e9e9] pb-16">
-        <div className="max-w-6xl mx-auto px-4">
+        <MotionWrapper className="max-w-6xl mx-auto px-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
             <div>
               <p className="font-prata text-5xl text-text-pink-600 mb-2">1+</p>
@@ -701,7 +703,7 @@ export default function Home() {
               </p>
             </div>
           </div>
-        </div>
+        </MotionWrapper>
       </section>
 
       {/* Join Rotaract Banner */}
@@ -712,8 +714,7 @@ export default function Home() {
           className="absolute inset-0 w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-black/60"></div>
-
-        <div className="relative z-10 h-full flex flex-col items-center justify-center text-center px-4">
+        <MotionWrapper className="relative z-10 h-full flex flex-col items-center justify-center text-center px-4">
           <h2 className="font-playfair font-medium text-3xl lg:text-5xl text-white mb-4">
             Be the Change.{" "}
             <span className="text-text-pink-600">Join Rotaract!</span>
@@ -730,12 +731,12 @@ export default function Home() {
           >
             Join Us
           </a>
-        </div>
+        </MotionWrapper>
       </section>
 
       {/* Our Projects (COMPLETED PROJECTS CAROUSEL) */}
       <section id="projects" className="py-16 lg:py-24">
-        <div className="max-w-7xl mx-auto px-4 lg:px-16">
+        <MotionWrapper className="max-w-7xl mx-auto px-4 lg:px-16">
           <h2 className="font-playfair font-medium text-4xl lg:text-5xl text-black text-center mb-8">
             Our Projects
           </h2>
@@ -766,12 +767,12 @@ export default function Home() {
               <ProjectCarousel projects={completedProjects as any} />
             )}
           </div>
-        </div>
+        </MotionWrapper>
       </section>
 
       {/* Upcoming Projects (DYNAMIC GRID) */}
       <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4">
+        <MotionWrapper className="max-w-7xl mx-auto px-4">
           {/* Outer pink border container */}
           <div className="bg-pink-600 rounded-[51px] p-1">
             {/* Inner white container */}
@@ -799,8 +800,11 @@ export default function Home() {
                     key={project.id}
                     className="block"
                   >
-                    <div
-                      className="bg-black rounded-[41px] h-[300px] relative overflow-hidden flex items-end group cursor-pointer"
+                    <MotionWrapper
+                      delay={0.1}
+                      variant="fadeInUp"
+                      whileHover={{ scale: 1.03 }}
+                      className="bg-black rounded-[41px] h-[300px] relative overflow-hidden flex items-end group cursor-pointer transition-transform"
                     >
                       {/* Image Background */}
                       <img
@@ -823,7 +827,7 @@ export default function Home() {
                           </span>
                         </div>
                       </div>
-                    </div>
+                    </MotionWrapper>
                   </Link>
                 ))}
 
@@ -840,12 +844,12 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </div>
+        </MotionWrapper>
       </section>
 
       {/* Cherished Memories Header */}
       <section id="gallery" className="bg-pink-600 py-12">
-        <div className="max-w-7xl mx-auto px-4 text-center">
+        <MotionWrapper className="max-w-7xl mx-auto px-4 text-center">
           <h2 className="font-playfair font-medium text-4xl lg:text-5xl text-white mb-4">
             Cherished Memories
           </h2>
@@ -855,12 +859,12 @@ export default function Home() {
             energy from our projects, reflecting the tangible impact and
             unforgettable memories we create together.
           </p>
-        </div>
+        </MotionWrapper>
       </section>
 
       {/* Gallery Grid - Separate Grey Container */}
       <section className="bg-white py-8">
-        <div className="max-w-7xl mx-auto px-4">
+        <MotionWrapper className="max-w-7xl mx-auto px-4">
           <div className="bg-[#d9d9d9] rounded-[43px] py-12 px-6">
             {galleryLoading ? (
               <div className="text-center py-10">
@@ -869,16 +873,18 @@ export default function Home() {
             ) : galleryImages.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {galleryImages.map((img, index) => (
-                  <div
+                  <MotionWrapper
                     key={index}
+                    delay={index * 0.1} // Staggered delay for each image
+                    variant="scaleUp" // Using scaleUp for a nice pop effect
                     className="rounded-[20px] overflow-hidden bg-gray-300 aspect-square"
                   >
                     <img
                       src={img.url || images.imgRectangle20}
                       alt={`Gallery ${index + 1}`}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
                     />
-                  </div>
+                  </MotionWrapper>
                 ))}
               </div>
             ) : (
@@ -896,12 +902,12 @@ export default function Home() {
               </a>
             </div>
           </div>
-        </div>
+        </MotionWrapper>
       </section>
 
       {/* Service Stars */}
       <section className="bg-[#eeeeee] py-16 lg:py-24">
-        <div className="max-w-7xl mx-auto px-4 text-center">
+        <MotionWrapper className="max-w-7xl mx-auto px-4 text-center">
           <h2 className="font-playfair font-medium text-4xl lg:text-5xl text-black mb-4">
             Our Service Stars
           </h2>
@@ -917,7 +923,7 @@ export default function Home() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
             {/* Director of the Month (Dynamic) */}
-            <div className="bg-pink-600 rounded-[37px] shadow-lg p-8 relative flex flex-col">
+            <MotionWrapper delay={0.1} variant="fadeInLeft" whileHover={{ y: -5 }} className="bg-pink-600 rounded-[37px] shadow-lg p-8 relative flex flex-col transition-shadow hover:shadow-2xl">
               <p className="font-playfair font-medium text-[32px] text-white mb-1">
                 Director
               </p>
@@ -942,10 +948,10 @@ export default function Home() {
               <p className="font-poppins font-medium italic text-[17px] text-white leading-relaxed">
                 {directorOfMonth?.quote || "Director quote goes here."}
               </p>
-            </div>
+            </MotionWrapper>
 
             {/* Rotaractor of the Month (Dynamic) */}
-            <div className="bg-pink-600 rounded-[37px] shadow-lg p-8 relative flex flex-col">
+            <MotionWrapper delay={0.2} variant="fadeInRight" whileHover={{ y: -5 }} className="bg-pink-600 rounded-[37px] shadow-lg p-8 relative flex flex-col transition-shadow hover:shadow-2xl">
               <p className="font-playfair font-medium text-[32px] text-white mb-1">
                 Rotaractor
               </p>
@@ -971,14 +977,14 @@ export default function Home() {
               <p className="font-poppins font-medium italic text-[17px] text-white leading-relaxed">
                 {rotaractorOfMonth?.quote || "Rotaractor quote goes here."}
               </p>
-            </div>
+            </MotionWrapper>
           </div>
-        </div>
+        </MotionWrapper>
       </section>
 
       {/* Leadership Section */}
       <section id="leadership" className="bg-[#e9e9e9] py-16 lg:py-24">
-        <div className="max-w-6xl mx-auto px-4">
+        <MotionWrapper className="max-w-6xl mx-auto px-4">
           <h2 className="font-playfair font-medium text-4xl lg:text-5xl text-black text-center mb-6">
             Our Leadership
           </h2>
@@ -992,15 +998,26 @@ export default function Home() {
             {/* Leadership Grid - All 9 Members */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {leadershipTeam.map((member, i) => (
-                <div key={member.id || i} className="flex flex-col">
-                  <img
-                    src={
-                      member.photo ||
-                      "/assets/leadership/placeholder-230x247.png"
-                    }
-                    alt={member.name}
-                    className="bg-pink-600 rounded-[32px] aspect-[230/247] mb-4 object-cover"
-                  />
+                <MotionWrapper
+                  key={member.id || i}
+                  delay={i * 0.1} // Staggered delay for each card
+                  variant="fadeInUp"
+                  className="flex flex-col"
+                >
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden rounded-[32px] mb-4 aspect-[230/247]"
+                  >
+                    <img
+                      src={
+                        member.photo ||
+                        "/assets/leadership/placeholder-230x247.png"
+                      }
+                      alt={member.name}
+                      className="bg-pink-600 w-full h-full object-cover"
+                    />
+                  </motion.div>
                   <p className="font-playfair font-medium text-lg text-text-pink-600 mb-1">
                     {member.role}
                   </p>
@@ -1039,11 +1056,11 @@ export default function Home() {
                       {member.phone}
                     </span>
                   </div>
-                </div>
+                </MotionWrapper>
               ))}
             </div>
           </div>
-        </div>
+        </MotionWrapper>
       </section>
 
       {/* Contribution Section */}
@@ -1054,8 +1071,7 @@ export default function Home() {
           className="absolute inset-0 w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-black/50"></div>
-
-        <div className="relative z-10 h-full flex flex-col items-center justify-center text-center px-4">
+        <MotionWrapper className="relative z-10 h-full flex flex-col items-center justify-center text-center px-4">
           <h2 className="font-playfair font-medium text-3xl lg:text-5xl text-white mb-6">
             Every Contribution Matters!
           </h2>
@@ -1066,7 +1082,7 @@ export default function Home() {
           <p className="font-poppins font-medium text-lg text-white">
             Contact us at: info@rotaractsusl.org
           </p>
-        </div>
+        </MotionWrapper>
       </section>
 
       {/* Footer */}

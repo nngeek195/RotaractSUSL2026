@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { Loader2, AlertCircle, CheckCircle, Info } from 'lucide-react'; // Ensure lucide-react is installed
+import MotionWrapper from '../components/MotionWrapper';
 import { useAuth } from '../contexts/AuthContext';
 
 // Firebase Imports
@@ -157,7 +158,10 @@ function LoginContent() {
 
             {/* Login Form Section */}
             <main className="flex-1 flex items-center justify-center px-4 pt-12 pb-20">
-                <div className="w-full max-w-[732px]">
+                <MotionWrapper
+                    className="w-full max-w-[732px]"
+                    variant="scaleUp"
+                >
 
                     {/* Tabs */}
                     <div className="flex mb-8">
@@ -282,7 +286,7 @@ function LoginContent() {
                             </p>
                         </div>
                     </form>
-                </div>
+                </MotionWrapper>
             </main>
 
             {/* Footer */}
