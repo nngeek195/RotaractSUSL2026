@@ -1,8 +1,8 @@
 "use client";
 
-import React, { ReactNode, useState } from "react"; // Import ReactNode for children type
+import React, { ReactNode, useState } from "react";
 import { useAuth } from "@/app/contexts/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -10,17 +10,16 @@ import {
   Clock,
   Calendar,
   LogOut,
-  Mail,
   Menu,
   X,
   FileText,
   Heart,
-  Gift,
   Settings,
+  ChevronRight,
+  Shield
 } from "lucide-react";
 import { auth } from "@/lib/firebase";
 
-// Define the type for props
 interface AdminLayoutProps {
   children: ReactNode;
 }
@@ -28,23 +27,26 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const { user, isAdmin, isCommittee, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Loading session...</p>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-pink-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-gray-500 font-medium text-sm">Loading workspace...</p>
+        </div>
       </div>
     );
   }
 
-  // This is our route protection
+  // Route protection
   if (!user || (!isAdmin && !isCommittee)) {
-    // We use useEffect to avoid server-side render issues with router
     if (typeof window !== "undefined") {
       router.push("/login");
     }
-    return null; // Return null while redirecting
+    return null;
   }
 
   const handleLogout = async () => {
@@ -52,137 +54,137 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     router.push("/login");
   };
 
-  return (
-    <div className="flex min-h-screen bg-gray-100">
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-gray-900 text-white rounded-lg"
-      >
-        {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
-      </button>
+  const isActive = (path: string) => pathname === path;
 
-      {/* Overlay for mobile */}
+  const NavItem = ({ href, icon: Icon, label, exact = false }: { href: string; icon: any; label: string; exact?: boolean }) => {
+    const active = exact ? pathname === href : pathname.startsWith(href);
+    
+    return (
+      <li>
+        <Link
+          href={href}
+          onClick={() => setIsSidebarOpen(false)}
+          className={`group flex items-center justify-between p-3.5 rounded-xl transition-all duration-200 ${
+            active
+              ? "bg-pink-600/10 text-pink-600"
+              : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+          }`}
+        >
+          <div className="flex items-center gap-3.5">
+            <Icon size={20} className={active ? "text-pink-600" : "text-gray-400 group-hover:text-gray-600"} />
+            <span className={`font-medium text-sm ${active ? "font-semibold" : ""}`}>{label}</span>
+          </div>
+          {active && <ChevronRight size={16} className="text-pink-600 opacity-100" />}
+        </Link>
+      </li>
+    );
+  };
+
+  const SidebarContent = () => (
+    <>
+      <div className="px-6 py-8 flex items-center gap-3 mb-2">
+        <div className="w-10 h-10 bg-pink-600 rounded-xl flex items-center justify-center shadow-lg shadow-pink-600/20 text-white">
+            <Shield size={20} />
+        </div>
+        <div>
+            <h1 className="font-bold text-gray-900 text-lg leading-tight">Admin<span className="text-pink-600">Portal</span></h1>
+            <p className="text-xs text-gray-400 font-medium">Rotaract Club SUSL</p>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 pb-4">
+        {/* Main Menu */}
+        <div className="mb-6">
+            <p className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Overview</p>
+            <ul className="space-y-1">
+            {isAdmin && (
+                <NavItem href="/admin" icon={LayoutDashboard} label="Dashboard" exact />
+            )}
+            <NavItem href="/admin/relief" icon={Heart} label="Flood Relief" />
+            </ul>
+        </div>
+
+        {/* Management */}
+        {isAdmin && (
+            <div className="mb-6">
+            <p className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Management</p>
+            <ul className="space-y-1">
+                <NavItem href="/admin/users" icon={Users} label="Members & Users" />
+                <NavItem href="/admin/requests" icon={Clock} label="Pending Requests" />
+                <NavItem href="/admin/events" icon={Calendar} label="Events & Projects" />
+                <NavItem href="/admin/project-details" icon={FileText} label="Project Reports" />
+            </ul>
+            </div>
+        )}
+
+        {/* Rewards & Settings */}
+        {isAdmin && (
+            <div>
+            <p className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Configuration</p>
+            <ul className="space-y-1">
+                <NavItem href="/admin/leaderboard" icon={Users} label="Leaderboard" />
+                <NavItem href="/admin/monthly-stars" icon={Calendar} label="Monthly Stars" />
+                <NavItem href="/admin/settings" icon={Settings} label="System Settings" />
+            </ul>
+            </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="p-4 border-t border-gray-100">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 p-3.5 rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-600 transition-all duration-200 group"
+        >
+          <LogOut size={20} className="group-hover:text-red-600 transition-colors" />
+          <span className="font-medium text-sm">Sign Out</span>
+        </button>
+      </div>
+    </>
+  );
+
+  return (
+    <div className="flex min-h-screen bg-[#F8FAFC]">
+      {/* Mobile Header */}
+      <div className="md:hidden fixed top-0 w-full z-30 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
+         <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-pink-600 rounded-lg flex items-center justify-center text-white">
+                <Shield size={16} />
+            </div>
+            <span className="font-bold text-gray-900">Admin</span>
+         </div>
+         <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+         >
+            {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+         </button>
+      </div>
+
+      {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div
-          className="md:hidden fixed inset-0 bg-black/50 z-30"
+          className="md:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar Navigation */}
       <nav
-        className={`w-64 bg-gray-900 text-white p-5 flex flex-col fixed h-full z-40 transition-transform duration-300 ${
+        className={`fixed md:sticky top-0 h-screen w-[280px] bg-white border-r border-gray-100 flex flex-col z-50 transition-transform duration-300 ease-out shadow-[4px_0_24px_rgba(0,0,0,0.02)] ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
-        <div className="text-2xl font-bold mb-10 text-center border-b border-gray-800 pb-4">
-          <span className="text-blue-400">Admin</span>Panel
-        </div>
-        <ul className="space-y-2 flex-1">
-          {isAdmin && (
-            <>
-              <li>
-                <Link
-                  href="/admin"
-                  onClick={() => setIsSidebarOpen(false)}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-pink-400 transition"
-                >
-                  <LayoutDashboard size={20} /> Dashboard
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/admin/requests"
-                  onClick={() => setIsSidebarOpen(false)}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-pink-400 transition"
-                >
-                  <Clock size={20} /> Pending Requests
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/admin/users"
-                  onClick={() => setIsSidebarOpen(false)}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-pink-400 transition"
-                >
-                  <Users size={20} /> User Handling
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/admin/events"
-                  onClick={() => setIsSidebarOpen(false)}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-pink-400 transition"
-                >
-                  <Calendar size={20} /> Event Handling
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/admin/project-details"
-                  onClick={() => setIsSidebarOpen(false)}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-pink-400 transition"
-                >
-                  <FileText size={20} /> Project Details
-                </Link>
-              </li>
-            </>
-          )}
-
-          <li>
-            <Link
-              href="/admin/relief"
-              onClick={() => setIsSidebarOpen(false)}
-              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-pink-400 transition"
-            >
-              <Heart size={20} /> 🇱🇰 Flood Relief
-            </Link>
-          </li>
-
-          {isAdmin && (
-            <>
-              <li>
-                <Link
-                  href="/admin/leaderboard"
-                  onClick={() => setIsSidebarOpen(false)}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-blue-400 transition"
-                >
-                  <Users size={20} /> Leaderboard
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/admin/monthly-stars"
-                  onClick={() => setIsSidebarOpen(false)}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-yellow-400 transition"
-                >
-                  <Calendar size={20} /> Monthly Stars
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/admin/settings"
-                  onClick={() => setIsSidebarOpen(false)}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 hover:text-gray-400 transition"
-                >
-                  <Settings size={20} /> Settings
-                </Link>
-              </li>
-            </>
-          )}
-        </ul>
-        <button
-          onClick={handleLogout}
-          className="mt-auto flex items-center gap-3 text-red-400 hover:text-red-300 p-3 hover:bg-gray-800 rounded-lg transition"
-        >
-          <LogOut size={20} /> Logout
-        </button>
+        <SidebarContent />
       </nav>
 
-      {/* Main Content */}
-      <main className="flex-1 p-4 md:p-10 md:ml-64 pt-16 md:pt-10">
-        {children}
+      {/* Main Content Area */}
+      <main className="flex-1 min-w-0 md:pt-0 pt-16">
+         {/* Top Header (Desktop) - optional, can be kept simple or added here */}
+         
+         <div className="p-4 md:p-8 lg:p-10 max-w-[1600px] mx-auto">
+            {children}
+         </div>
       </main>
     </div>
   );

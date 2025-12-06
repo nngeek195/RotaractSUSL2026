@@ -3,35 +3,51 @@
 import { useState, useEffect } from "react";
 import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Edit, Save, X, Plus, Trash2, Image as ImageIcon, MessageSquare, Users as UsersIcon, DollarSign, Calendar, Loader2 } from "lucide-react";
+import {
+    Edit, Save, X, Plus, Trash2, Image as ImageIcon,
+    MessageSquare, Users as UsersIcon, DollarSign, Calendar,
+    Loader2, ChevronRight, LayoutGrid, FileText, Share2, MapPin
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/dvqoiqzxe/image/upload";
 const CLOUDINARY_UPLOAD_PRESET = "projects";
 
+const TABS = [
+    { id: "overview", label: "Overview", icon: LayoutGrid },
+    { id: "media", label: "Media Gallery", icon: ImageIcon },
+    { id: "content", label: "Content", icon: FileText },
+    { id: "relations", label: "Relations", icon: UsersIcon },
+];
+
 export default function ProjectDetailsManagement() {
+    // Core Data States
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedProject, setSelectedProject] = useState(null);
     const [editingProject, setEditingProject] = useState(null);
     const [saving, setSaving] = useState(false);
+    const [activeTab, setActiveTab] = useState("overview");
 
-    // Form states
-    const [title, setTitle] = useState("");
-    const [date, setDate] = useState("");
-    const [location, setLocation] = useState("");
-    const [status, setStatus] = useState("upcoming");
-    const [description, setDescription] = useState("");
-    const [mainImage, setMainImage] = useState("");
-    const [galleryImages, setGalleryImages] = useState([]);
+    // Form States
+    const [formData, setFormData] = useState({
+        title: "",
+        date: "",
+        location: "",
+        status: "upcoming",
+        description: "",
+        mainImage: "",
+        galleryImages: [],
+        testimonials: [],
+        partners: [],
+        category: "",
+        budget: "",
+        longDescription: "",
+    });
+
+    // Upload States
     const [newGalleryUrl, setNewGalleryUrl] = useState("");
-    const [testimonials, setTestimonials] = useState([]);
-    const [partners, setPartners] = useState([]);
-    const [category, setCategory] = useState("");
-    const [budget, setBudget] = useState("");
-    const [longDescription, setLongDescription] = useState("");
-
-    // Upload states
-    const [uploadingMainImage, setUploadingMainImage] = useState(false);
+    const [uploadingMain, setUploadingMain] = useState(false);
     const [uploadingGallery, setUploadingGallery] = useState(false);
 
     useEffect(() => {
@@ -50,616 +66,551 @@ export default function ProjectDetailsManagement() {
             setProjects(projectsList);
         } catch (error) {
             console.error("Error fetching projects:", error);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const handleSelectProject = (project) => {
         setSelectedProject(project);
         setEditingProject(project);
+        setActiveTab("overview");
 
-        // Populate form with existing data or defaults
-        setTitle(project.title || project.name || "");
-        setDate(project.date || "");
-        setLocation(project.location || "");
-        setStatus((project.status || "upcoming").toLowerCase());
-        setDescription(project.description || "");
-        setMainImage(project.imageUrl || project.image || "");
-        setGalleryImages(project.galleryImages || []);
-        setTestimonials(project.testimonials || []);
-        setPartners(project.partners || []);
-        setCategory(project.category || "Community Development");
-        setBudget(project.budget || "");
-        setLongDescription(project.longDescription || project.description || "");
+        // Populate Form
+        setFormData({
+            title: project.title || project.name || "",
+            date: project.date || "",
+            location: project.location || "",
+            status: (project.status || "upcoming").toLowerCase(),
+            description: project.description || "",
+            mainImage: project.imageUrl || project.image || "",
+            galleryImages: project.galleryImages || [],
+            testimonials: project.testimonials || [],
+            partners: project.partners || [],
+            category: project.category || "Community Development",
+            budget: project.budget || "",
+            longDescription: project.longDescription || project.description || "",
+        });
+    };
+
+    const handleInputChange = (field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
     };
 
     const handleSave = async () => {
         if (!editingProject) return;
-
         setSaving(true);
         try {
             const updateData = {
-                title,
-                name: title, // Keep both for compatibility
-                date,
-                location,
-                status,
-                description,
-                imageUrl: mainImage,
-                galleryImages,
-                testimonials,
-                partners,
-                category,
-                budget,
-                longDescription,
+                title: formData.title,
+                name: formData.title, // Compatibility
+                date: formData.date,
+                location: formData.location,
+                status: formData.status,
+                description: formData.description,
+                imageUrl: formData.mainImage,
+                galleryImages: formData.galleryImages,
+                testimonials: formData.testimonials,
+                partners: formData.partners,
+                category: formData.category,
+                budget: formData.budget,
+                longDescription: formData.longDescription,
             };
 
             await updateDoc(doc(db, "events", editingProject.id), updateData);
-            alert("Project details updated successfully!");
 
-            // Refresh projects list
-            await fetchProjects();
-            setSelectedProject(null);
-            setEditingProject(null);
-            resetForm();
+            // Refresh local state without full reload
+            setProjects(prev => prev.map(p =>
+                p.id === editingProject.id ? { ...p, ...updateData } : p
+            ));
+
+            alert("Project saved successfully!");
         } catch (error) {
             console.error("Error updating project:", error);
-            alert("Failed to update project details.");
+            alert("Failed to update project.");
         } finally {
             setSaving(false);
         }
     };
 
-    const resetForm = () => {
-        setTitle("");
-        setDate("");
-        setLocation("");
-        setStatus("upcoming");
-        setDescription("");
-        setMainImage("");
-        setGalleryImages([]);
-        setNewGalleryUrl("");
-        setTestimonials([]);
-        setPartners([]);
-        setCategory("");
-        setBudget("");
-        setLongDescription("");
+    // --- Media Handlers ---
+
+    const handleUploadImage = async (file, folderSubpath) => {
+        const sanitizeFolderName = (name) =>
+            name.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-");
+
+        const folderName = sanitizeFolderName(formData.title || "project");
+        const formDataUpload = new FormData();
+        formDataUpload.append("file", file);
+        formDataUpload.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+        formDataUpload.append("folder", `Projects/${folderName}${folderSubpath}`);
+
+        const res = await fetch(CLOUDINARY_UPLOAD_URL, {
+            method: "POST",
+            body: formDataUpload,
+        });
+        const data = await res.json();
+        if (data.secure_url) return data.secure_url;
+        throw new Error("Upload failed");
     };
 
-    const handleCancel = () => {
-        setSelectedProject(null);
-        setEditingProject(null);
-        resetForm();
-    };
-
-    // Gallery Image Management
-    const handleAddGalleryImage = () => {
-        if (newGalleryUrl.trim()) {
-            setGalleryImages([...galleryImages, newGalleryUrl.trim()]);
-            setNewGalleryUrl("");
+    const onMainImageUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setUploadingMain(true);
+        try {
+            const url = await handleUploadImage(file, "");
+            handleInputChange("mainImage", url);
+        } catch (err) {
+            alert("Upload failed.");
+        } finally {
+            setUploadingMain(false);
         }
     };
 
-    const handleRemoveGalleryImage = (index) => {
-        setGalleryImages(galleryImages.filter((_, i) => i !== index));
-    };
-
-    const handleUploadGalleryImage = async (e) => {
+    const onGalleryUpload = async (e) => {
         const files = Array.from(e.target.files || []);
         if (files.length === 0) return;
-
         setUploadingGallery(true);
         try {
-            const sanitizeFolderName = (name) =>
-                name.toLowerCase()
-                    .trim()
-                    .replace(/[^a-z0-9\s-]/g, "")
-                    .replace(/\s+/g, "-");
-
-            const folderName = sanitizeFolderName(editingProject.title || editingProject.name || "project");
-
-            const uploadPromises = files.map(async (file) => {
-                const formData = new FormData();
-                formData.append("file", file);
-                formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-                formData.append("folder", `Projects/${folderName}/gallery`);
-
-                const res = await fetch(CLOUDINARY_UPLOAD_URL, {
-                    method: "POST",
-                    body: formData,
-                });
-
-                const data = await res.json();
-
-                if (data.secure_url) {
-                    return data.secure_url;
-                } else {
-                    throw new Error("Upload failed for " + file.name);
-                }
-            });
-
-            const uploadedUrls = await Promise.all(uploadPromises);
-            setGalleryImages([...galleryImages, ...uploadedUrls]);
-            alert(`${uploadedUrls.length} image(s) uploaded successfully!`);
-
-            // Clear the file input
-            e.target.value = '';
+            const promises = files.map(file => handleUploadImage(file, "/gallery"));
+            const urls = await Promise.all(promises);
+            handleInputChange("galleryImages", [...formData.galleryImages, ...urls]);
         } catch (err) {
-            console.error(err);
-            alert("Some images failed to upload. Please try again.");
+            alert("Some images failed to upload.");
         } finally {
             setUploadingGallery(false);
         }
     };
 
-    // Main Image Upload
-    const handleUploadMainImage = async (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+    // --- List Handlers (Testimonials/Partners) ---
 
-        setUploadingMainImage(true);
-        try {
-            const sanitizeFolderName = (name) =>
-                name.toLowerCase()
-                    .trim()
-                    .replace(/[^a-z0-9\s-]/g, "")
-                    .replace(/\s+/g, "-");
-
-            const folderName = sanitizeFolderName(editingProject.title || editingProject.name || "project");
-
-            const formData = new FormData();
-            formData.append("file", file);
-            formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-            formData.append("folder", `Projects/${folderName}`);
-
-            const res = await fetch(CLOUDINARY_UPLOAD_URL, {
-                method: "POST",
-                body: formData,
-            });
-
-            const data = await res.json();
-
-            if (data.secure_url) {
-                setMainImage(data.secure_url);
-                alert("Main image uploaded successfully!");
-                e.target.value = '';
-            } else {
-                throw new Error("Upload failed");
-            }
-        } catch (err) {
-            console.error(err);
-            alert("Main image upload error.");
-        } finally {
-            setUploadingMainImage(false);
+    const updateListItem = (listName, index, field, value) => {
+        const updatedList = [...formData[listName]];
+        if (typeof updatedList[index] === 'object') {
+            updatedList[index][field] = value;
+        } else {
+            updatedList[index] = value;
         }
+        handleInputChange(listName, updatedList);
     };
 
-    // Testimonial Management
-    const handleAddTestimonial = () => {
-        setTestimonials([...testimonials, { quote: "", author: "" }]);
+    const addListItem = (listName, emptyItem) => {
+        handleInputChange(listName, [...formData[listName], emptyItem]);
     };
 
-    const handleUpdateTestimonial = (index, field, value) => {
-        const updated = [...testimonials];
-        updated[index][field] = value;
-        setTestimonials(updated);
-    };
-
-    const handleRemoveTestimonial = (index) => {
-        setTestimonials(testimonials.filter((_, i) => i !== index));
-    };
-
-    // Partner Management
-    const handleAddPartner = () => {
-        setPartners([...partners, ""]);
-    };
-
-    const handleUpdatePartner = (index, value) => {
-        const updated = [...partners];
-        updated[index] = value;
-        setPartners(updated);
-    };
-
-    const handleRemovePartner = (index) => {
-        setPartners(partners.filter((_, i) => i !== index));
+    const removeListItem = (listName, index) => {
+        handleInputChange(listName, formData[listName].filter((_, i) => i !== index));
     };
 
     return (
-        <div className="max-w-7xl mx-auto space-y-8 pb-20">
-            <div className="bg-white p-8 rounded-xl shadow-md border border-gray-100">
-                <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center gap-3">
-                    <Edit className="text-pink-600" size={32} />
-                    Project Details Management
-                </h1>
-                <p className="text-gray-600 mb-6">
-                    Manage gallery images, testimonials, partners, and additional details for your projects
-                </p>
-            </div>
-
-            {/* Project Selection */}
-            {!selectedProject && (
-                <div className="bg-white p-8 rounded-xl shadow-md border border-gray-100">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-6">Select a Project to Edit</h2>
-
-                    {loading ? (
-                        <div className="flex items-center justify-center py-12">
-                            <Loader2 className="animate-spin text-pink-600" size={40} />
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {projects.map((project) => (
-                                <button
-                                    key={project.id}
-                                    onClick={() => handleSelectProject(project)}
-                                    className="text-left p-4 border-2 border-gray-200 rounded-lg hover:border-pink-600 hover:shadow-lg transition-all"
-                                >
-                                    <div className="flex items-start gap-3">
-                                        <Calendar className="text-pink-600 mt-1" size={20} />
-                                        <div className="flex-1">
-                                            <h3 className="font-bold text-gray-800 mb-1 line-clamp-1">
-                                                {project.title || project.name}
-                                            </h3>
-                                            <p className="text-sm text-gray-600">{project.date}</p>
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                Status: <span className="font-medium">{project.status}</span>
-                                            </p>
-                                        </div>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    )}
+        <div className="max-w-[1600px] mx-auto pb-12 h-[calc(100vh-100px)] flex flex-col">
+            {/* Header */}
+            <div className={`mb-6 flex justify-between items-end ${selectedProject ? 'hidden md:flex' : 'flex'}`}>
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Project Management</h1>
+                    <p className="text-gray-500 mt-1 font-medium">Edit project details, media, and relations.</p>
                 </div>
-            )}
-
-            {/* Edit Form */}
-            {selectedProject && (
-                <div className="space-y-6">
-                    {/* Header with project info */}
-                    <div className="bg-gradient-to-r from-pink-600 to-purple-600 p-6 rounded-xl shadow-lg text-white">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h2 className="text-2xl font-bold mb-2">
-                                    {selectedProject.title || selectedProject.name}
-                                </h2>
-                                <p className="text-pink-100">{selectedProject.location} • {selectedProject.date}</p>
-                            </div>
-                            <button
-                                onClick={handleCancel}
-                                className="bg-white/20 hover:bg-white/30 p-2 rounded-lg transition"
-                            >
-                                <X size={24} />
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Core Details */}
-                    <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
-                        <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                            <Edit className="text-indigo-600" />
-                            Core Details
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
-                                <input
-                                    type="text"
-                                    value={title}
-                                    onChange={(e) => setTitle(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                                <select
-                                    value={status}
-                                    onChange={(e) => setStatus(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                >
-                                    <option value="upcoming">Upcoming</option>
-                                    <option value="completed">Completed</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
-                                <input
-                                    type="date"
-                                    value={date}
-                                    onChange={(e) => setDate(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
-                                <input
-                                    type="text"
-                                    value={location}
-                                    onChange={(e) => setLocation(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                />
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Short Description</label>
-                            <textarea
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                placeholder="Brief summary of the project..."
-                                rows={3}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Main Project Image */}
-                    <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
-                        <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                            <ImageIcon className="text-pink-600" />
-                            Main Project Image
-                        </h3>
-
-                        {mainImage && (
-                            <div className="mb-4">
-                                <img
-                                    src={mainImage}
-                                    alt="Main project"
-                                    className="w-full max-w-2xl h-64 object-cover rounded-lg"
-                                />
-                            </div>
-                        )}
-
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
-                                <input
-                                    type="text"
-                                    value={mainImage}
-                                    onChange={(e) => setMainImage(e.target.value)}
-                                    placeholder="Enter image URL or upload below"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Or Upload New Image</label>
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleUploadMainImage}
-                                    disabled={uploadingMainImage}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                                />
-                                {uploadingMainImage && (
-                                    <p className="text-sm text-gray-600 mt-2 flex items-center gap-2">
-                                        <Loader2 className="animate-spin" size={16} />
-                                        Uploading main image...
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Category & Budget */}
-                    <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
-                        <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                            <DollarSign className="text-green-600" />
-                            Basic Details
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                                <input
-                                    type="text"
-                                    value={category}
-                                    onChange={(e) => setCategory(e.target.value)}
-                                    placeholder="e.g., Community Development"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Budget</label>
-                                <input
-                                    type="text"
-                                    value={budget}
-                                    onChange={(e) => setBudget(e.target.value)}
-                                    placeholder="e.g., LKR 500,000"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                />
-                            </div>
-                        </div>
-                        <div className="mt-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Extended Description</label>
-                            <textarea
-                                value={longDescription}
-                                onChange={(e) => setLongDescription(e.target.value)}
-                                placeholder="Additional project details..."
-                                rows={4}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Gallery Images */}
-                    <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
-                        <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                            <ImageIcon className="text-blue-600" />
-                            Gallery Images ({galleryImages.length})
-                        </h3>
-
-                        <div className="mb-4 flex gap-2">
-                            <input
-                                type="text"
-                                value={newGalleryUrl}
-                                onChange={(e) => setNewGalleryUrl(e.target.value)}
-                                placeholder="Enter image URL or upload below"
-                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                            />
-                            <button
-                                onClick={handleAddGalleryImage}
-                                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
-                            >
-                                <Plus size={20} /> Add URL
-                            </button>
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Or Upload Images (multiple)</label>
-                            <input
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                onChange={handleUploadGalleryImage}
-                                disabled={uploadingGallery}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                            />
-                            {uploadingGallery && <p className="text-sm text-gray-600 mt-2">Uploading images...</p>}
-                        </div>
-
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {galleryImages.map((url, index) => (
-                                <div key={index} className="relative group">
-                                    <img
-                                        src={url}
-                                        alt={`Gallery ${index + 1}`}
-                                        className="w-full h-32 object-cover rounded-lg"
-                                    />
-                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
-                                        <button
-                                            onClick={() => setMainImage(url)}
-                                            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg text-sm flex items-center gap-1"
-                                            title="Set as main image"
-                                        >
-                                            <ImageIcon size={14} />
-                                            Set Main
-                                        </button>
-                                        <button
-                                            onClick={() => handleRemoveGalleryImage(index)}
-                                            className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg"
-                                            title="Remove image"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
-                                    {mainImage === url && (
-                                        <div className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-bold">
-                                            MAIN
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Partners */}
-                    <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
-                        <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                            <UsersIcon className="text-purple-600" />
-                            Partners ({partners.length})
-                        </h3>
-
-                        <button
-                            onClick={handleAddPartner}
-                            className="mb-4 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition flex items-center gap-2"
-                        >
-                            <Plus size={20} /> Add Partner
-                        </button>
-
-                        <div className="space-y-2">
-                            {partners.map((partner, index) => (
-                                <div key={index} className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={partner}
-                                        onChange={(e) => handleUpdatePartner(index, e.target.value)}
-                                        placeholder="Partner name"
-                                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                    />
-                                    <button
-                                        onClick={() => handleRemovePartner(index)}
-                                        className="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition"
-                                    >
-                                        <Trash2 size={20} />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Testimonials */}
-                    <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
-                        <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                            <MessageSquare className="text-orange-600" />
-                            Testimonials ({testimonials.length})
-                        </h3>
-
-                        <button
-                            onClick={handleAddTestimonial}
-                            className="mb-4 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition flex items-center gap-2"
-                        >
-                            <Plus size={20} /> Add Testimonial
-                        </button>
-
-                        <div className="space-y-4">
-                            {testimonials.map((testimonial, index) => (
-                                <div key={index} className="border-2 border-gray-200 p-4 rounded-lg">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h4 className="font-medium text-gray-700">Testimonial {index + 1}</h4>
-                                        <button
-                                            onClick={() => handleRemoveTestimonial(index)}
-                                            className="text-red-500 hover:text-red-700"
-                                        >
-                                            <Trash2 size={20} />
-                                        </button>
-                                    </div>
-                                    <textarea
-                                        value={testimonial.quote}
-                                        onChange={(e) => handleUpdateTestimonial(index, 'quote', e.target.value)}
-                                        placeholder="Quote..."
-                                        rows={3}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-2 focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                    />
-                                    <input
-                                        type="text"
-                                        value={testimonial.author}
-                                        onChange={(e) => handleUpdateTestimonial(index, 'author', e.target.value)}
-                                        placeholder="Author name"
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Save Button */}
-                    <div className="flex gap-4 sticky bottom-4 bg-white p-4 rounded-xl shadow-lg border border-gray-200">
+                {selectedProject && (
+                    <div className="hidden md:block">
                         <button
                             onClick={handleSave}
                             disabled={saving}
-                            className="flex-1 bg-pink-600 text-white px-6 py-3 rounded-lg hover:bg-pink-700 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold"
+                            className="bg-gray-900 text-white px-6 py-2.5 rounded-xl hover:bg-gray-800 transition-all shadow-lg shadow-gray-900/20 font-bold flex items-center gap-2 disabled:opacity-70 text-sm"
                         >
-                            {saving ? (
-                                <>
-                                    <Loader2 className="animate-spin" size={20} />
-                                    Saving...
-                                </>
-                            ) : (
-                                <>
-                                    <Save size={20} />
-                                    Save Project Details
-                                </>
-                            )}
-                        </button>
-                        <button
-                            onClick={handleCancel}
-                            className="bg-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-400 transition font-bold"
-                        >
-                            Cancel
+                            {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+                            Save Changes
                         </button>
                     </div>
+                )}
+            </div>
+
+            <div className="flex-1 flex gap-6 overflow-hidden relative">
+                {/* Sidebar: Project List */}
+                <div className={`
+                    flex flex-col bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden shrink-0 transition-all duration-300
+                    w-full md:w-96
+                    ${selectedProject ? 'hidden md:flex' : 'flex'}
+                `}>
+                    <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+                        <h2 className="font-bold text-gray-700">All Projects ({projects.length})</h2>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                        {loading ? (
+                            <div className="flex justify-center p-8"><Loader2 className="animate-spin text-gray-400" /></div>
+                        ) : (
+                            projects.map(project => (
+                                <button
+                                    key={project.id}
+                                    onClick={() => handleSelectProject(project)}
+                                    className={`w-full text-left p-3 rounded-xl transition-all border group relative ${selectedProject?.id === project.id
+                                        ? "bg-blue-50 border-blue-200 shadow-sm"
+                                        : "bg-white border-transparent hover:bg-gray-50 hover:border-gray-200"
+                                        }`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${selectedProject?.id === project.id ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-500"
+                                            }`}>
+                                            <Calendar size={18} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h3 className={`font-bold text-sm truncate ${selectedProject?.id === project.id ? "text-blue-900" : "text-gray-700"
+                                                }`}>
+                                                {project.title || project.name}
+                                            </h3>
+                                            <p className="text-xs text-gray-500 truncate">{project.date}</p>
+                                        </div>
+                                        <div className="hidden md:block">
+                                            {selectedProject?.id === project.id && (
+                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-500">
+                                                    <ChevronRight size={16} />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </button>
+                            ))
+                        )}
+                    </div>
                 </div>
-            )}
+
+                {/* Main Content Area */}
+                <div className={`
+                    flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 flex-col overflow-hidden relative
+                    ${selectedProject ? 'flex' : 'hidden md:flex'}
+                `}>
+                    {!selectedProject ? (
+                        <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
+                            <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                                <Edit size={40} className="opacity-20" />
+                            </div>
+                            <p className="text-lg font-medium">Select a project to start editing</p>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Tabs Header */}
+                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-gray-100 px-4 pt-4 pb-0 sticky top-0 bg-white/80 backdrop-blur-md z-10 gap-4">
+
+                                {/* Mobile Header with Back Button */}
+                                <div className="flex items-center w-full md:w-auto md:hidden pb-2 border-b border-gray-100 md:border-0">
+                                    <button
+                                        onClick={() => setSelectedProject(null)}
+                                        className="mr-3 p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-full"
+                                    >
+                                        <ChevronRight size={24} className="rotate-180" />
+                                    </button>
+                                    <h3 className="font-bold text-lg truncate flex-1">{formData.title || "New Project"}</h3>
+                                    <button
+                                        onClick={handleSave}
+                                        disabled={saving}
+                                        className="bg-gray-900 text-white p-2 rounded-lg"
+                                    >
+                                        {saving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+                                    </button>
+                                </div>
+
+                                <div className="flex items-center gap-1 overflow-x-auto w-full md:w-auto no-scrollbar">
+                                    {TABS.map(tab => (
+                                        <button
+                                            key={tab.id}
+                                            onClick={() => setActiveTab(tab.id)}
+                                            className={`flex items-center gap-2 px-4 py-3 md:px-6 md:py-4 text-sm font-bold border-b-2 transition-all whitespace-nowrap ${activeTab === tab.id
+                                                ? "border-blue-600 text-blue-600"
+                                                : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50/50 rounded-t-lg"
+                                                }`}
+                                        >
+                                            <tab.icon size={18} />
+                                            {tab.label}
+                                        </button>
+                                    ))}
+                                </div>
+
+
+                            </div>
+
+                            {/* Tab Content */}
+                            <div className="flex-1 overflow-y-auto p-4 md:p-8">
+                                <AnimatePresence mode="wait">
+                                    <motion.div
+                                        key={activeTab}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="max-w-4xl mx-auto"
+                                    >
+                                        {/* --- OVERVIEW TAB --- */}
+                                        {activeTab === "overview" && (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                <div className="space-y-6">
+                                                    <div>
+                                                        <label className="text-xs font-bold uppercase text-gray-500 mb-1.5 block">Project Title</label>
+                                                        <input
+                                                            type="text"
+                                                            value={formData.title}
+                                                            onChange={(e) => handleInputChange("title", e.target.value)}
+                                                            className="w-full p-3 bg-gray-50 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all font-medium text-gray-900"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-xs font-bold uppercase text-gray-500 mb-1.5 block">Date</label>
+                                                        <input
+                                                            type="date"
+                                                            value={formData.date}
+                                                            onChange={(e) => handleInputChange("date", e.target.value)}
+                                                            className="w-full p-3 bg-gray-50 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all font-medium text-gray-900"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-6">
+                                                    <div>
+                                                        <label className="text-xs font-bold uppercase text-gray-500 mb-1.5 block">Status</label>
+                                                        <select
+                                                            value={formData.status}
+                                                            onChange={(e) => handleInputChange("status", e.target.value)}
+                                                            className="w-full p-3 bg-gray-50 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all font-medium text-gray-900"
+                                                        >
+                                                            <option value="upcoming">Upcoming</option>
+                                                            <option value="completed">Completed</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-xs font-bold uppercase text-gray-500 mb-1.5 block">Location</label>
+                                                        <div className="relative">
+                                                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                                            <input
+                                                                type="text"
+                                                                value={formData.location}
+                                                                onChange={(e) => handleInputChange("location", e.target.value)}
+                                                                className="w-full p-3 pl-10 bg-gray-50 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all font-medium text-gray-900"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="md:col-span-2 space-y-6 mt-2">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                        <div>
+                                                            <label className="text-xs font-bold uppercase text-gray-500 mb-1.5 block">Category</label>
+                                                            <input
+                                                                type="text"
+                                                                value={formData.category}
+                                                                onChange={(e) => handleInputChange("category", e.target.value)}
+                                                                className="w-full p-3 bg-gray-50 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all font-medium text-gray-900"
+                                                                placeholder="e.g. Community Service"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-xs font-bold uppercase text-gray-500 mb-1.5 block">Budget</label>
+                                                            <div className="relative">
+                                                                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                                                <input
+                                                                    type="text"
+                                                                    value={formData.budget}
+                                                                    onChange={(e) => handleInputChange("budget", e.target.value)}
+                                                                    className="w-full p-3 pl-10 bg-gray-50 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all font-medium text-gray-900"
+                                                                    placeholder="e.g. 50,000 LKR"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* --- MEDIA TAB --- */}
+                                        {activeTab === "media" && (
+                                            <div className="space-y-8">
+                                                {/* Main Image */}
+                                                <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100">
+                                                    <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                                        <ImageIcon className="text-blue-500" size={20} /> Main Hero Image
+                                                    </h3>
+                                                    <div className="flex gap-6 items-start flex-col md:flex-row">
+                                                        <div className="w-48 h-32 bg-gray-200 rounded-lg overflow-hidden shrink-0 border border-gray-300">
+                                                            {formData.mainImage ? (
+                                                                <img src={formData.mainImage} alt="Main" className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <div className="flex items-center justify-center h-full text-gray-400">No Image</div>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex-1 space-y-3 w-full">
+                                                            <input
+                                                                type="text"
+                                                                value={formData.mainImage}
+                                                                onChange={(e) => handleInputChange("mainImage", e.target.value)}
+                                                                placeholder="Image URL"
+                                                                className="w-full p-3 bg-white border-gray-200 rounded-xl text-sm"
+                                                            />
+                                                            <div className="flex items-center gap-3">
+                                                                <span className="text-xs font-bold text-gray-400 uppercase">OR</span>
+                                                                <label className={`cursor-pointer px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors flex items-center gap-2 ${uploadingMain ? 'opacity-50 pointer-events-none' : ''}`}>
+                                                                    {uploadingMain ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />}
+                                                                    Upload New
+                                                                    <input type="file" className="hidden" accept="image/*" onChange={onMainImageUpload} />
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Gallery */}
+                                                <div>
+                                                    <div className="flex justify-between items-center mb-4">
+                                                        <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                                                            <LayoutGrid className="text-purple-500" size={20} /> Project Gallery
+                                                        </h3>
+                                                        <label className={`cursor-pointer px-4 py-2 bg-purple-50 text-purple-700 rounded-lg text-sm font-bold hover:bg-purple-100 transition-colors flex items-center gap-2 ${uploadingGallery ? 'opacity-50 pointer-events-none' : ''}`}>
+                                                            {uploadingGallery ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />}
+                                                            Upload Images
+                                                            <input type="file" className="hidden" multiple accept="image/*" onChange={onGalleryUpload} />
+                                                        </label>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                        {formData.galleryImages.map((url, idx) => (
+                                                            <div key={idx} className="relative group aspect-square bg-gray-100 rounded-xl overflow-hidden border border-gray-100">
+                                                                <img src={url} alt={`Gallery ${idx}`} className="w-full h-full object-cover" />
+                                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                                    <button
+                                                                        onClick={() => handleInputChange("mainImage", url)}
+                                                                        className="p-2 bg-white rounded-lg text-gray-900 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                                                                        title="Set as Main"
+                                                                    >
+                                                                        <ImageIcon size={16} />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleInputChange("galleryImages", formData.galleryImages.filter(img => img !== url))}
+                                                                        className="p-2 bg-white rounded-lg text-gray-900 hover:bg-red-50 hover:text-red-600 transition-colors"
+                                                                        title="Remove"
+                                                                    >
+                                                                        <Trash2 size={16} />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                        {formData.galleryImages.length === 0 && (
+                                                            <div className="col-span-full py-12 text-center text-gray-400 bg-gray-50 rounded-xl border-dashed border-2 border-gray-200">
+                                                                No gallery images yet.
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* --- CONTENT TAB --- */}
+                                        {activeTab === "content" && (
+                                            <div className="space-y-8">
+                                                <div>
+                                                    <label className="text-xs font-bold uppercase text-gray-500 mb-1.5 block">Short Description</label>
+                                                    <textarea
+                                                        value={formData.description}
+                                                        onChange={(e) => handleInputChange("description", e.target.value)}
+                                                        className="w-full p-4 bg-gray-50 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all font-medium text-gray-900 min-h-[100px]"
+                                                        placeholder="Brief summary shown on cards..."
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs font-bold uppercase text-gray-500 mb-1.5 block">Detailed Article</label>
+                                                    <textarea
+                                                        value={formData.longDescription}
+                                                        onChange={(e) => handleInputChange("longDescription", e.target.value)}
+                                                        className="w-full p-4 bg-gray-50 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all font-medium text-gray-900 min-h-[300px]"
+                                                        placeholder="Full project details, markdown supported..."
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* --- RELATIONS TAB --- */}
+                                        {activeTab === "relations" && (
+                                            <div className="space-y-8">
+                                                {/* Partners */}
+                                                <div className="p-6 bg-white border border-gray-200 rounded-2xl shadow-sm">
+                                                    <div className="flex justify-between items-center mb-4">
+                                                        <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                                                            <Share2 className="text-orange-500" size={20} /> Partners & Sponsors
+                                                        </h3>
+                                                        <button
+                                                            onClick={() => addListItem("partners", "")}
+                                                            className="text-xs font-bold bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                                                        >
+                                                            <Plus size={14} /> Add Pattern
+                                                        </button>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        {formData.partners.map((partner, idx) => (
+                                                            <div key={idx} className="flex gap-2">
+                                                                <input
+                                                                    type="text"
+                                                                    value={partner}
+                                                                    onChange={(e) => updateListItem("partners", idx, null, e.target.value)}
+                                                                    className="flex-1 p-2.5 bg-gray-50 border-gray-200 rounded-lg text-sm"
+                                                                    placeholder="Partner Name"
+                                                                />
+                                                                <button
+                                                                    onClick={() => removeListItem("partners", idx)}
+                                                                    className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
+                                                                >
+                                                                    <Trash2 size={18} />
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                        {formData.partners.length === 0 && <p className="text-sm text-gray-400 italic">No partners listed.</p>}
+                                                    </div>
+                                                </div>
+
+                                                {/* Testimonials */}
+                                                <div className="p-6 bg-white border border-gray-200 rounded-2xl shadow-sm">
+                                                    <div className="flex justify-between items-center mb-4">
+                                                        <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                                                            <MessageSquare className="text-green-500" size={20} /> Testimonials
+                                                        </h3>
+                                                        <button
+                                                            onClick={() => addListItem("testimonials", { quote: "", author: "" })}
+                                                            className="text-xs font-bold bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                                                        >
+                                                            <Plus size={14} /> Add Testimonial
+                                                        </button>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 gap-4">
+                                                        {formData.testimonials.map((test, idx) => (
+                                                            <div key={idx} className="p-4 bg-gray-50 rounded-xl border border-gray-100 relative group">
+                                                                <button
+                                                                    onClick={() => removeListItem("testimonials", idx)}
+                                                                    className="absolute top-2 right-2 p-1.5 text-gray-300 hover:text-red-500 transition-colors"
+                                                                >
+                                                                    <X size={16} />
+                                                                </button>
+                                                                <div className="space-y-3">
+                                                                    <textarea
+                                                                        value={test.quote}
+                                                                        onChange={(e) => updateListItem("testimonials", idx, "quote", e.target.value)}
+                                                                        placeholder="Quote text..."
+                                                                        className="w-full p-2 bg-white border border-gray-200 rounded-lg text-sm min-h-[60px]"
+                                                                    />
+                                                                    <input
+                                                                        type="text"
+                                                                        value={test.author}
+                                                                        onChange={(e) => updateListItem("testimonials", idx, "author", e.target.value)}
+                                                                        placeholder="- Author Name"
+                                                                        className="w-full p-2 bg-white border border-gray-200 rounded-lg text-sm font-bold text-gray-700"
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                        {formData.testimonials.length === 0 && <p className="text-sm text-gray-400 italic">No testimonials added.</p>}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                </AnimatePresence>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }

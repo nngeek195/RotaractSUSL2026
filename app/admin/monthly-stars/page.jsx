@@ -2,16 +2,15 @@
 
 import React, { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
+import { collection, getDocs, setDoc, doc } from "firebase/firestore";
 import {
-    collection,
-    doc,
-    getDocs,
-    setDoc,
-    updateDoc,
-} from "firebase/firestore";
+    Upload, Save, Loader2, User, Trophy, Quote,
+    Smartphone, RotateCw, CheckCircle2, AlertCircle
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/dvqoiqzxe/image/upload";
-const CLOUDINARY_UPLOAD_PRESET = "monthly_stars_upload"; // Replace with your actual preset name from Cloudinary
+const CLOUDINARY_UPLOAD_PRESET = "monthly_stars_upload";
 
 const initialState = {
     image: "",
@@ -21,236 +20,276 @@ const initialState = {
 };
 
 export default function MonthlyStarsAdmin() {
-    const [selectedType, setSelectedType] = useState("director");
-    const [currentData, setCurrentData] = useState(initialState);
-    const [savedDirector, setSavedDirector] = useState(initialState);
-    const [savedRotaractor, setSavedRotaractor] = useState(initialState);
+    const [activeTab, setActiveTab] = useState("director"); // 'director' | 'rotaractor'
+    const [directorData, setDirectorData] = useState(initialState);
+    const [rotaractorData, setRotaractorData] = useState(initialState);
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState("");
+    const [saving, setSaving] = useState(false);
+    const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+
+    // Helper to get current active data/setter
+    const currentData = activeTab === "director" ? directorData : rotaractorData;
+    const setCurrentData = activeTab === "director" ? setDirectorData : setRotaractorData;
 
     useEffect(() => {
-        // Fetch current data from Firestore for preview
-        const fetchData = async () => {
-            const querySnapshot = await getDocs(collection(db, "monthlyStars"));
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                if (data.type === "director") setSavedDirector(data);
-                if (data.type === "rotaractor") setSavedRotaractor(data);
-            });
-        };
         fetchData();
     }, []);
 
-    const handleImageUpload = async (file) => {
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-        formData.append("folder", "MonthlyStars"); // Upload to specific folder
+    const fetchData = async () => {
         setLoading(true);
-        setMessage("");
         try {
-            const res = await fetch(CLOUDINARY_UPLOAD_URL, {
-                method: "POST",
-                body: formData,
+            const querySnapshot = await getDocs(collection(db, "monthlyStars"));
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                if (doc.id === "director") setDirectorData(data);
+                if (doc.id === "rotaractor") setRotaractorData(data);
             });
-            const data = await res.json();
-            if (data.public_id) {
-                setCurrentData((prev) => ({
-                    ...prev,
-                    image: data.public_id, // 👈 only public_id
-                }));
-                setMessage("Image uploaded successfully.");
-            }
-            else {
-                setMessage("Image upload failed.");
-            }
-        } catch (err) {
-            setMessage("Image upload error.");
-        }
-        setLoading(false);
-    }; const handleSave = async () => {
-        setLoading(true);
-        setMessage("");
-        try {
-            await setDoc(doc(db, "monthlyStars", selectedType), { ...currentData, type: selectedType });
-            setMessage("Saved successfully.");
-            // Update the saved data state
-            if (selectedType === "director") {
-                setSavedDirector({ ...currentData, type: selectedType });
-            } else {
-                setSavedRotaractor({ ...currentData, type: selectedType });
-            }
-            // Clear the form
-            setCurrentData(initialState);
-        } catch (err) {
-            setMessage("Save failed.");
+        } catch (error) {
+            console.error("Error fetching data:", error);
+            showToast("Failed to load data", "error");
         }
         setLoading(false);
     };
 
+    const handleImageUpload = async (file) => {
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+        formData.append("folder", "MonthlyStars");
+
+        setSaving(true); // Re-using saving spinner for upload
+        try {
+            const res = await fetch(CLOUDINARY_UPLOAD_URL, { method: "POST", body: formData });
+            const data = await res.json();
+
+            if (data.public_id) {
+                setCurrentData(prev => ({ ...prev, image: data.public_id }));
+                showToast("Image uploaded successfully");
+            } else {
+                showToast("Upload failed", "error");
+            }
+        } catch (err) {
+            console.error("Upload error:", err);
+            showToast("Upload failed", "error");
+        }
+        setSaving(false);
+    };
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            await setDoc(doc(db, "monthlyStars", activeTab), { ...currentData, type: activeTab });
+            showToast(`${activeTab === 'director' ? 'Director' : 'Rotaractor'} updated successfully!`);
+        } catch (err) {
+            console.error("Save error:", err);
+            showToast("Failed to save changes", "error");
+        }
+        setSaving(false);
+    };
+
+    const showToast = (message, type = "success") => {
+        setToast({ show: true, message, type });
+        setTimeout(() => setToast({ show: false, message: "", type: "success" }), 3000);
+    };
+
+    const faculties = [
+        "Faculty of Applied Sciences", "Faculty of Agricultural Sciences", "Faculty of Geomatics",
+        "Faculty of Management Studies", "Faculty of Medicine", "Faculty of Social Sciences & Languages",
+        "Faculty of Technology", "Faculty of Computing"
+    ];
+
     return (
-        <div className="max-w-7xl mx-auto py-12 px-4">
-            <h2 className="font-playfair text-3xl mb-8 text-center">Monthly Stars Admin Panel</h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                {/* Left Side - Form */}
-                <div className="space-y-6">
-                    <div className="bg-white rounded-lg shadow p-6">
-                        <h3 className="font-bold text-xl mb-6">Update Monthly Star</h3>
+        <div className="max-w-7xl mx-auto pb-20 space-y-8">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Monthly Stars</h1>
+                    <p className="text-gray-500 mt-1">Highlight the top performing members of the month.</p>
+                </div>
 
-                        {/* Type Selector */}
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Select Type</label>
-                            <select
-                                value={selectedType}
-                                onChange={(e) => setSelectedType(e.target.value)}
-                                className="w-full border p-2 rounded"
-                            >
-                                <option value="director">Director of the Month</option>
-                                <option value="rotaractor">Rotaractor of the Month</option>
-                            </select>
-                        </div>
-
-                        {/* Image Upload */}
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Image</label>
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) =>
-                                    handleImageUpload(e.target.files[0])
-                                }
-                                className="w-full"
-                            />
-                            {currentData.image && (
-                                <img
-                                    src={`https://res.cloudinary.com/dvqoiqzxe/image/upload/${currentData.image}`}
-                                    alt="Preview"
-                                    className="mt-2 rounded w-full h-48 object-cover"
-                                />
-                            )}
-
-                        </div>
-
-                        {/* Name */}
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
-                            <input
-                                type="text"
-                                placeholder="Enter name"
-                                value={currentData.name}
-                                onChange={(e) =>
-                                    setCurrentData((prev) => ({ ...prev, name: e.target.value }))
-                                }
-                                className="w-full border p-2 rounded"
-                            />
-                        </div>
-
-                        {/* Faculty */}
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Faculty</label>
-                            <select
-                                value={currentData.faculty}
-                                onChange={(e) =>
-                                    setCurrentData((prev) => ({ ...prev, faculty: e.target.value }))
-                                }
-                                className="w-full border p-2 rounded"
-                            >
-                                <option value="">Select Faculty</option>
-                                <option value="Faculty of Applied Sciences">Faculty of Applied Sciences</option>
-                                <option value="Faculty of Agricultural Sciences">Faculty of Agricultural Sciences</option>
-                                <option value="Faculty of Geomatics">Faculty of Geomatics</option>
-                                <option value="Faculty of Management Studies">Faculty of Management Studies</option>
-                                <option value="Faculty of Medicine">Faculty of Medicine</option>
-                                <option value="Faculty of Social Sciences & Languages">Faculty of Social Sciences & Languages</option>
-                                <option value="Faculty of Technology">Faculty of Technology</option>
-                                <option value="Faculty of Computing">Faculty of Computing</option>
-                            </select>
-                        </div>
-
-                        {/* Quote */}
-                        <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Quote</label>
-                            <textarea
-                                placeholder="Enter quote"
-                                value={currentData.quote}
-                                onChange={(e) =>
-                                    setCurrentData((prev) => ({ ...prev, quote: e.target.value }))
-                                }
-                                className="w-full border p-2 rounded h-24"
-                            />
-                        </div>
-
-                        {/* Save Button */}
+                {/* Tabs */}
+                <div className="bg-gray-100 p-1 rounded-xl inline-flex">
+                    {["director", "rotaractor"].map((tab) => (
                         <button
-                            onClick={handleSave}
-                            className="bg-pink-600 text-white px-6 py-3 rounded w-full font-medium"
-                            disabled={loading}
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            className={`px-6 py-2.5 rounded-lg font-bold text-sm transition-all capitalize ${activeTab === tab
+                                    ? "bg-white text-gray-900 shadow-sm"
+                                    : "text-gray-500 hover:text-gray-700"
+                                }`}
                         >
-                            {loading ? "Saving..." : `Save ${selectedType === "director" ? "Director" : "Rotaractor"}`}
+                            {tab}
                         </button>
+                    ))}
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                {/* Left Column: Editor */}
+                <div className="lg:col-span-7 space-y-6">
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
+                        <div className="flex items-center justify-between mb-8">
+                            <h2 className="text-xl font-bold flex items-center gap-2">
+                                <User className="text-blue-500" />
+                                Edit {activeTab === 'director' ? 'Director' : 'Rotaractor'} Details
+                            </h2>
+                            {saving && <span className="text-sm text-blue-600 font-medium animate-pulse">Saving...</span>}
+                        </div>
+
+                        <div className="space-y-6">
+                            {/* Image Upload */}
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Profile Image</label>
+                                <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer relative group">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => handleImageUpload(e.target.files[0])}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    />
+                                    <div className="flex flex-col items-center gap-3 text-gray-500 group-hover:text-blue-600">
+                                        <div className="p-3 bg-gray-50 rounded-full group-hover:bg-white transition-colors">
+                                            <Upload size={24} />
+                                        </div>
+                                        <p className="font-medium text-sm">Click to upload or drag and drop</p>
+                                        <p className="text-xs text-gray-400">SVG, PNG, JPG (MAX. 800x800px)</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Form Fields */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Full Name</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. John Doe"
+                                        value={currentData.name}
+                                        onChange={(e) => setCurrentData(prev => ({ ...prev, name: e.target.value }))}
+                                        className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Faculty</label>
+                                    <select
+                                        value={currentData.faculty}
+                                        onChange={(e) => setCurrentData(prev => ({ ...prev, faculty: e.target.value }))}
+                                        className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white transition-all"
+                                    >
+                                        <option value="">Select Faculty</option>
+                                        {faculties.map((fac) => (
+                                            <option key={fac} value={fac}>{fac}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Inspirational Quote</label>
+                                <div className="relative">
+                                    <Quote className="absolute left-3 top-3 text-gray-400" size={16} />
+                                    <textarea
+                                        placeholder="Enter a short quote..."
+                                        value={currentData.quote}
+                                        onChange={(e) => setCurrentData(prev => ({ ...prev, quote: e.target.value }))}
+                                        className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none h-32 resize-none transition-all"
+                                    />
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleSave}
+                                disabled={saving}
+                                className="w-full py-3 bg-gray-900 text-white font-bold rounded-xl hover:bg-gray-800 transition-all shadow-lg shadow-gray-900/10 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {saving ? <Loader2 className="animate-spin" /> : <Save size={20} />}
+                                Save Changes
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                {/* Right Side - Preview */}
-                <div className="space-y-6">
-                    <h3 className="font-bold text-xl">Current Saved Details</h3>
+                {/* Right Column: Live Mobile Preview */}
+                <div className="lg:col-span-5 flex flex-col items-center">
+                    <div className="sticky top-8">
+                        <div className="flex items-center gap-2 mb-4 text-gray-500 font-medium text-sm">
+                            <Smartphone size={16} />
+                            <span>Live Mobile Preview</span>
+                        </div>
 
-                    {/* Director Preview */}
-                    <div className="bg-pink-600 rounded-[37px] shadow-lg p-8 relative flex flex-col">
-                        <p className="font-playfair font-medium text-[32px] text-white mb-1">Director</p>
-                        <p className="font-poppins font-light text-[17px] text-white mb-6">of the Month</p>
-                        {savedDirector.image ? (
-                            <img
-                                src={`https://res.cloudinary.com/dvqoiqzxe/image/upload/${savedDirector.image}`}
-                                alt="Director of the Month"
-                                className="bg-white rounded-[32px] h-[280px] mb-6 flex-shrink-0 w-full object-cover"
-                            />
+                        {/* Phone Frame */}
+                        <div className="w-[320px] h-[640px] bg-gray-900 rounded-[3rem] p-3 shadow-2xl relative border-4 border-gray-800">
+                            {/* Screen */}
+                            <div className="w-full h-full bg-white rounded-[2.5rem] overflow-hidden relative flex items-center justify-center bg-dot-pattern">
+                                {/* Dynamic Content Card */}
+                                <div className="w-[90%] transform scale-90 origin-center">
+                                    <div className="bg-pink-600 rounded-[32px] shadow-xl p-6 relative flex flex-col text-center items-center">
 
-                        ) : (
-                            <div className="bg-white rounded-[32px] h-[280px] mb-6 flex items-center justify-center">
-                                <p className="text-gray-500">No image uploaded</p>
+                                        {/* Title */}
+                                        <div className="mb-4">
+                                            <h3 className="font-serif text-2xl text-white capitalize">{activeTab}</h3>
+                                            <p className="font-light text-white/80 text-sm">of the Month</p>
+                                        </div>
+
+                                        {/* Image */}
+                                        <div className="w-48 h-48 bg-white/10 rounded-full mb-6 p-1 relative overflow-hidden ring-4 ring-white/20">
+                                            {currentData.image ? (
+                                                <img
+                                                    src={`https://res.cloudinary.com/dvqoiqzxe/image/upload/${currentData.image}`}
+                                                    alt="Preview"
+                                                    className="w-full h-full rounded-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center text-gray-400">
+                                                    <User size={40} />
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Name & Faculty */}
+                                        <h4 className="font-bold text-xl text-white mb-1 line-clamp-1">
+                                            {currentData.name || "Name Here"}
+                                        </h4>
+                                        <p className="text-white/70 text-xs mb-4 line-clamp-1">
+                                            {currentData.faculty || "Faculty Here"}
+                                        </p>
+
+                                        {/* Quote */}
+                                        <div className="relative">
+                                            <Quote size={12} className="text-white/40 absolute -top-2 -left-2 transform -scale-x-100" />
+                                            <p className="text-white text-sm font-medium italic leading-relaxed px-2 line-clamp-3">
+                                                "{currentData.quote || "Your inspiring quote will appear here..."}"
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Status Bar Simulation */}
+                                <div className="absolute top-0 w-full h-6 bg-black/20 backdrop-blur-sm z-10" />
+                                <div className="absolute bottom-1 w-1/3 h-1 bg-gray-300 rounded-full left-1/3" />
                             </div>
-                        )}
-                        <p className="font-playfair font-medium text-[24px] text-white mb-1">
-                            {savedDirector.name || "Director Name"}
-                        </p>
-                        <p className="font-poppins text-[16px] text-[#d9d9d9] mb-4">
-                            {savedDirector.faculty || "Director Faculty"}
-                        </p>
-                        <p className="font-poppins font-medium italic text-[15px] text-white leading-relaxed">
-                            {savedDirector.quote || "Director quote goes here."}
-                        </p>
-                    </div>
-
-                    {/* Rotaractor Preview */}
-                    <div className="bg-pink-600 rounded-[37px] shadow-lg p-8 relative flex flex-col">
-                        <p className="font-playfair font-medium text-[32px] text-white mb-1">Rotaractor</p>
-                        <p className="font-poppins font-light text-[17px] text-white mb-6">of the Month</p>
-                        {savedRotaractor.image ? (
-                            <img
-                                src={`https://res.cloudinary.com/dvqoiqzxe/image/upload/${savedRotaractor.image}`}
-                                alt="Rotaractor of the Month"
-                                className="bg-white rounded-[32px] h-[280px] mb-6 flex-shrink-0 w-full object-cover"
-                            />
-
-                        ) : (
-                            <div className="bg-white rounded-[32px] h-[280px] mb-6 flex items-center justify-center">
-                                <p className="text-gray-500">No image uploaded</p>
-                            </div>
-                        )}
-                        <p className="font-playfair font-medium text-[24px] text-white mb-1">
-                            {savedRotaractor.name || "Rotaractor Name"}
-                        </p>
-                        <p className="font-poppins text-[16px] text-[#d9d9d9] mb-4">
-                            {savedRotaractor.faculty || "Rotaractor Faculty"}
-                        </p>
-                        <p className="font-poppins font-medium italic text-[15px] text-white leading-relaxed">
-                            {savedRotaractor.quote || "Rotaractor quote goes here."}
-                        </p>
+                        </div>
                     </div>
                 </div>
             </div>
-            {message && <div className="mt-6 text-center text-pink-600 font-medium">{message}</div>}
+
+            {/* Toast Notification */}
+            <AnimatePresence>
+                {toast.show && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 50 }}
+                        className={`fixed bottom-8 right-8 px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 z-50 ${toast.type === "error" ? "bg-red-500 text-white" : "bg-gray-900 text-white"
+                            }`}
+                    >
+                        {toast.type === "error" ? <AlertCircle size={24} /> : <CheckCircle2 size={24} />}
+                        <span className="font-bold">{toast.message}</span>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

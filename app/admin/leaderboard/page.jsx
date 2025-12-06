@@ -1,14 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
-import { Edit2, Trash2, PlusCircle, Loader2 } from "lucide-react";
+import {
+    Edit2, Trash2, Plus, Loader2, Search, X,
+    Trophy, Users, GraduationCap, Phone, Linkedin,
+    ArrowUp, ArrowDown, ExternalLink
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
 
 export default function LeaderboardAdmin() {
+    // Data States
     const [members, setMembers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [editing, setEditing] = useState(null);
+    const [stats, setStats] = useState({ total: 0, faculties: 0, positions: 0 });
+
+    // UI States
+    const [searchTerm, setSearchTerm] = useState("");
+    const [mounted, setMounted] = useState(false);
+
+    // Modal & Form States
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingId, setEditingId] = useState(null);
     const [form, setForm] = useState({
         name: "",
         role: "",
@@ -20,18 +35,33 @@ export default function LeaderboardAdmin() {
     });
 
     useEffect(() => {
+        setMounted(true);
         fetchMembers();
     }, []);
 
     const fetchMembers = async () => {
         setLoading(true);
-        const snap = await getDocs(collection(db, "leaderboard"));
-        setMembers(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        try {
+            const snap = await getDocs(collection(db, "leaderboard"));
+            const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            setMembers(data);
+
+            // Calculate stats
+            const uniqueFaculties = new Set(data.map(m => m.faculty).filter(Boolean));
+            setStats({
+                total: data.length,
+                faculties: uniqueFaculties.size,
+                positions: data.length // Assuming 1 person per position usually
+            });
+        } catch (error) {
+            console.error("Error fetching members:", error);
+        }
         setLoading(false);
     };
 
     const handleEdit = (member) => {
-        setEditing(member.id);
+        setEditingId(member.id);
         setForm({
             name: member.name || "",
             role: member.role || "",
@@ -41,130 +71,405 @@ export default function LeaderboardAdmin() {
             photo: member.photo || "",
             positionOrder: member.positionOrder || 0
         });
+        setIsModalOpen(true);
     };
 
     const handleDelete = async (id) => {
-        if (!confirm("Delete this member?")) return;
-        await deleteDoc(doc(db, "leaderboard", id));
-        fetchMembers();
+        if (!confirm("Delete this member permanently?")) return;
+        try {
+            await deleteDoc(doc(db, "leaderboard", id));
+            setMembers(prev => prev.filter(m => m.id !== id));
+            setStats(prev => ({ ...prev, total: prev.total - 1 }));
+        } catch (error) {
+            console.error("Error deleting:", error);
+        }
     };
 
-    const handleSave = async () => {
-        if (editing) {
-            await updateDoc(doc(db, "leaderboard", editing), form);
-        } else {
-            await addDoc(collection(db, "leaderboard"), form);
+    const handleSave = async (e) => {
+        e.preventDefault();
+        try {
+            if (editingId) {
+                await updateDoc(doc(db, "leaderboard", editingId), form);
+                setMembers(prev => prev.map(m => m.id === editingId ? { ...m, ...form } : m));
+            } else {
+                const ref = await addDoc(collection(db, "leaderboard"), form);
+                setMembers(prev => [...prev, { id: ref.id, ...form }]);
+                setStats(prev => ({ ...prev, total: prev.total + 1 }));
+            }
+            closeModal();
+        } catch (error) {
+            console.error("Error saving:", error);
+            alert("Failed to save member.");
         }
-        setEditing(null);
-        setForm({ name: "", role: "", faculty: "", phone: "", linkedin: "", photo: "", positionOrder: 0 });
-        fetchMembers();
     };
+
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setEditingId(null);
+        setForm({ name: "", role: "", faculty: "", phone: "", linkedin: "", photo: "", positionOrder: 0 });
+    };
+
+    const openCreateModal = () => {
+        closeModal(); // Reset form
+        setIsModalOpen(true);
+    };
+
+    // Filter and Sort
+    const filteredMembers = members
+        .filter(m =>
+            m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            m.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            m.faculty.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        .sort((a, b) => (a.positionOrder ?? 999) - (b.positionOrder ?? 999));
 
     // List of roles for dropdown
     const rolesWithOrder = [
-        "President",
-        "Vice President",
-        "Vice President",
-        "Vice President",
-        "Secretary",
-        "Assistant Secretary",
-        "Editor",
-        "Assistant Treasurer",
-        "Sergeant at Arms",
-        "Club Service",
-        "Community Service",
-        "International Service",
-        "Professional Development",
-        "Finance",
-        "Membership Development",
-        "Public Relations",
-        "Sports and Recreational Activities"
+        "President", "Vice President", "Secretary", "Assistant Secretary", "Editor",
+        "Assistant Treasurer", "Sergeant at Arms", "Club Service", "Community Service",
+        "International Service", "Professional Development", "Finance",
+        "Membership Development", "Public Relations", "Sports and Recreational Activities"
     ];
 
+    const faculties = [
+        "Faculty of Agricultural Sciences", "Faculty of Applied Sciences", "Faculty of Geomatics",
+        "Faculty of Management Studies", "Faculty of Medicine", "Faculty of Social Sciences and Languages",
+        "Faculty of Computing", "Faculty of Technology"
+    ];
+
+    const LoadingSkeleton = () => (
+        <div className="space-y-4">
+            {[1, 2, 3, 4, 5].map(i => (
+                <div key={i} className="h-20 bg-gray-100 rounded-xl animate-pulse" />
+            ))}
+        </div>
+    );
+
     return (
-        <div className="space-y-8">
-            <h1 className="text-2xl font-bold mb-4">Leaderboard Management</h1>
-            {loading ? (
-                <div className="flex justify-center p-10"><Loader2 className="animate-spin text-blue-600" size={40} /></div>
-            ) : (
-                <table className="w-full text-left border-collapse bg-white rounded-xl shadow-md overflow-hidden">
-                    <thead>
-                        <tr className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider border-b border-gray-200">
-                            <th className="p-4 font-semibold">Order</th>
-                            <th className="p-4 font-semibold">Photo</th>
-                            <th className="p-4 font-semibold">Name</th>
-                            <th className="p-4 font-semibold">Role</th>
-                            <th className="p-4 font-semibold">Faculty</th>
-                            <th className="p-4 font-semibold">Phone</th>
-                            <th className="p-4 font-semibold">LinkedIn</th>
-                            <th className="p-4 font-semibold text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100 text-sm">
-                        {members
-                            .sort((a, b) => (a.positionOrder ?? 999) - (b.positionOrder ?? 999))
-                            .map(member => (
-                                <tr key={member.id}>
-                                    <td className="p-4 font-bold">{member.positionOrder}</td>
-                                    <td className="p-4"><img src={member.photo} alt="photo" className="w-12 h-12 rounded-full object-cover" /></td>
-                                    <td className="p-4">{member.name}</td>
-                                    <td className="p-4">{member.role}</td>
-                                    <td className="p-4">{member.faculty}</td>
-                                    <td className="p-4">{member.phone}</td>
-                                    <td className="p-4">
-                                        {member.linkedin ? (
-                                            <a href={member.linkedin} target="_blank" rel="noopener noreferrer">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24" style={{ display: 'inline', verticalAlign: 'middle' }}>
-                                                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.761 0 5-2.239 5-5v-14c0-2.761-2.239-5-5-5zm-11 19h-3v-10h3v10zm-1.5-11.268c-.966 0-1.75-.784-1.75-1.75s.784-1.75 1.75-1.75 1.75.784 1.75 1.75-.784 1.75-1.75 1.75zm13.5 11.268h-3v-5.604c0-1.337-.026-3.063-1.868-3.063-1.868 0-2.154 1.459-2.154 2.967v5.7h-3v-10h2.881v1.367h.041c.401-.761 1.379-1.563 2.838-1.563 3.036 0 3.599 2.001 3.599 4.601v5.595z" />
-                                                </svg>
-                                            </a>
-                                        ) : (
-                                            <span style={{ color: '#888' }}>—</span>
-                                        )}
-                                    </td>
-                                    <td className="p-4 text-right">
-                                        <button className="p-2 text-blue-600" onClick={() => handleEdit(member)}><Edit2 size={16} /></button>
-                                        <button className="p-2 text-red-600" onClick={() => handleDelete(member.id)}><Trash2 size={16} /></button>
-                                    </td>
-                                </tr>
-                            ))}
-                    </tbody>
-                </table>
-            )}
-            <div className="bg-white p-6 rounded-xl shadow-md mt-8">
-                <h2 className="text-lg font-bold mb-4">{editing ? "Edit Member" : "Add New Member"}</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input className="p-3 border rounded" placeholder="Name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-                    <select className="p-3 border rounded" value={form.positionOrder ? `${form.positionOrder} - ${form.role}` : ""} onChange={e => {
-                        const selected = e.target.value;
-                        const [order, role] = selected.split(' - ');
-                        setForm(f => ({ ...f, role, positionOrder: Number(order) }));
-                    }}>
-                        <option value="">Select Role</option>
-                        {rolesWithOrder.map((role, idx) => (
-                            <option key={idx} value={`${idx + 1} - ${role}`}>{`${idx + 1} - ${role}`}</option>
-                        ))}
-                    </select>
-                    <select className="p-3 border rounded" value={form.faculty} onChange={e => setForm(f => ({ ...f, faculty: e.target.value }))}>
-                        <option value="">Select Faculty</option>
-                        <option value="Faculty of Agricultural Sciences">Faculty of Agricultural Sciences</option>
-                        <option value="Faculty of Applied Sciences">Faculty of Applied Sciences</option>
-                        <option value="Faculty of Geomatics">Faculty of Geomatics</option>
-                        <option value="Faculty of Management Studies">Faculty of Management Studies</option>
-                        <option value="Faculty of Medicine">Faculty of Medicine</option>
-                        <option value="Faculty of Social Sciences and Languages">Faculty of Social Sciences and Languages</option>
-                        <option value="Faculty of Computing">Faculty of Computing</option>
-                        <option value="Faculty of Technology">Faculty of Technology</option>
-                    </select>
-                    <input className="p-3 border rounded" placeholder="Phone" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
-                    <input className="p-3 border rounded" placeholder="LinkedIn URL" value={form.linkedin} onChange={e => setForm(f => ({ ...f, linkedin: e.target.value }))} />
-                    <input className="p-3 border rounded" placeholder="Photo URL" value={form.photo} onChange={e => setForm(f => ({ ...f, photo: e.target.value }))} />
+        <div className="space-y-8 max-w-7xl mx-auto pb-20">
+
+            {/* Header */}
+            <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Leaderboard Management</h1>
+                    <p className="text-gray-500 mt-1 font-medium">Manage executive board members and positions.</p>
                 </div>
-                <button className="mt-4 px-6 py-2 bg-blue-600 text-white rounded font-bold flex items-center gap-2" onClick={handleSave}>
-                    <PlusCircle size={18} /> {editing ? "Update Member" : "Add Member"}
+                <button
+                    onClick={openCreateModal}
+                    className="px-5 py-2.5 bg-gray-900 text-white font-bold rounded-xl hover:bg-gray-800 transition-all shadow-lg shadow-gray-900/10 flex items-center gap-2 active:scale-95"
+                >
+                    <Plus size={20} /> Add Member
                 </button>
-                {editing && <button className="mt-4 ml-4 px-6 py-2 bg-gray-300 text-gray-700 rounded font-bold" onClick={() => { setEditing(null); setForm({ name: "", role: "", faculty: "", phone: "", linkedin: "", photo: "" }); }}>Cancel</button>}
+            </header>
+
+            {/* Stats Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {[
+                    { label: "Total Leaders", value: stats.total, icon: Users, color: "bg-blue-500", lightColor: "bg-blue-50 text-blue-600" },
+                    { label: "Faculties Represented", value: stats.faculties, icon: GraduationCap, color: "bg-purple-500", lightColor: "bg-purple-50 text-purple-600" },
+                    { label: "Position Types", value: stats.positions, icon: Trophy, color: "bg-amber-500", lightColor: "bg-amber-50 text-amber-600" },
+                ].map((stat, idx) => (
+                    <motion.div
+                        key={idx}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.1 }}
+                        className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-5 hover:shadow-md transition-shadow"
+                    >
+                        <div className={`p-4 rounded-xl ${stat.lightColor}`}>
+                            <stat.icon size={28} />
+                        </div>
+                        <div>
+                            <p className="text-sm text-gray-500 font-medium mb-1">{stat.label}</p>
+                            <h3 className="text-3xl font-bold text-gray-900">{stat.value}</h3>
+                        </div>
+                    </motion.div>
+                ))}
             </div>
+
+            {/* Search */}
+            <div className="relative max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <input
+                    type="text"
+                    placeholder="Search by name, role, or faculty..."
+                    className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all shadow-sm"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+
+            {/* Content Area */}
+            {loading ? (
+                <LoadingSkeleton />
+            ) : filteredMembers.length === 0 ? (
+                <div className="text-center py-20 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+                        <Users size={32} />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900">No members found</h3>
+                    <p className="text-gray-500">Try adjusting your search or add a new member.</p>
+                </div>
+            ) : (
+                <>
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-gray-50/50 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500">
+                                    <th className="p-5 font-bold text-center w-16">#</th>
+                                    <th className="p-5 font-bold">Profile</th>
+                                    <th className="p-5 font-bold">Role & Faculty</th>
+                                    <th className="p-5 font-bold">Contact</th>
+                                    <th className="p-5 font-bold text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                <AnimatePresence mode="popLayout">
+                                    {filteredMembers.map((member, i) => (
+                                        <motion.tr
+                                            key={member.id}
+                                            layout
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            className="hover:bg-gray-50/80 transition-colors group"
+                                        >
+                                            <td className="p-5 text-center font-bold text-gray-400">{member.positionOrder}</td>
+                                            <td className="p-5">
+                                                <div className="flex items-center gap-4">
+                                                    <img
+                                                        src={member.photo || "https://via.placeholder.com/100"}
+                                                        alt={member.name}
+                                                        className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
+                                                    />
+                                                    <span className="font-bold text-gray-900">{member.name}</span>
+                                                </div>
+                                            </td>
+                                            <td className="p-5">
+                                                <div className="flex flex-col">
+                                                    <span className="font-semibold text-gray-800">{member.role}</span>
+                                                    <span className="text-xs text-gray-500">{member.faculty}</span>
+                                                </div>
+                                            </td>
+                                            <td className="p-5">
+                                                <div className="flex gap-3 text-gray-400">
+                                                    {member.phone && (
+                                                        <div className="group/tooltip relative">
+                                                            <Phone size={18} className="hover:text-blue-600 transition-colors cursor-help" />
+                                                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                                                {member.phone}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    {member.linkedin && (
+                                                        <a href={member.linkedin} target="_blank" rel="noopener noreferrer" className="hover:text-blue-600 transition-colors">
+                                                            <Linkedin size={18} />
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="p-5 text-right">
+                                                <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button onClick={() => handleEdit(member)} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors">
+                                                        <Edit2 size={16} />
+                                                    </button>
+                                                    <button onClick={() => handleDelete(member.id)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors">
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </motion.tr>
+                                    ))}
+                                </AnimatePresence>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Mobile Card View */}
+                    <div className="md:hidden grid grid-cols-1 gap-4">
+                        <AnimatePresence mode="popLayout">
+                            {filteredMembers.map((member, i) => (
+                                <motion.div
+                                    key={member.id}
+                                    layout
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4"
+                                >
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <img
+                                                src={member.photo || "https://via.placeholder.com/100"}
+                                                alt={member.name}
+                                                className="w-14 h-14 rounded-full object-cover border-2 border-white shadow-sm"
+                                            />
+                                            <div>
+                                                <h3 className="font-bold text-gray-900 text-lg leading-tight">{member.name}</h3>
+                                                <span className="text-sm font-medium text-blue-600">{member.role}</span>
+                                            </div>
+                                        </div>
+                                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-500 text-xs">
+                                            {member.positionOrder}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2 text-sm text-gray-600">
+                                        <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg">
+                                            <GraduationCap size={16} className="text-purple-500" />
+                                            {member.faculty}
+                                        </div>
+                                        <div className="flex gap-4 px-2">
+                                            {member.phone && (
+                                                <span className="flex items-center gap-2"><Phone size={14} /> {member.phone}</span>
+                                            )}
+                                            {member.linkedin && (
+                                                <a href={member.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-600 font-medium">
+                                                    <Linkedin size={14} /> LinkedIn
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-2 pt-2 border-t border-gray-100">
+                                        <button onClick={() => handleEdit(member)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg font-bold hover:bg-gray-200 text-sm">
+                                            Edit
+                                        </button>
+                                        <button onClick={() => handleDelete(member.id)} className="flex-1 py-2 bg-red-50 text-red-600 rounded-lg font-bold hover:bg-red-100 text-sm">
+                                            Delete
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </AnimatePresence>
+                    </div>
+                </>
+            )}
+
+            {/* Portal Modal */}
+            {mounted && createPortal(
+                <AnimatePresence>
+                    {isModalOpen && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/60 backdrop-blur-md z-[9999] flex items-center justify-center p-4"
+                            onClick={closeModal}
+                        >
+                            <motion.div
+                                initial={{ scale: 0.95, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.95, opacity: 0 }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]"
+                            >
+                                <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                                    <h3 className="text-xl font-bold text-gray-900">
+                                        {editingId ? "Edit Member" : "Add Leaderboard Member"}
+                                    </h3>
+                                    <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 transition-colors">
+                                        <X size={24} />
+                                    </button>
+                                </div>
+
+                                <div className="p-6 overflow-y-auto">
+                                    <form id="memberForm" onSubmit={handleSave} className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-1">Full Name</label>
+                                            <input
+                                                value={form.name}
+                                                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                                                required
+                                                className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-bold text-gray-700 mb-1">Role & Order</label>
+                                                <select
+                                                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                                                    value={form.positionOrder && form.role ? `${form.positionOrder} - ${form.role}` : ""}
+                                                    onChange={e => {
+                                                        const [order, role] = e.target.value.split(' - ');
+                                                        if (order && role) setForm(f => ({ ...f, role, positionOrder: Number(order) }));
+                                                    }}
+                                                >
+                                                    <option value="">Select Role</option>
+                                                    {rolesWithOrder.map((role, idx) => (
+                                                        <option key={idx} value={`${idx + 1} - ${role}`}>{idx + 1}. {role}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-gray-700 mb-1">Faculty</label>
+                                                <select
+                                                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                                                    value={form.faculty}
+                                                    onChange={e => setForm(f => ({ ...f, faculty: e.target.value }))}
+                                                >
+                                                    <option value="">Select Faculty</option>
+                                                    {faculties.map((fac, i) => (
+                                                        <option key={i} value={fac}>{fac}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-1">Photo URL</label>
+                                            <input
+                                                value={form.photo}
+                                                onChange={e => setForm(f => ({ ...f, photo: e.target.value }))}
+                                                placeholder="https://..."
+                                                className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-bold text-gray-700 mb-1">Phone</label>
+                                                <input
+                                                    value={form.phone}
+                                                    onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                                                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-gray-700 mb-1">LinkedIn URL</label>
+                                                <input
+                                                    value={form.linkedin}
+                                                    onChange={e => setForm(f => ({ ...f, linkedin: e.target.value }))}
+                                                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                                                />
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+                                    <button
+                                        onClick={closeModal}
+                                        className="px-5 py-2.5 text-gray-600 font-bold hover:bg-gray-200 rounded-xl transition-colors text-sm"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        form="memberForm"
+                                        className="px-6 py-2.5 bg-gray-900 text-white font-bold rounded-xl hover:bg-gray-800 transition-all shadow-lg shadow-gray-900/10 text-sm"
+                                    >
+                                        {editingId ? "Save Changes" : "Add Member"}
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
         </div>
     );
 }
