@@ -66,11 +66,13 @@ const facultyData = {
         "Department of Geography and Environmental Management",
         "Department of Information Technology",
         "Department of Languages",
-        "Department of Social Sciences"
+        "Department of Social Sciences",
+        " - "
     ],
     "Faculty of Technology": [
         "Department of Biosystems Technology",
-        "Department of Engineering Technology"
+        "Department of Engineering Technology",
+        " - "
     ]
 };
 
