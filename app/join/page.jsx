@@ -23,7 +23,8 @@ const facultyData = {
         "Department of Food Science and Technology",
         "Department of Natural Resources",
         "Department of Physical Sciences and Technology",
-        "Department of Sport Sciences and Physical Education"
+        "Department of Sport Sciences and Physical Education",
+        " - "
     ],
     "Faculty of Computing": [
         "Department of Computing and Information Systems",
@@ -32,7 +33,8 @@ const facultyData = {
     ],
     "Faculty of Geomatics": [
         "Department of Remote Sensing and GIS",
-        "Department of Surveying and Geodesy"
+        "Department of Surveying and Geodesy",
+        " - "
     ],
     "Faculty of Management Studies": [
         "Department of Accountancy & Finance",
