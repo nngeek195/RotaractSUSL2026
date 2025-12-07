@@ -984,7 +984,10 @@ export default function Home() {
 
       {/* Leadership Section */}
       <section id="leadership" className="bg-[#e9e9e9] py-16 lg:py-24">
-        <MotionWrapper className="max-w-6xl mx-auto px-4">
+        <MotionWrapper
+          className="max-w-6xl mx-auto px-4"
+          viewport={{ once: true, amount: 0 }}
+        >
           <h2 className="font-playfair font-medium text-4xl lg:text-5xl text-black text-center mb-6">
             Our Leadership
           </h2>
