@@ -1,14 +1,49 @@
 'use client';
+import { useState, useEffect } from 'react';
+import { db } from '../../lib/firebase';
+import { collection, query, where, getDocs, addDoc, serverTimestamp, orderBy, onSnapshot } from 'firebase/firestore';
+import {
+    ShieldCheck, Mail, Calendar, CheckCircle, AlertCircle, User, X, Search, MapPin,
+    Loader2, Package, ArrowRight, Plus, Heart, FileSearch, Info, Phone, CreditCard,
+    UploadCloud, Send, Copy, BadgeCheck, Filter, ChevronDown, Landmark,
+    Backpack, Book, PenTool, Pencil, ShoppingBag, Droplet, Shirt, Footprints, Notebook
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CldUploadWidget } from 'next-cloudinary';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
-import { useState, useEffect } from "react";
-import { collection, getDocs, query, orderBy, addDoc, where, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import NavBar from "../components/Navbar.jsx";
-import Footer from "../components/Footer.jsx";
-import { Search, MapPin, Phone, Package, X, Loader2, Heart, Plus, FileSearch, User, Upload } from "lucide-react";
+const ITEM_ICONS = {
+    notebooks: <Notebook size={32} className="text-blue-500" />,
+    pens: <PenTool size={32} className="text-purple-500" />,
+    pencils: <Pencil size={32} className="text-yellow-500" />,
+    schoolbags: <Backpack size={32} className="text-pink-500" />,
+    shoes: <Footprints size={32} className="text-orange-500" />,
+    waterbottles: <Droplet size={32} className="text-cyan-500" />,
+    uniforms: <Shirt size={32} className="text-indigo-500" />,
+    default: <Package size={32} className="text-gray-400" />
+};
 
-const CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/dvqoiqzxe/image/upload";
-const CLOUDINARY_UPLOAD_PRESET = "projects";
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1
+        }
+    }
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+};
+
+const buttonVariants = {
+    rest: { scale: 1 },
+    hover: { scale: 1.05 },
+    tap: { scale: 0.95 }
+};
 
 export default function ReliefRequestsPage() {
     const [requests, setRequests] = useState([]);
@@ -146,7 +181,7 @@ export default function ReliefRequestsPage() {
         predefinedItems.forEach(item => {
             stats[item.id] = {
                 name: item.name,
-                icon: item.icon,
+                icon: ITEM_ICONS[item.id] || ITEM_ICONS[item.name.toLowerCase().replace(/\s+/g, '')] || ITEM_ICONS.default,
                 totalRequested: 0,
                 totalFulfilled: item.globalFulfilled || 0, // Use global fulfilled count from admin
                 pending: 0
@@ -284,8 +319,8 @@ export default function ReliefRequestsPage() {
             });
 
         if (selectedItems.length === 0 && !donationForm.itemsOffered && !donationForm.paymentSlip) {
-             alert("Please either select items from the list, type a description, or upload a payment slip.");
-             return;
+            alert("Please either select items from the list, type a description, or upload a payment slip.");
+            return;
         }
 
         if (!donationForm.district) {
@@ -498,108 +533,161 @@ export default function ReliefRequestsPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <NavBar currentPage="relief" />
+        <div className="min-h-screen bg-slate-50 relative overflow-hidden">
+            {/* Background Decoration */}
+            <div className="absolute top-0 left-0 w-full h-[600px] bg-gradient-to-b from-blue-600/10 to-transparent pointer-events-none" />
+            <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute top-40 -left-20 w-[400px] h-[400px] bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
-            <div className="pt-8 pb-16 px-4 lg:px-8 max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-8 rounded-2xl shadow-lg mb-8">
-                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                        <div>
-                            <h1 className="font-playfair text-4xl font-bold mb-3">
-                                📋 Material Requests
-                            </h1>
-                            <p className="font-poppins text-lg text-blue-50">
-                                Browse and help fulfill material requests for flood-affected schools
-                            </p>
-                            <p className="font-poppins text-base mt-1 text-blue-100">
-                                පහත බොත්තම් භාවිතා කර ඉල්ලීම් කරන්න, පරිත්‍යාග කරන්න හෝ ඔබගේ ඉල්ලීම පරීක්ෂා කරන්න.
-                            </p>
-                        </div>
-                        <div className="flex flex-col sm:flex-row gap-4 sm:gap-5">
-                            <button
-                                onClick={() => setShowTrackModal(true)}
-                                className="bg-purple-600 text-white px-8 py-5 rounded-xl font-poppins font-extrabold text-base md:text-lg hover:bg-purple-700 transition flex items-center gap-3 shadow-xl min-w-[240px] justify-center border-2 border-purple-700"
-                                aria-label="Track my request (මගේ ඉල්ලීම පරීක්ෂා කරන්න)"
-                            >
-                                <FileSearch size={24} />
-                                <span className="flex flex-col leading-tight text-center">
-                                    <span>Track My Request</span>
-                                    <span className="text-xs md:text-sm font-medium text-purple-50">මගේ ඉල්ලීම පරීක්ෂා කරන්න</span>
-                                </span>
-                            </button>
-                            <button
-                                onClick={() => setShowRequestForm(true)}
-                                className="bg-white text-blue-700 px-8 py-5 rounded-xl font-poppins font-extrabold text-base md:text-lg hover:bg-blue-50 transition flex items-center gap-3 shadow-xl min-w-[240px] justify-center"
-                                aria-label="Request donation (අවශ්‍ය දේ ඉල්ලන්න)"
-                            >
-                                <Plus size={24} />
-                                <span className="flex flex-col leading-tight text-center">
-                                    <span>Request Donation</span>
-                                    <span className="text-xs md:text-sm font-medium text-blue-500">අවශ්‍ය දේ ඉල්ලන්න</span>
-                                </span>
-                            </button>
-                            <button
-                                onClick={() => setShowDonationForm(true)}
-                                className="bg-pink-600 text-white px-8 py-5 rounded-xl font-poppins font-extrabold text-base md:text-lg hover:bg-pink-700 transition flex items-center gap-3 shadow-xl min-w-[240px] justify-center"
-                                aria-label="Offer donation (පරිත්‍යාග කරන්න)"
-                            >
-                                <Heart size={24} />
-                                <span className="flex flex-col leading-tight text-center">
-                                    <span>Offer Donation</span>
-                                    <span className="text-xs md:text-sm font-medium text-pink-100">පරිත්‍යාග කරන්න</span>
-                                </span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+            <Navbar currentPage="relief" />
 
+            <div className="pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative z-10">
+
+                {/* Hero Section */}
+                <motion.div
+                    initial="hidden"
+                    animate="visible"
+                    variants={containerVariants}
+                    className="mb-16 text-center max-w-4xl mx-auto"
+                >
+                    <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100 text-blue-700 text-sm font-bold mb-6 border border-blue-200">
+                        <ShieldCheck size={16} />
+                        <span>Flood Relief Initiative 2025</span>
+                    </motion.div>
+
+                    <motion.h1 variants={itemVariants} className="font-playfair text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+                        Connecting Needs with <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">Generosity</span>
+                    </motion.h1>
+
+                    <motion.p variants={itemVariants} className="font-poppins text-lg text-gray-600 mb-10 leading-relaxed max-w-2xl mx-auto">
+                        Browse verified material requests from flood-affected schools or submit your own needs.
+                        Together, we can rebuild our community&apos;s future.
+                    </motion.p>
+
+                    {/* Action Buttons */}
+                    <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                        <motion.button
+                            variants={buttonVariants}
+                            initial="rest"
+                            whileHover="hover"
+                            whileTap="tap"
+                            onClick={() => setShowRequestForm(true)}
+                            className="group relative px-8 py-4 bg-gray-900 text-white rounded-2xl font-bold font-poppins text-lg overflow-hidden shadow-xl shadow-gray-900/20 active:scale-95 transition-all w-full sm:w-auto"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="relative flex items-center justify-center gap-3">
+                                <Plus size={20} />
+                                Request Help
+                            </div>
+                        </motion.button>
+
+                        <motion.button
+                            variants={buttonVariants}
+                            initial="rest"
+                            whileHover="hover"
+                            whileTap="tap"
+                            onClick={() => setShowDonationForm(true)}
+                            className="group px-8 py-4 bg-white text-gray-900 border border-gray-200 rounded-2xl font-bold font-poppins text-lg shadow-lg hover:shadow-xl hover:border-pink-200 active:scale-95 transition-all w-full sm:w-auto flex items-center justify-center gap-3"
+                        >
+                            <Heart size={20} className="text-pink-600 group-hover:scale-110 transition-transform" />
+                            Offer Donation
+                        </motion.button>
+
+                        <motion.button
+                            variants={buttonVariants}
+                            initial="rest"
+                            whileHover="hover"
+                            whileTap="tap"
+                            onClick={() => setShowTrackModal(true)}
+                            className="px-8 py-4 bg-transparent text-gray-600 font-bold font-poppins text-base hover:text-blue-600 hover:bg-white/50 rounded-2xl transition-all w-full sm:w-auto flex items-center justify-center gap-2"
+                        >
+                            <FileSearch size={18} />
+                            Track Request
+                        </motion.button>
+                    </motion.div>
+                </motion.div>
                 {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div className="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-6">
-                        <p className="font-poppins text-sm text-yellow-700 mb-1">Pending Requests</p>
-                        <p className="font-playfair text-4xl font-bold text-yellow-800">{counts.pending}</p>
-                    </div>
-                    <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-6">
-                        <p className="font-poppins text-sm text-blue-700 mb-1">Assigned Requests</p>
-                        <p className="font-playfair text-4xl font-bold text-blue-800">{counts.assigned}</p>
-                    </div>
-                    <div className="bg-green-50 border-2 border-green-300 rounded-xl p-6">
-                        <p className="font-poppins text-sm text-green-700 mb-1">Fulfilled Requests</p>
-                        <p className="font-playfair text-4xl font-bold text-green-800">{counts.fulfilled}</p>
-                    </div>
-                </div>
+                <motion.div
+                    variants={containerVariants}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true }}
+                    className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16"
+                >
+                    <motion.div variants={itemVariants} className="bg-white/80 backdrop-blur-md border border-white/20 rounded-2xl p-6 shadow-xl relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <AlertCircle size={80} className="text-yellow-500" />
+                        </div>
+                        <p className="font-poppins text-sm text-gray-500 mb-1 font-semibold uppercase tracking-wider">Pending Requests</p>
+                        <p className="font-playfair text-5xl font-bold text-gray-900">{counts.pending}</p>
+                        <div className="w-full bg-gray-100 h-1 mt-4 rounded-full overflow-hidden">
+                            <div className="h-full bg-yellow-400 w-1/3" />
+                        </div>
+                    </motion.div>
 
+                    <motion.div variants={itemVariants} className="bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-2xl p-6 shadow-xl relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <User size={80} className="text-white" />
+                        </div>
+                        <p className="font-poppins text-sm text-blue-100 mb-1 font-semibold uppercase tracking-wider">Assigned</p>
+                        <p className="font-playfair text-5xl font-bold text-white">{counts.assigned}</p>
+                        <div className="w-full bg-white/20 h-1 mt-4 rounded-full overflow-hidden">
+                            <div className="h-full bg-white w-1/2" />
+                        </div>
+                    </motion.div>
 
+                    <motion.div variants={itemVariants} className="bg-white/80 backdrop-blur-md border border-white/20 rounded-2xl p-6 shadow-xl relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <CheckCircle size={80} className="text-green-500" />
+                        </div>
+                        <p className="font-poppins text-sm text-gray-500 mb-1 font-semibold uppercase tracking-wider">Fulfilled</p>
+                        <p className="font-playfair text-5xl font-bold text-gray-900">{counts.fulfilled}</p>
+                        <div className="w-full bg-gray-100 h-1 mt-4 rounded-full overflow-hidden">
+                            <div className="h-full bg-green-500 w-3/4" />
+                        </div>
+                    </motion.div>
+                </motion.div>
 
                 {/* Filters */}
-                <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-                    <h2 className="font-playfair text-2xl font-bold text-gray-800 mb-6">
-                        🔍 Filter Requests
-                    </h2>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="bg-white/70 backdrop-blur-xl border border-white/40 rounded-3xl shadow-xl p-8 mb-12"
+                >
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                         <div>
-                            <label className="block font-poppins font-medium text-gray-700 mb-2">
-                                Search by School Name
-                            </label>
+                            <h2 className="font-playfair text-3xl font-bold text-gray-900">
+                                Browse Requests
+                            </h2>
+                            <p className="text-gray-500 font-poppins mt-1">Find a school to support in your area</p>
+                        </div>
+                        <button
+                            onClick={clearFilters}
+                            className="text-sm font-bold text-pink-600 hover:text-pink-700 font-poppins uppercase tracking-wide flex items-center gap-1"
+                        >
+                            <X size={16} /> Clear Filters
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="relative group">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors" size={20} />
                             <input
                                 type="text"
                                 value={searchSchool}
                                 onChange={(e) => setSearchSchool(e.target.value)}
-                                placeholder="Enter school name..."
-                                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
+                                placeholder="Search by school..."
+                                className="w-full pl-12 pr-4 py-4 bg-white/50 border-2 border-transparent focus:border-blue-500/20 focus:bg-white rounded-xl outline-none font-poppins transition-all shadow-sm hover:shadow-md focus:shadow-lg text-gray-800 placeholder:text-gray-400"
                             />
                         </div>
 
-                        <div>
-                            <label className="block font-poppins font-medium text-gray-700 mb-2">
-                                Filter by District
-                            </label>
+                        <div className="relative group">
+                            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-purple-600 transition-colors" size={20} />
                             <select
                                 value={filterDistrict}
                                 onChange={(e) => setFilterDistrict(e.target.value)}
-                                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
+                                className="w-full pl-12 pr-4 py-4 bg-white/50 border-2 border-transparent focus:border-purple-500/20 focus:bg-white rounded-xl outline-none font-poppins transition-all shadow-sm hover:shadow-md focus:shadow-lg text-gray-800 appearance-none cursor-pointer"
                             >
                                 <option value="">All Districts</option>
                                 {districts.map(district => (
@@ -608,14 +696,14 @@ export default function ReliefRequestsPage() {
                             </select>
                         </div>
 
-                        <div>
-                            <label className="block font-poppins font-medium text-gray-700 mb-2">
-                                Filter by Status
-                            </label>
+                        <div className="relative group">
+                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-green-600 transition-colors">
+                                <div className="w-5 h-5 rounded-full border-2 border-current border-dahsed" />
+                            </div>
                             <select
                                 value={filterStatus}
                                 onChange={(e) => setFilterStatus(e.target.value)}
-                                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
+                                className="w-full pl-12 pr-4 py-4 bg-white/50 border-2 border-transparent focus:border-green-500/20 focus:bg-white rounded-xl outline-none font-poppins transition-all shadow-sm hover:shadow-md focus:shadow-lg text-gray-800 appearance-none cursor-pointer"
                             >
                                 <option value="">All Statuses</option>
                                 <option value="pending">Pending</option>
@@ -624,132 +712,115 @@ export default function ReliefRequestsPage() {
                             </select>
                         </div>
                     </div>
-
-                    <div className="flex gap-3">
-                        <button
-                            onClick={clearFilters}
-                            className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg font-poppins font-medium hover:bg-gray-300 transition"
-                        >
-                            Clear Filters
-                        </button>
-                        <p className="text-sm text-gray-600 font-poppins flex items-center">
-                            Showing {filteredRequests.length} of {requests.length} requests
-                        </p>
-                    </div>
-                </div>
+                </motion.div>
 
                 {/* Requests List */}
                 {loading ? (
-                    <div className="flex items-center justify-center py-20">
-                        <Loader2 className="animate-spin text-pink-600" size={48} />
+                    <div className="flex flex-col items-center justify-center py-32">
+                        <Loader2 className="animate-spin text-blue-600 mb-4" size={48} />
+                        <p className="font-poppins text-gray-500 animate-pulse">Loading requests...</p>
                     </div>
                 ) : filteredRequests.length === 0 ? (
-                    <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
-                        <p className="font-poppins text-gray-600 text-lg">
-                            No requests found matching your criteria
+                    <div className="bg-white/50 backdrop-blur-sm rounded-3xl p-16 text-center border-2 border-dashed border-gray-300">
+                        <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <Search className="text-gray-400" size={32} />
+                        </div>
+                        <h3 className="font-playfair text-2xl font-bold text-gray-800 mb-2">No Requests Found</h3>
+                        <p className="font-poppins text-gray-500 text-lg max-w-md mx-auto">
+                            We couldn&apos;t find any requests matching your criteria. Try adjusting your filters.
                         </p>
                     </div>
                 ) : (
-                    <div className="space-y-12">
+                    <div className="space-y-16">
                         {['pending', 'assigned', 'fulfilled'].map(status => {
                             const statusRequests = filteredRequests.filter(r => r.status === status);
                             if (statusRequests.length === 0) return null;
 
                             return (
-                                <div key={status}>
-                                    <div className="flex items-center gap-3 mb-6 border-b-2 border-gray-100 pb-3">
-                                        <h3 className="font-playfair text-2xl font-bold text-gray-800 capitalize">
+                                <div key={status} className="relative">
+                                    <div className="flex items-center gap-4 mb-8">
+                                        <div className={`h-12 w-1 rounded-full ${status === 'pending' ? 'bg-yellow-400' :
+                                            status === 'assigned' ? 'bg-blue-600' :
+                                                'bg-green-500'
+                                            }`} />
+                                        <h3 className="font-playfair text-3xl font-bold text-gray-900 capitalize">
                                             {status} Requests
                                         </h3>
-                                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
-                                            status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                            status === 'assigned' ? 'bg-blue-100 text-blue-800' :
-                                            'bg-green-100 text-green-800'
-                                        }`}>
+                                        <span className="px-3 py-1 bg-gray-100 rounded-full text-xs font-bold text-gray-500 font-poppins">
                                             {statusRequests.length}
                                         </span>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {statusRequests.map((request) => (
-                                            <div
-                                                key={request.id}
-                                                className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition border border-gray-100 flex flex-col"
-                                            >
-                                                {/* Icon and Status */}
-                                                <div className="flex items-start justify-between mb-4">
-                                                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                                                        <Package size={24} className="text-blue-600" />
-                                                    </div>
-                                                    <span className={`px-3 py-1 rounded-full font-poppins font-bold text-xs uppercase ${getStatusBadge(request.status)}`}>
-                                                        {request.status}
-                                                    </span>
-                                                </div>
-
-                                                {/* School Name */}
-                                                <h3 className="font-poppins font-semibold text-lg md:text-xl text-gray-900 mb-3 leading-snug break-words">
-                                                    {request.schoolName}
-                                                </h3>
-
-                                                {/* Details */}
-                                                <div className="space-y-3 mb-4">
-                                                    <div className="flex items-start gap-2 text-gray-600">
-                                                        <MapPin size={18} className="text-gray-400 mt-0.5 flex-shrink-0" />
-                                                        <span className="font-poppins text-sm">{request.district}</span>
-                                                    </div>
-                                                    {request.contactPerson && (
-                                                        <div className="flex items-start gap-2 text-gray-600">
-                                                            <User size={18} className="text-gray-400 mt-0.5 flex-shrink-0" />
-                                                            <span className="font-poppins text-sm">{request.contactPerson}</span>
+                                        <AnimatePresence>
+                                            {statusRequests.map((request, index) => (
+                                                <motion.div
+                                                    layout
+                                                    key={request.id}
+                                                    initial={{ opacity: 0, y: 20 }}
+                                                    whileInView={{ opacity: 1, y: 0 }}
+                                                    viewport={{ once: true }}
+                                                    transition={{ delay: index * 0.05 }}
+                                                    className="bg-white rounded-3xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-blue-100 group flex flex-col"
+                                                >
+                                                    <div className="flex items-start justify-between mb-4">
+                                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${status === 'pending' ? 'bg-yellow-100 text-yellow-600' :
+                                                            status === 'assigned' ? 'bg-blue-100 text-blue-600' :
+                                                                'bg-green-100 text-green-600'
+                                                            }`}>
+                                                            <Package size={24} />
                                                         </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Description */}
-                                                {request.description && (
-                                                    <p className="text-sm text-gray-600 font-poppins mb-4 line-clamp-2">
-                                                        {request.description}
-                                                    </p>
-                                                )}
-
-                                                {/* Materials Needed */}
-                                                <div className="mb-4 flex-grow">
-                                                    <p className="font-poppins font-semibold text-gray-800 text-sm mb-2">
-                                                        Materials Needed:
-                                                    </p>
-                                                    <div className="space-y-1">
-                                                        {request.items?.slice(0, 3).map((item, index) => (
-                                                            <div key={index} className="flex justify-between items-center text-sm">
-                                                                <span className="font-poppins text-gray-700">{item.name}</span>
-                                                                <span className="font-poppins font-bold text-gray-900">×{item.quantity}</span>
-                                                            </div>
-                                                        ))}
-                                                        {request.items?.length > 3 && (
-                                                            <p className="text-xs text-gray-500 font-poppins italic">
-                                                                +{request.items.length - 3} more item(s)
-                                                            </p>
-                                                        )}
+                                                        <span className={`px-4 py-1.5 rounded-full font-poppins font-bold text-xs uppercase tracking-wide border ${status === 'pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                                                            status === 'assigned' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                                'bg-green-50 text-green-700 border-green-200'
+                                                            }`}>
+                                                            {request.status}
+                                                        </span>
                                                     </div>
-                                                </div>
 
-                                                {/* Date and Button - Always at bottom */}
-                                                <div className="mt-auto">
-                                                    <div className="flex items-center gap-2 text-gray-500 text-xs font-poppins mb-4">
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                        </svg>
-                                                        {request.createdAt?.toDate?.()?.toLocaleDateString() || 'N/A'}
+                                                    <h3 className="font-poppins font-bold text-xl text-gray-900 mb-3 leading-tight line-clamp-2 min-h-[3.5rem] group-hover:text-blue-600 transition-colors">
+                                                        {request.schoolName}
+                                                    </h3>
+
+                                                    <div className="space-y-2 mb-6 text-sm text-gray-500 font-poppins">
+                                                        <div className="flex items-center gap-2">
+                                                            <MapPin size={16} className="text-gray-400" />
+                                                            {request.district}
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <Calendar size={16} className="text-gray-400" />
+                                                            {request.createdAt?.toDate?.()?.toLocaleDateString()}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="bg-gray-50 rounded-2xl p-4 mb-6 flex-grow">
+                                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Needed Materials</p>
+                                                        <div className="space-y-2">
+                                                            {request.items?.slice(0, 3).map((item, idx) => (
+                                                                <div key={idx} className="flex justify-between items-center text-sm font-poppins">
+                                                                    <span className="text-gray-700 font-medium truncate pr-2">{item.name}</span>
+                                                                    <span className="bg-white px-2 py-0.5 rounded-md border border-gray-200 text-gray-900 font-bold shadow-sm">
+                                                                        {item.quantity}
+                                                                    </span>
+                                                                </div>
+                                                            ))}
+                                                            {request.items?.length > 3 && (
+                                                                <p className="text-xs text-center text-blue-600 font-medium py-1">
+                                                                    +{request.items.length - 3} more items
+                                                                </p>
+                                                            )}
+                                                        </div>
                                                     </div>
 
                                                     <button
                                                         onClick={() => setSelectedRequest(request)}
-                                                        className="w-full bg-pink-600 text-white py-3 rounded-lg font-poppins font-bold hover:bg-pink-700 transition"
+                                                        className="w-full py-4 rounded-xl font-poppins font-bold text-sm bg-gray-900 text-white group-hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
                                                     >
-                                                        View Details
+                                                        View Details <ArrowRight size={16} />
                                                     </button>
-                                                </div>
-                                            </div>
-                                        ))}
+                                                </motion.div>
+                                            ))}
+                                        </AnimatePresence>
                                     </div>
                                 </div>
                             );
@@ -759,758 +830,812 @@ export default function ReliefRequestsPage() {
 
                 {/* Item Statistics Dashboard */}
                 {itemStats.length > 0 && (
-                    <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-                        <h2 className="font-playfair text-2xl font-bold text-gray-800 mb-6">
-                            📊 Materials Overview
-                        </h2>
-                        <p className="font-poppins text-sm text-gray-600 mb-6">
-                            Real-time statistics showing requested vs fulfilled quantities for each material type
-                        </p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {itemStats.map(stat => {
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="mt-24 bg-gradient-to-br from-gray-900 to-gray-800 rounded-[2.5rem] p-8 md:p-12 shadow-2xl overflow-hidden relative"
+                    >
+                        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-600/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+
+                        <div className="relative z-10 mb-10">
+                            <h2 className="font-playfair text-3xl md:text-4xl font-bold text-white mb-4">
+                                📊 Impact Overview
+                            </h2>
+                            <p className="font-poppins text-gray-400 text-lg max-w-2xl">
+                                Live tracking of materials requested vs. delivered across all affected schools.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {itemStats.map((stat, idx) => {
                                 const fulfillmentRate = stat.totalRequested > 0
-                                    ? (stat.totalFulfilled / stat.totalRequested * 100).toFixed(1)
+                                    ? (stat.totalFulfilled / stat.totalRequested * 100).toFixed(0)
                                     : 0;
 
                                 return (
-                                    <div key={stat.name} className="border-2 border-gray-200 rounded-xl p-4 hover:border-blue-400 transition">
-                                        <div className="flex items-center gap-3 mb-3">
-                                            <span className="text-3xl">{stat.icon}</span>
-                                            <div className="flex-1">
-                                                <h3 className="font-poppins font-bold text-gray-800">{stat.name}</h3>
-                                                <p className="font-poppins text-xs text-gray-500">
-                                                    {fulfillmentRate}% fulfilled
+                                    <div key={stat.name} className="bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-white/10 transition-colors group">
+                                        <div className="flex items-center gap-4 mb-4">
+                                            <span className="text-4xl bg-white/10 w-14 h-14 rounded-2xl flex items-center justify-center">{stat.icon}</span>
+                                            <div>
+                                                <h3 className="font-poppins font-bold text-white text-lg">{stat.name}</h3>
+                                                <p className="font-poppins text-sm text-gray-400">
+                                                    {stat.totalFulfilled} / {stat.totalRequested} delivered
                                                 </p>
                                             </div>
                                         </div>
 
-                                        {/* Progress Bar */}
-                                        <div className="mb-3">
-                                            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                                                <div
-                                                    className="bg-gradient-to-r from-green-400 to-green-600 h-3 rounded-full transition-all duration-500"
-                                                    style={{ width: `${Math.min(fulfillmentRate, 100)}%` }}
-                                                />
-                                            </div>
+                                        <div className="relative h-2 bg-gray-700 rounded-full overflow-hidden">
+                                            <motion.div
+                                                initial={{ width: 0 }}
+                                                whileInView={{ width: `${Math.min(fulfillmentRate, 100)}%` }}
+                                                transition={{ duration: 1, delay: idx * 0.05 }}
+                                                className={`absolute top-0 left-0 h-full rounded-full ${fulfillmentRate >= 100 ? 'bg-green-500' : 'bg-blue-500'
+                                                    }`}
+                                            />
                                         </div>
-
-                                        {/* Stats */}
-                                        <div className="grid grid-cols-3 gap-2 text-center">
-                                            <div className="bg-blue-50 rounded-lg p-2">
-                                                <p className="font-poppins text-xs text-blue-600 font-semibold">Requested</p>
-                                                <p className="font-poppins text-lg font-bold text-blue-800">{stat.totalRequested}</p>
-                                            </div>
-                                            <div className="bg-green-50 rounded-lg p-2">
-                                                <p className="font-poppins text-xs text-green-600 font-semibold">Fulfilled</p>
-                                                <p className="font-poppins text-lg font-bold text-green-800">{stat.totalFulfilled}</p>
-                                            </div>
-                                            <div className="bg-yellow-50 rounded-lg p-2">
-                                                <p className="font-poppins text-xs text-yellow-600 font-semibold">Pending</p>
-                                                <p className="font-poppins text-lg font-bold text-yellow-800">{stat.pending}</p>
-                                            </div>
+                                        <div className="flex justify-end mt-2">
+                                            <span className={`text-xs font-bold font-poppins ${fulfillmentRate >= 100 ? 'text-green-400' : 'text-blue-400'
+                                                }`}>
+                                                {fulfillmentRate}% Success
+                                            </span>
                                         </div>
                                     </div>
                                 );
                             })}
                         </div>
-                    </div>
+                    </motion.div>
                 )}
             </div>
 
             {/* Request Detail Modal */}
-            {selectedRequest && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedRequest(null)}>
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                        <div className="sticky top-0 bg-gradient-to-r from-pink-600 to-purple-600 text-white p-6 rounded-t-2xl flex items-start justify-between">
-                            <div className="flex-1">
-                                <h2 className="font-poppins text-xl md:text-2xl font-semibold mb-2 leading-snug">
-                                    {selectedRequest.schoolName}
-                                </h2>
-                                <span className={`inline-block px-3 py-1 rounded-full font-poppins font-bold text-xs border-2 uppercase ${getStatusBadge(selectedRequest.status)}`}>
-                                    {selectedRequest.status}
-                                </span>
-                            </div>
-                            <button
-                                onClick={() => setSelectedRequest(null)}
-                                className="bg-white/20 hover:bg-white/30 p-2 rounded-lg transition"
-                            >
-                                <X size={24} />
-                            </button>
-                        </div>
-
-                        <div className="p-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <AnimatePresence>
+                {selectedRequest && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setSelectedRequest(null)}
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-white rounded-[2rem] shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col relative border border-white/20"
+                        >
+                            <div className="p-6 border-b border-gray-100 bg-gray-50/50 backdrop-blur-xl flex justify-between items-start sticky top-0 z-10">
                                 <div>
-                                    <p className="font-poppins font-semibold text-gray-700 mb-1">District</p>
-                                    <p className="font-poppins text-gray-900">{selectedRequest.district}</p>
+                                    <h2 className="font-playfair text-2xl font-bold text-gray-900 leading-snug">
+                                        {selectedRequest.schoolName}
+                                    </h2>
+                                    <div className="flex items-center gap-2 mt-2">
+                                        <span className={`px-3 py-1 rounded-full font-poppins font-bold text-xs uppercase tracking-wide border ${selectedRequest.status === 'pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                                            selectedRequest.status === 'assigned' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                'bg-green-50 text-green-700 border-green-200'
+                                            }`}>
+                                            {selectedRequest.status}
+                                        </span>
+                                        <span className="text-gray-400 text-sm font-poppins">•</span>
+                                        <span className="text-gray-500 text-sm font-poppins flex items-center gap-1">
+                                            <Calendar size={14} />
+                                            {selectedRequest.createdAt?.toDate?.()?.toLocaleDateString()}
+                                        </span>
+                                    </div>
                                 </div>
-                                {selectedRequest.contactPerson && (
+                                <button
+                                    onClick={() => setSelectedRequest(null)}
+                                    className="p-2 rounded-full bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="p-6 overflow-y-auto space-y-8 custom-scrollbar">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="bg-gray-50 rounded-2xl p-4">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                                                <MapPin size={16} />
+                                            </div>
+                                            <p className="font-poppins font-bold text-gray-900">Location</p>
+                                        </div>
+                                        <p className="font-poppins text-gray-600 text-sm pl-11">{selectedRequest.district}</p>
+                                        {selectedRequest.address && <p className="font-poppins text-gray-500 text-xs pl-11 mt-1">{selectedRequest.address}</p>}
+                                    </div>
+
+                                    {selectedRequest.contactPerson && (
+                                        <div className="bg-gray-50 rounded-2xl p-4">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+                                                    <User size={16} />
+                                                </div>
+                                                <p className="font-poppins font-bold text-gray-900">Contact</p>
+                                            </div>
+                                            <p className="font-poppins text-gray-600 text-sm pl-11">{selectedRequest.contactPerson}</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {selectedRequest.description && (
                                     <div>
-                                        <p className="font-poppins font-semibold text-gray-700 mb-1">Contact Person</p>
-                                        <p className="font-poppins text-gray-900">{selectedRequest.contactPerson}</p>
+                                        <h3 className="font-poppins font-bold text-gray-900 mb-3 text-sm uppercase tracking-wider">Situation Description</h3>
+                                        <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
+                                            <p className="font-poppins text-gray-600 leading-relaxed">
+                                                {selectedRequest.description}
+                                            </p>
+                                        </div>
                                     </div>
                                 )}
-                                <div>
-                                    <p className="font-poppins font-semibold text-gray-700 mb-1">Submitted</p>
-                                    <p className="font-poppins text-gray-900">
-                                        {selectedRequest.createdAt?.toDate?.()?.toLocaleDateString()} at {selectedRequest.createdAt?.toDate?.()?.toLocaleTimeString()}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                <p className="font-poppins text-sm text-blue-800">
-                                    <strong>Note:</strong> Contact information is private and only visible to administrators for coordination purposes. If you would like to help, please use the donation form or contact the admin.
-                                </p>
-                            </div>
-
-                            {selectedRequest.address && (
-                                <div className="mb-6">
-                                    <p className="font-poppins font-semibold text-gray-700 mb-1">Address</p>
-                                    <p className="font-poppins text-gray-900">{selectedRequest.address}</p>
-                                </div>
-                            )}
-
-                            {selectedRequest.description && (
-                                <div className="mb-6">
-                                    <p className="font-poppins font-semibold text-gray-700 mb-1">Description</p>
-                                    <p className="font-poppins text-gray-900">{selectedRequest.description}</p>
-                                </div>
-                            )}
-
-                            <div className="mb-6">
-                                <p className="font-poppins font-semibold text-gray-900 mb-3 text-lg">Materials Requested</p>
-                                <div className="space-y-2">
-                                    {selectedRequest.items?.map((item, index) => (
-                                        <div key={index} className="flex justify-between items-center bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                            <span className="font-poppins text-gray-900 font-medium">{item.name}</span>
-                                            <span className="font-poppins font-bold text-pink-600 text-lg">{item.quantity}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-                                <p className="font-poppins text-sm text-gray-800 text-center">
-                                    💙 To help fulfill this request, please contact the school directly using the contact number provided above.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Donation Form Modal */}
-            {showDonationForm && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowDonationForm(false)}>
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                        <div className="sticky top-0 bg-gradient-to-r from-pink-600 to-purple-600 text-white p-6 rounded-t-2xl flex items-start justify-between">
-                            <div>
-                                <h2 className="font-playfair text-2xl font-bold mb-2">
-                                    💝 Offer a Donation
-                                </h2>
-                                <p className="font-poppins text-sm text-pink-50">
-                                    Help flood-affected schools by donating materials
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => setShowDonationForm(false)}
-                                className="bg-white/20 hover:bg-white/30 p-2 rounded-lg transition"
-                            >
-                                <X size={24} />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleDonationSubmit} className="p-6 space-y-4">
-                            <div>
-                                <label className="block font-poppins font-semibold text-gray-700 mb-2">
-                                    Your Name <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={donationForm.donorName}
-                                    onChange={(e) => setDonationForm({ ...donationForm, donorName: e.target.value })}
-                                    placeholder="Enter your full name"
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
-                                    required
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block font-poppins font-semibold text-gray-700 mb-2">
-                                        Contact Number <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="tel"
-                                        value={donationForm.contactNumber}
-                                        onChange={(e) => setDonationForm({ ...donationForm, contactNumber: e.target.value })}
-                                        placeholder="07XXXXXXXX"
-                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
-                                        required
-                                    />
-                                </div>
 
                                 <div>
-                                    <label className="block font-poppins font-semibold text-gray-700 mb-2">
-                                        Email (Optional)
-                                    </label>
-                                    <input
-                                        type="email"
-                                        value={donationForm.email}
-                                        onChange={(e) => setDonationForm({ ...donationForm, email: e.target.value })}
-                                        placeholder="your@email.com"
-                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block font-poppins font-semibold text-gray-700 mb-2">
-                                    Your District
-                                </label>
-                                <select
-                                    value={donationForm.district}
-                                    onChange={(e) => setDonationForm({ ...donationForm, district: e.target.value })}
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
-                                >
-                                    <option value="">Select your district</option>
-                                    {districts.map(district => (
-                                        <option key={district} value={district}>{district}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block font-poppins font-semibold text-gray-700 mb-3">
-                                    Select Items to Donate (Optional)
-                                </label>
-                                {itemsLoading ? (
-                                    <div className="text-center py-4">
-                                        <Loader2 className="animate-spin text-pink-600 mx-auto" size={24} />
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                        {predefinedItems.map(item => (
-                                            <div key={item.id} className="flex items-center gap-3 p-3 border-2 border-gray-200 rounded-lg hover:border-pink-300 transition">
-                                                <div className="flex-1 flex items-center gap-2">
-                                                    <span className="text-2xl">{item.icon}</span>
-                                                    <label className="font-poppins font-medium text-gray-700 cursor-pointer flex-1">
-                                                        {item.name}
-                                                        <span className="text-xs text-gray-500 ml-1">({item.category})</span>
-                                                    </label>
+                                    <h3 className="font-poppins font-bold text-gray-900 mb-4 text-sm uppercase tracking-wider flex items-center justify-between">
+                                        <span>Materials Requested</span>
+                                        <span className="text-xs normal-case font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded-md">{selectedRequest.items?.length || 0} items</span>
+                                    </h3>
+                                    <div className="grid grid-cols-1 gap-3">
+                                        {selectedRequest.items?.map((item, index) => (
+                                            <div key={index} className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-2 h-2 rounded-full bg-pink-500" />
+                                                    <span className="font-poppins text-gray-900 font-medium">{item.name}</span>
                                                 </div>
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    value={donationForm.items[item.id] || ""}
-                                                    onChange={(e) => {
-                                                        const newItems = { ...donationForm.items };
-                                                        if (e.target.value && parseInt(e.target.value) > 0) {
-                                                            newItems[item.id] = e.target.value;
-                                                        } else {
-                                                            delete newItems[item.id];
-                                                        }
-                                                        setDonationForm({ ...donationForm, items: newItems });
-                                                    }}
-                                                    placeholder="Qty"
-                                                    className="w-24 px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins text-center"
-                                                />
+                                                <span className="font-poppins font-bold text-pink-600 bg-pink-50 px-3 py-1 rounded-lg">
+                                                    {item.quantity}
+                                                </span>
                                             </div>
                                         ))}
                                     </div>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block font-poppins font-semibold text-gray-700 mb-2">
-                                    Other Items / Description
-                                </label>
-                                <textarea
-                                    value={donationForm.itemsOffered}
-                                    onChange={(e) => setDonationForm({ ...donationForm, itemsOffered: e.target.value })}
-                                    placeholder="E.g., 50 notebooks, 100 pens, 20 water bottles (if not in list above)"
-                                    rows={3}
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block font-poppins font-semibold text-gray-700 mb-2">
-                                    Additional Message (Optional)
-                                </label>
-                                <textarea
-                                    value={donationForm.message}
-                                    onChange={(e) => setDonationForm({ ...donationForm, message: e.target.value })}
-                                    placeholder="Any additional information or preferences"
-                                    rows={3}
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-poppins"
-                                />
-                            </div>
-
-                            {bankDetails && (
-                                <div className="bg-gray-50 border-2 border-gray-200 rounded-lg p-4">
-                                    <h3 className="font-playfair text-lg font-bold text-gray-800 mb-2">Bank Transfer Details</h3>
-                                    <div className="text-sm font-poppins text-gray-700 space-y-1">
-                                        <p><strong>Bank:</strong> {bankDetails.bankName}</p>
-                                        <p><strong>Branch:</strong> {bankDetails.branch}</p>
-                                        <p><strong>Account Name:</strong> {bankDetails.accountHolder}</p>
-                                        <p><strong>Account Number:</strong> {bankDetails.accountNumber}</p>
-                                    </div>
                                 </div>
-                            )}
 
-                            <div>
-                                <label className="block font-poppins font-semibold text-gray-700 mb-2">
-                                    Upload Payment Slip (Optional)
-                                </label>
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        type="file"
-                                        accept="image/*,application/pdf"
-                                        onChange={handleUploadSlip}
-                                        className="block w-full text-sm text-gray-500
-                                            file:mr-4 file:py-2 file:px-4
-                                            file:rounded-lg file:border-0
-                                            file:text-sm file:font-semibold
-                                            file:bg-pink-50 file:text-pink-700
-                                            hover:file:bg-pink-100
-                                        "
-                                    />
-                                    {uploadingSlip && <Loader2 className="animate-spin text-pink-600" size={20} />}
-                                </div>
-                                {donationForm.paymentSlip && (
-                                    <p className="text-xs text-green-600 mt-1 font-semibold">
-                                        ✅ Slip uploaded successfully
+                                <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-5 flex gap-4 items-start">
+                                    <Info className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
+                                    <p className="font-poppins text-sm text-blue-800 leading-relaxed">
+                                        To help fulfill this request, please contact the school directly using the contact number provided, or offer a donation through our platform to let us coordinate the delivery.
                                     </p>
-                                )}
+                                </div>
                             </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-                            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-                                <p className="font-poppins text-sm text-gray-700">
-                                    💙 Our team will review your donation offer and contact you within 24-48 hours to coordinate the delivery.
-                                </p>
-                            </div>
-
-                            <div className="flex gap-3">
+            {/* Donation Form Modal */}
+            <AnimatePresence>
+                {showDonationForm && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+                        onClick={() => setShowDonationForm(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 30 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 30 }}
+                            className="bg-white rounded-[2rem] shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="bg-gradient-to-r from-pink-600 to-rose-500 p-8 text-white relative flex-shrink-0">
                                 <button
-                                    type="button"
                                     onClick={() => setShowDonationForm(false)}
-                                    className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-poppins font-bold hover:bg-gray-300 transition"
-                                    disabled={submittingDonation}
+                                    className="absolute top-6 right-6 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-all"
                                 >
-                                    Cancel
+                                    <X size={20} />
                                 </button>
-                                <button
-                                    type="submit"
-                                    className="flex-1 bg-pink-600 text-white px-6 py-3 rounded-lg font-poppins font-bold hover:bg-pink-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                    disabled={submittingDonation}
-                                >
-                                    {submittingDonation ? (
-                                        <>
-                                            <Loader2 className="animate-spin" size={20} />
-                                            Submitting...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Heart size={20} />
-                                            Submit Donation Offer
-                                        </>
-                                    )}
-                                </button>
+                                <div className="flex items-center gap-4 mb-2">
+                                    <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-sm">
+                                        <Heart size={32} className="text-white" />
+                                    </div>
+                                    <div>
+                                        <h2 className="font-playfair text-2xl md:text-3xl font-bold">Offer a Donation</h2>
+                                        <p className="text-pink-100 font-poppins text-sm opacity-90">Your generosity changes lives.</p>
+                                    </div>
+                                </div>
                             </div>
-                        </form>
-                    </div>
-                </div>
-            )}
 
-            {/* Request Donation Form Modal */}
-            {showRequestForm && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => !generatedToken && setShowRequestForm(false)}>
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 rounded-t-2xl flex items-start justify-between">
-                            <div>
-                                <h2 className="font-playfair text-2xl font-bold mb-2">
-                                    {generatedToken ? "✅ Request Submitted!" : "📝 Request Material Donation"}
-                                </h2>
-                                <p className="font-poppins text-sm text-blue-50 mb-1">
-                                    {generatedToken ? "Save your token to track your request" : "Submit your material needs for flood relief"}
-                                </p>
-                                <p className="font-poppins text-xs text-blue-100">
-                                    {generatedToken ? "ඔබගේ ඉල්ලීම පරීක්ෂා කිරීමට ටෝකනය සුරකින්න" : "ඔබට අවශ්‍ය භාණ්ඩ ඉල්ලීම ඉදිරිපත් කරන්න"}
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => {
-                                    setShowRequestForm(false);
-                                    setGeneratedToken("");
-                                    setEmailSent(false);
-                                }}
-                                className="bg-white/20 hover:bg-white/30 p-2 rounded-lg transition"
-                            >
-                                <X size={24} />
-                            </button>
-                        </div>
-
-                        {generatedToken ? (
-                            // Success view with token
-                            <div className="p-6 space-y-6">
-                                <div className="bg-green-50 border-2 border-green-300 rounded-lg p-6 text-center">
-                                    <div className="text-6xl mb-4">✅</div>
-                                    <h3 className="font-playfair text-2xl font-bold text-green-800 mb-2">
-                                        Request Submitted Successfully!
-                                    </h3>
-                                    <p className="font-poppins text-base font-semibold text-green-700 mb-3">
-                                        ඉල්ලීම සාර්ථකව ඉදිරිපත් කරන ලදී!
-                                    </p>
-                                    <p className="font-poppins text-gray-700 mb-2">
-                                        Your material request has been received. Please save your tracking token below.
-                                    </p>
-                                    <p className="font-poppins text-sm text-gray-600 mb-6">
-                                        ඔබගේ ඉල්ලීම ලැබී ඇත. කරුණාකර පහත ටෝකනය සුරකින්න.
-                                    </p>
-
-                                    {emailSent && (
-                                        <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-3 mb-4">
-                                            <p className="font-poppins text-sm text-blue-800">
-                                                📧 We've also sent this token to your email address!
-                                            </p>
+                            <form onSubmit={handleDonationSubmit} className="p-8 overflow-y-auto space-y-6 custom-scrollbar">
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-2 font-poppins">Your Name <span className="text-pink-500">*</span></label>
+                                            <div className="relative">
+                                                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                                <input
+                                                    type="text"
+                                                    value={donationForm.donorName}
+                                                    onChange={(e) => setDonationForm({ ...donationForm, donorName: e.target.value })}
+                                                    placeholder="John Doe"
+                                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition font-poppins"
+                                                    required
+                                                />
+                                            </div>
                                         </div>
-                                    )}
-
-                                    <div className="bg-white p-4 rounded-lg border-2 border-green-400 mb-4">
-                                        <p className="font-poppins text-sm text-gray-600 mb-1">Your Tracking Token</p>
-                                        <p className="font-poppins text-xs text-gray-500 mb-2">ඔබගේ ටෝකනය</p>
-                                        <p className="font-mono text-2xl font-bold text-green-700 mb-3">{generatedToken}</p>
-                                        <button
-                                            onClick={copyToken}
-                                            className="bg-green-600 text-white px-6 py-2 rounded-lg font-poppins font-bold hover:bg-green-700 transition"
-                                        >
-                                            📋 Copy Token / ටෝකනය පිටපත් කරන්න
-                                        </button>
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-2 font-poppins">Contact Number <span className="text-pink-500">*</span></label>
+                                            <div className="relative">
+                                                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                                <input
+                                                    type="tel"
+                                                    value={donationForm.contactNumber}
+                                                    onChange={(e) => setDonationForm({ ...donationForm, contactNumber: e.target.value })}
+                                                    placeholder="07X XXX XXXX"
+                                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition font-poppins"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 text-left">
-                                        <p className="font-poppins text-sm text-gray-700 mb-2">
-                                            <strong>Important:</strong> Use this token to track and update your request status at{" "}
-                                            <a href="/manage-relief" className="text-blue-600 underline">/manage-relief</a>
-                                        </p>
-                                        <p className="font-poppins text-sm text-gray-600">
-                                            <strong>වැදගත්:</strong> ඔබගේ ඉල්ලීමේ තත්ත්වය පරීක්ෂා කිරීමට හා යාවත්කාලීන කිරීමට මෙම ටෝකනය භාවිතා කරන්න{" "}
-                                            <a href="/manage-relief" className="text-blue-600 underline">/manage-relief</a> පිටුවේදී.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-3">
-                                    <a
-                                        href="/manage-relief"
-                                        className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg font-poppins font-bold hover:bg-blue-700 transition text-center"
-                                    >
-                                        Track My Request
-                                    </a>
-                                    <button
-                                        onClick={() => {
-                                            setShowRequestForm(false);
-                                            setGeneratedToken("");
-                                            setEmailSent(false);
-                                        }}
-                                        className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-poppins font-bold hover:bg-gray-300 transition"
-                                    >
-                                        Close
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            // Request form
-                            <form onSubmit={handleRequestSubmit} className="p-6 space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block font-poppins font-semibold text-gray-700 mb-2">
-                                            School Name <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={requestForm.schoolName}
-                                            onChange={(e) => setRequestForm({ ...requestForm, schoolName: e.target.value })}
-                                            placeholder="Enter school name"
-                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-poppins"
-                                            required
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block font-poppins font-semibold text-gray-700 mb-2">
-                                            District <span className="text-red-500">*</span>
-                                        </label>
-                                        <select
-                                            value={requestForm.district}
-                                            onChange={(e) => setRequestForm({ ...requestForm, district: e.target.value })}
-                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-poppins"
-                                            required
-                                        >
-                                            <option value="">Select district</option>
-                                            {districts.map(district => (
-                                                <option key={district} value={district}>{district}</option>
-                                            ))}
-                                        </select>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-2 font-poppins">Email (Optional)</label>
+                                            <div className="relative">
+                                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                                <input
+                                                    type="email"
+                                                    value={donationForm.email}
+                                                    onChange={(e) => setDonationForm({ ...donationForm, email: e.target.value })}
+                                                    placeholder="john@example.com"
+                                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition font-poppins"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-2 font-poppins">District</label>
+                                            <div className="relative">
+                                                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                                <select
+                                                    value={donationForm.district}
+                                                    onChange={(e) => setDonationForm({ ...donationForm, district: e.target.value })}
+                                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition font-poppins appearance-none"
+                                                >
+                                                    <option value="">Select Local District</option>
+                                                    {districts.map(district => (
+                                                        <option key={district} value={district}>{district}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label className="block font-poppins font-semibold text-gray-700 mb-2">
-                                        School Address <span className="text-red-500">*</span>
+                                <div className="border-t border-gray-100 pt-6">
+                                    <label className="block text-sm font-bold text-gray-800 mb-4 font-poppins uppercase tracking-wide">
+                                        Select Items to Donate
                                     </label>
-                                    <input
-                                        type="text"
-                                        value={requestForm.address}
-                                        onChange={(e) => setRequestForm({ ...requestForm, address: e.target.value })}
-                                        placeholder="Enter complete address"
-                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-poppins"
-                                        required
-                                    />
-                                </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block font-poppins font-semibold text-gray-700 mb-2">
-                                            Contact Person <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={requestForm.contactPerson}
-                                            onChange={(e) => setRequestForm({ ...requestForm, contactPerson: e.target.value })}
-                                            placeholder="Principal/Teacher name"
-                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-poppins"
-                                            required
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block font-poppins font-semibold text-gray-700 mb-2">
-                                            Contact Number <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="tel"
-                                            value={requestForm.contactNumber}
-                                            onChange={(e) => setRequestForm({ ...requestForm, contactNumber: e.target.value })}
-                                            placeholder="07XXXXXXXX"
-                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-poppins"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block font-poppins font-semibold text-gray-700 mb-2">
-                                        Email Address (Optional)
-                                    </label>
-                                    <input
-                                        type="email"
-                                        value={requestForm.email}
-                                        onChange={(e) => setRequestForm({ ...requestForm, email: e.target.value })}
-                                        placeholder="school@example.com (to receive tracking token via email)"
-                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-poppins"
-                                    />
-                                    <p className="font-poppins text-xs text-gray-500 mt-1">
-                                        We'll send your tracking token to this email for easy access
-                                    </p>
-                                </div>
-
-                                <div>
-                                    <label className="block font-poppins font-semibold text-gray-700 mb-2">
-                                        Description of Situation
-                                    </label>
-                                    <textarea
-                                        value={requestForm.description}
-                                        onChange={(e) => setRequestForm({ ...requestForm, description: e.target.value })}
-                                        placeholder="Briefly describe the flood damage and why these materials are needed"
-                                        rows={3}
-                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-poppins"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block font-poppins font-semibold text-gray-700 mb-3">
-                                        Select Materials Needed <span className="text-red-500">*</span>
-                                    </label>
                                     {itemsLoading ? (
-                                        <div className="text-center py-8">
-                                            <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600 mx-auto mb-3"></div>
-                                            <p className="font-poppins text-gray-600">Loading available items...</p>
-                                        </div>
-                                    ) : predefinedItems.length === 0 ? (
-                                        <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-6 text-center">
-                                            <p className="font-poppins text-yellow-800 font-semibold mb-2">No items available</p>
-                                            <p className="font-poppins text-sm text-yellow-700">
-                                                Please contact the administrator to add relief items.
-                                            </p>
+                                        <div className="py-8 text-center text-gray-400">
+                                            <Loader2 className="animate-spin mb-2 mx-auto" />
+                                            <span className="text-xs">Loading items...</span>
                                         </div>
                                     ) : (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
                                             {predefinedItems.map(item => (
-                                                <div key={item.id} className="flex items-center gap-3 p-3 border-2 border-gray-200 rounded-lg hover:border-blue-300 transition">
-                                                    <div className="flex-1 flex items-center gap-2">
-                                                        <span className="text-2xl">{item.icon}</span>
-                                                        <label className="font-poppins font-medium text-gray-700 cursor-pointer flex-1">
-                                                            {item.name}
-                                                            <span className="text-xs text-gray-500 ml-1">({item.category})</span>
-                                                        </label>
+                                                <div
+                                                    key={item.id}
+                                                    className={`relative flex items-center gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${donationForm.items[item.id] ? 'border-pink-500 bg-pink-50/50' : 'border-gray-100 hover:border-pink-200 bg-white'
+                                                        }`}
+                                                >
+                                                    <div className="text-2xl">{ITEM_ICONS[item.id] || ITEM_ICONS[item.name.toLowerCase().replace(/\s+/g, '')] || item.icon}</div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-bold text-gray-800 text-sm truncate">{item.name}</p>
+                                                        <p className="text-xs text-gray-500">{item.category}</p>
                                                     </div>
                                                     <input
                                                         type="number"
                                                         min="0"
-                                                        value={requestForm.items[item.id] || ""}
+                                                        value={donationForm.items[item.id] || ""}
                                                         onChange={(e) => {
-                                                            const newItems = { ...requestForm.items };
+                                                            const newItems = { ...donationForm.items };
                                                             if (e.target.value && parseInt(e.target.value) > 0) {
                                                                 newItems[item.id] = e.target.value;
                                                             } else {
                                                                 delete newItems[item.id];
                                                             }
-                                                            setRequestForm({ ...requestForm, items: newItems });
+                                                            setDonationForm({ ...donationForm, items: newItems });
                                                         }}
-                                                        placeholder="Qty"
-                                                        className="w-24 px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-poppins text-center"
+                                                        placeholder="0"
+                                                        className="w-16 px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-center font-bold text-gray-900 focus:ring-2 focus:ring-pink-500 outline-none"
                                                     />
                                                 </div>
                                             ))}
                                         </div>
                                     )}
-                                    <p className="font-poppins text-xs text-gray-500 mt-2">
-                                        Enter the quantity needed for each item. Leave blank if not needed.
-                                    </p>
+
+                                    <textarea
+                                        value={donationForm.itemsOffered}
+                                        onChange={(e) => setDonationForm({ ...donationForm, itemsOffered: e.target.value })}
+                                        placeholder="Or describe other items you'd like to donate (e.g. '50 School Bags, 20 Water Bottles')..."
+                                        rows={3}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none transition font-poppins mb-4"
+                                    />
+
+                                    <textarea
+                                        value={donationForm.message}
+                                        onChange={(e) => setDonationForm({ ...donationForm, message: e.target.value })}
+                                        placeholder="Any additional message or notes..."
+                                        rows={2}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none transition font-poppins"
+                                    />
                                 </div>
 
-                                <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
-                                    <p className="font-poppins text-sm text-red-800 mb-2">
-                                        <strong>Important:</strong> When a donor is assigned or your needs are fully met, please update the request status using your tracking token via <span className="font-semibold">Track My Request</span>. Keeping your status current helps us direct support to schools still in need.
-                                    </p>
-                                    <p className="font-poppins text-sm text-red-700">
-                                        <strong>වැදගත්:</strong> පරිත්‍යාගකරුවෙකු හා සම්බන්ධ වී ඔබගේ අවශ්‍යතා පූරණය වූ පසු, ඔබගේ ටෝකනය භාවිතා කර ඔබගේ ඉල්ලීමේ තත්ත්වය යාවත්කාලීන කරන්න. මෙය තවදුරටත් උපකාර අවශ්‍ය පාසල් වෙත සහාය වීමට උපකාරී වේ.
-                                    </p>
+                                {bankDetails && (
+                                    <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-5 text-white">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="bg-white/10 p-2 rounded-lg">
+                                                <CreditCard size={20} className="text-white" />
+                                            </div>
+                                            <h3 className="font-playfair font-bold text-lg">Bank Transfer Details</h3>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm font-poppins opacity-90">
+                                            <div>
+                                                <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">Bank</p>
+                                                <p className="font-semibold">{bankDetails.bankName}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">Account No</p>
+                                                <p className="font-mono text-lg">{bankDetails.accountNumber}</p>
+                                            </div>
+                                            <div className="sm:col-span-2">
+                                                <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">Account Name</p>
+                                                <p className="font-semibold">{bankDetails.accountHolder}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2 font-poppins">Upload Payment Slip (Optional)</label>
+                                    <div className={`border-2 border-dashed rounded-xl p-6 transition-colors text-center ${donationForm.paymentSlip ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-pink-400 bg-gray-50 hover:bg-white'
+                                        }`}>
+                                        <input
+                                            type="file"
+                                            id="slip-upload"
+                                            accept="image/*,application/pdf"
+                                            onChange={handleUploadSlip}
+                                            className="hidden"
+                                        />
+                                        <label htmlFor="slip-upload" className="cursor-pointer block">
+                                            {uploadingSlip ? (
+                                                <div className="flex flex-col items-center">
+                                                    <Loader2 className="animate-spin text-pink-600 mb-2" />
+                                                    <span className="text-sm font-medium text-gray-500">Uploading...</span>
+                                                </div>
+                                            ) : donationForm.paymentSlip ? (
+                                                <div className="flex flex-col items-center">
+                                                    <CheckCircle className="text-green-500 mb-2" size={32} />
+                                                    <span className="text-sm font-bold text-green-700">Slip Attached Successfully</span>
+                                                    <span className="text-xs text-green-600 mt-1">Click to change</span>
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col items-center">
+                                                    <UploadCloud className="text-gray-400 mb-2" size={32} />
+                                                    <span className="text-sm font-bold text-gray-600">Click to upload slip</span>
+                                                    <span className="text-xs text-gray-400 mt-1">JPG, PNG or PDF</span>
+                                                </div>
+                                            )}
+                                        </label>
+                                    </div>
                                 </div>
 
-                                <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
-                                    <p className="font-poppins text-sm text-gray-800 mb-2">
-                                        ⚠️ After submission, you will receive a tracking token. Please save it to check your request status later.
-                                    </p>
-                                    <p className="font-poppins text-sm text-gray-700">
-                                        ඉල්ලීම ඉදිරිපත් කිරීමෙන් පසු, ඔබට ටෝකනයක් ලැබෙනු ඇත. කරුණාකර එය සුරකින්න. පසුව ඔබගේ ඉල්ලීමේ තත්ත්වය පරීක්ෂා කිරීමට එය භාවිතා කරන්න.
-                                    </p>
-                                </div>
-
-                                <div className="flex gap-3">
-                                    <button
+                                <div className="flex gap-4 pt-4">
+                                    <motion.button
                                         type="button"
-                                        onClick={() => setShowRequestForm(false)}
-                                        className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-poppins font-bold hover:bg-gray-300 transition"
-                                        disabled={submittingRequest}
+                                        variants={buttonVariants}
+                                        whileHover="hover"
+                                        whileTap="tap"
+                                        onClick={() => setShowDonationForm(false)}
+                                        className="flex-1 px-6 py-4 rounded-xl font-poppins font-bold text-gray-500 hover:bg-gray-100 transition"
+                                        disabled={submittingDonation}
                                     >
                                         Cancel
-                                    </button>
-                                    <button
+                                    </motion.button>
+                                    <motion.button
                                         type="submit"
-                                        className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg font-poppins font-bold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                        disabled={submittingRequest}
+                                        variants={buttonVariants}
+                                        whileHover="hover"
+                                        whileTap="tap"
+                                        className="flex-[2] bg-gradient-to-r from-pink-600 to-rose-600 text-white px-6 py-4 rounded-xl font-poppins font-bold hover:shadow-lg hover:-translate-y-1 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                        disabled={submittingDonation}
                                     >
-                                        {submittingRequest ? (
+                                        {submittingDonation ? (
                                             <>
                                                 <Loader2 className="animate-spin" size={20} />
-                                                Submitting...
+                                                Processing...
                                             </>
                                         ) : (
                                             <>
-                                                <Plus size={20} />
-                                                Submit Request
+                                                <Heart size={20} className="fill-white/20" />
+                                                Confirm Donation
                                             </>
                                         )}
-                                    </button>
+                                    </motion.button>
                                 </div>
                             </form>
-                        )}
-                    </div>
-                </div>
-            )}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Request Donation Form Modal */}
+            <AnimatePresence>
+                {showRequestForm && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+                        onClick={() => !generatedToken && setShowRequestForm(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 30 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 30 }}
+                            className="bg-white rounded-[2rem] shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-8 text-white relative flex-shrink-0">
+                                <button
+                                    onClick={() => {
+                                        setShowRequestForm(false);
+                                        setGeneratedToken("");
+                                        setEmailSent(false);
+                                    }}
+                                    className="absolute top-6 right-6 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-all"
+                                >
+                                    <X size={20} />
+                                </button>
+                                <div className="flex items-center gap-4 mb-2">
+                                    <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-sm">
+                                        {generatedToken ? <CheckCircle size={32} className="text-white" /> : <Package size={32} className="text-white" />}
+                                    </div>
+                                    <div>
+                                        <h2 className="font-playfair text-2xl md:text-3xl font-bold">
+                                            {generatedToken ? "Request Submitted!" : "Request Assistance"}
+                                        </h2>
+                                        <p className="text-blue-100 font-poppins text-sm opacity-90">
+                                            {generatedToken ? "Your needs have been recorded." : "Tell us what your school needs."}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-8 overflow-y-auto custom-scrollbar flex-grow">
+                                {generatedToken ? (
+                                    <div className="flex flex-col items-center justify-center text-center space-y-6 py-6">
+                                        <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center relative">
+                                            <div className="absolute inset-0 bg-green-400/20 rounded-full animate-ping" />
+                                            <CheckCircle size={48} className="text-green-600 relative z-10" />
+                                        </div>
+
+                                        <div className="max-w-lg">
+                                            <h3 className="font-playfair text-2xl font-bold text-gray-900 mb-2">Submission Successful</h3>
+                                            <p className="font-poppins text-gray-500">
+                                                Your material request has been logged in our system. We will connect you with donors as soon as possible.
+                                            </p>
+                                        </div>
+
+                                        <div className="w-full max-w-md bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl p-6">
+                                            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Your Tracking Token</p>
+                                            <div className="flex items-center justify-center gap-3 mb-4">
+                                                <code className="bg-white px-4 py-2 rounded-lg border border-gray-200 font-mono text-2xl font-bold text-blue-600 shadow-sm">
+                                                    {generatedToken}
+                                                </code>
+                                            </div>
+                                            <button
+                                                onClick={copyToken}
+                                                className="text-sm font-bold text-blue-600 hover:text-blue-700 flex items-center justify-center gap-2 mx-auto"
+                                            >
+                                                <Copy size={16} /> Copy to Clipboard
+                                            </button>
+                                        </div>
+
+                                        {emailSent && (
+                                            <div className="flex items-center gap-2 text-green-600 bg-green-50 px-4 py-2 rounded-full text-sm font-semibold">
+                                                <Mail size={16} /> Confirmation email sent
+                                            </div>
+                                        )}
+
+                                        <div className="flex gap-4 w-full max-w-md mt-4">
+                                            <a
+                                                href="/manage-relief"
+                                                className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-xl font-poppins font-bold hover:bg-blue-700 transition text-center shadow-lg shadow-blue-200"
+                                            >
+                                                Track Now
+                                            </a>
+                                            <motion.button
+                                                variants={buttonVariants}
+                                                initial="rest"
+                                                whileHover="hover"
+                                                whileTap="tap"
+                                                onClick={() => {
+                                                    setShowRequestForm(false);
+                                                    setGeneratedToken("");
+                                                    setEmailSent(false);
+                                                }}
+                                                className="flex-1 bg-gray-100 text-gray-600 px-6 py-3 rounded-xl font-poppins font-bold hover:bg-gray-200 transition"
+                                            >
+                                                Close
+                                            </motion.button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <form onSubmit={handleRequestSubmit} className="space-y-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                            <div>
+                                                <label className="block text-sm font-bold text-gray-700 mb-2 font-poppins">School Name <span className="text-red-500">*</span></label>
+                                                <input
+                                                    type="text"
+                                                    value={requestForm.schoolName}
+                                                    onChange={(e) => setRequestForm({ ...requestForm, schoolName: e.target.value })}
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-poppins"
+                                                    required
+                                                    placeholder="School Name"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-gray-700 mb-2 font-poppins">District <span className="text-red-500">*</span></label>
+                                                <select
+                                                    value={requestForm.district}
+                                                    onChange={(e) => setRequestForm({ ...requestForm, district: e.target.value })}
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-poppins"
+                                                    required
+                                                >
+                                                    <option value="">Select District</option>
+                                                    {districts.map(district => (
+                                                        <option key={district} value={district}>{district}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                            <div>
+                                                <label className="block text-sm font-bold text-gray-700 mb-2 font-poppins">Contact Person <span className="text-red-500">*</span></label>
+                                                <input
+                                                    type="text"
+                                                    value={requestForm.contactPerson}
+                                                    onChange={(e) => setRequestForm({ ...requestForm, contactPerson: e.target.value })}
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-poppins"
+                                                    required
+                                                    placeholder="Principal / Rep"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-gray-700 mb-2 font-poppins">Phone Number <span className="text-red-500">*</span></label>
+                                                <input
+                                                    type="tel"
+                                                    value={requestForm.contactNumber}
+                                                    onChange={(e) => setRequestForm({ ...requestForm, contactNumber: e.target.value })}
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-poppins"
+                                                    required
+                                                    placeholder="07X XXX XXXX"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-2 font-poppins">School Address <span className="text-red-500">*</span></label>
+                                            <input
+                                                type="text"
+                                                value={requestForm.address}
+                                                onChange={(e) => setRequestForm({ ...requestForm, address: e.target.value })}
+                                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-poppins"
+                                                required
+                                                placeholder="Full Address"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-2 font-poppins">Email (Optional)</label>
+                                            <input
+                                                type="email"
+                                                value={requestForm.email}
+                                                onChange={(e) => setRequestForm({ ...requestForm, email: e.target.value })}
+                                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-poppins"
+                                                placeholder="To receive updates"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-2 font-poppins">Description <span className="text-red-500">*</span></label>
+                                            <textarea
+                                                value={requestForm.description}
+                                                onChange={(e) => setRequestForm({ ...requestForm, description: e.target.value })}
+                                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-poppins"
+                                                required
+                                                placeholder="Describe the situation and specific needs..."
+                                                rows={3}
+                                            />
+                                        </div>
+
+                                        <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                                            <h4 className="font-bold text-gray-900 mb-4 font-playfair text-lg">Required Materials</h4>
+
+                                            {itemsLoading ? (
+                                                <div className="text-center py-4">
+                                                    <Loader2 className="animate-spin text-blue-600 mx-auto" />
+                                                </div>
+                                            ) : (
+                                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                                    {predefinedItems.map(item => (
+                                                        <div key={item.id} className={`p-3 rounded-xl border-2 transition-all ${requestForm.items[item.id] ? 'bg-blue-50 border-blue-500' : 'bg-white border-gray-100'
+                                                            }`}>
+                                                            <div className="flex flex-col items-center text-center">
+                                                                <span className="text-2xl mb-1">{item.icon}</span>
+                                                                <span className="text-xs font-bold text-gray-700 mb-2">{item.name}</span>
+                                                                <input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    placeholder="Qty"
+                                                                    value={requestForm.items[item.id] || ""}
+                                                                    onChange={(e) => {
+                                                                        const newItems = { ...requestForm.items };
+                                                                        if (e.target.value && parseInt(e.target.value) > 0) {
+                                                                            newItems[item.id] = e.target.value;
+                                                                        } else {
+                                                                            delete newItems[item.id];
+                                                                        }
+                                                                        setRequestForm({ ...requestForm, items: newItems });
+                                                                    }}
+                                                                    className="w-full py-1 px-2 border border-gray-200 rounded-md text-center text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="flex gap-4 pt-4">
+                                            <motion.button
+                                                type="button"
+                                                variants={buttonVariants}
+                                                whileHover="hover"
+                                                whileTap="tap"
+                                                onClick={() => setShowRequestForm(false)}
+                                                className="flex-1 px-6 py-4 rounded-xl font-poppins font-bold text-gray-500 hover:bg-gray-100 transition"
+                                                disabled={submittingRequest}
+                                            >
+                                                Cancel
+                                            </motion.button>
+                                            <motion.button
+                                                type="submit"
+                                                variants={buttonVariants}
+                                                whileHover="hover"
+                                                whileTap="tap"
+                                                className="flex-[2] bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 rounded-xl font-poppins font-bold hover:shadow-lg hover:-translate-y-1 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                                disabled={submittingRequest}
+                                            >
+                                                {submittingRequest ? (
+                                                    <>
+                                                        <Loader2 className="animate-spin" size={20} />
+                                                        Submitting...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Send size={20} className="fill-white/20" />
+                                                        Submit Request
+                                                    </>
+                                                )}
+                                            </motion.button>
+                                        </div>
+                                    </form>
+                                )}
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Track Request Modal */}
-            {showTrackModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowTrackModal(false)}>
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
-                        <div className="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 rounded-t-2xl flex items-start justify-between">
-                            <div>
-                                <h2 className="font-playfair text-2xl font-bold mb-2">
-                                    🔍 Track Your Request
-                                </h2>
-                                <p className="font-poppins text-sm text-indigo-50">
-                                    Enter your tracking token to manage your request
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => setShowTrackModal(false)}
-                                className="bg-white/20 hover:bg-white/30 p-2 rounded-lg transition"
-                            >
-                                <X size={24} />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleTrackRequest} className="p-6 space-y-4">
-                            <div>
-                                <label className="block font-poppins font-semibold text-gray-700 mb-2">
-                                    Tracking Token <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={trackToken}
-                                    onChange={(e) => setTrackToken(e.target.value)}
-                                    placeholder="Enter your token (e.g., REL-XXXXX-XXXXX)"
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-lg"
-                                    required
-                                />
-                                <p className="text-sm text-gray-500 mt-2 font-poppins">
-                                    Enter the token you received when you submitted your request
-                                </p>
-                            </div>
-
-                            <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
-                                <p className="font-poppins text-sm text-gray-700">
-                                    💡 <strong>Don't have your token?</strong> Check your email or the confirmation page you saw after submitting your request.
-                                </p>
-                            </div>
-
-                            <div className="flex gap-3">
+            <AnimatePresence>
+                {showTrackModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+                        onClick={() => setShowTrackModal(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 30 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 30 }}
+                            className="bg-white rounded-[2rem] shadow-2xl max-w-md w-full overflow-hidden"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-8 text-white relative">
                                 <button
-                                    type="button"
                                     onClick={() => setShowTrackModal(false)}
-                                    className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-poppins font-bold hover:bg-gray-300 transition"
-                                    disabled={trackingRequest}
+                                    className="absolute top-6 right-6 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-all"
                                 >
-                                    Cancel
+                                    <X size={20} />
                                 </button>
-                                <button
-                                    type="submit"
-                                    className="flex-1 bg-indigo-600 text-white px-6 py-3 rounded-lg font-poppins font-bold hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                    disabled={trackingRequest}
-                                >
-                                    {trackingRequest ? (
-                                        <>
-                                            <Loader2 className="animate-spin" size={20} />
-                                            Searching...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <FileSearch size={20} />
-                                            Track Request
-                                        </>
-                                    )}
-                                </button>
+                                <div className="flex items-center gap-4 mb-2">
+                                    <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-sm">
+                                        <FileSearch size={32} className="text-white" />
+                                    </div>
+                                    <div>
+                                        <h2 className="font-playfair text-2xl font-bold">Track Request</h2>
+                                        <p className="text-indigo-100 font-poppins text-sm opacity-90">Manage your application status</p>
+                                    </div>
+                                </div>
                             </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+
+                            <form onSubmit={handleTrackRequest} className="p-8 space-y-6">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2 font-poppins">Tracking Token <span className="text-indigo-500">*</span></label>
+                                    <div className="relative">
+                                        <BadgeCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                        <input
+                                            type="text"
+                                            value={trackToken}
+                                            onChange={(e) => setTrackToken(e.target.value)}
+                                            placeholder="REL-XXXXX-XXXXX"
+                                            className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition font-mono text-lg uppercase"
+                                            required
+                                        />
+                                    </div>
+                                    <p className="text-xs text-gray-400 mt-2 font-poppins ml-1">
+                                        Enter the token you received upon submission.
+                                    </p>
+                                </div>
+
+                                <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-4 flex gap-3">
+                                    <div className="bg-yellow-100 p-2 rounded-lg h-fit text-yellow-600">
+                                        <Info size={18} />
+                                    </div>
+                                    <div className="text-xs text-yellow-800 font-poppins">
+                                        <p className="font-bold mb-1">Lost your token?</p>
+                                        <p>Check your email inbox or contact support with your school details for assistance.</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-4 pt-2">
+                                    <motion.button
+                                        type="button"
+                                        variants={buttonVariants}
+                                        whileHover="hover"
+                                        whileTap="tap"
+                                        onClick={() => setShowTrackModal(false)}
+                                        className="flex-1 px-6 py-4 rounded-xl font-poppins font-bold text-gray-500 hover:bg-gray-100 transition"
+                                        disabled={trackingRequest}
+                                    >
+                                        Cancel
+                                    </motion.button>
+                                    <motion.button
+                                        type="submit"
+                                        variants={buttonVariants}
+                                        whileHover="hover"
+                                        whileTap="tap"
+                                        className="flex-[2] bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-4 rounded-xl font-poppins font-bold hover:shadow-lg hover:-translate-y-1 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                        disabled={trackingRequest}
+                                    >
+                                        {trackingRequest ? (
+                                            <>
+                                                <Loader2 className="animate-spin" size={20} />
+                                                Searching...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <ArrowRight size={20} className="fill-white/20" />
+                                                Track Now
+                                            </>
+                                        )}
+                                    </motion.button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <Footer />
-        </div>
+        </div >
     );
 }
