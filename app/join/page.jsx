@@ -301,9 +301,10 @@ export default function JoinUs() {
 
                             {/* Email */}
                             <div>
-                                <label htmlFor="email" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">Student Email</label>
+                                <label htmlFor="email" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">University Email Address</label>
+                                <p className="text-xs text-slate-500 mb-2 font-poppins">You strictly need to use your university provided email address.</p>
                                 <input
-                                    id="email" name="email" type="email" required placeholder="It is compulsury to use your Student Email"
+                                    id="email" name="email" type="email" required placeholder="Enter your university email address"
                                     value={formData.email} onChange={handleChange}
                                     className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
                                 />
