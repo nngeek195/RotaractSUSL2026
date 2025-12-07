@@ -11,6 +11,20 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
 
+// List of roles for dropdown
+const rolesWithOrder = [
+    "President", "Vice President", "Secretary", "Assistant Secretary", "Editor",
+    "Assistant Treasurer", "Sergeant at Arms", "Club Service", "Community Service",
+    "International Service", "Professional Development", "Finance",
+    "Membership Development", "Public Relations", "Sports and Recreational Activities"
+];
+
+const faculties = [
+    "Faculty of Agricultural Sciences", "Faculty of Applied Sciences", "Faculty of Geomatics",
+    "Faculty of Management Studies", "Faculty of Medicine", "Faculty of Social Sciences and Languages",
+    "Faculty of Computing", "Faculty of Technology"
+];
+
 export default function LeaderboardAdmin() {
     // Data States
     const [members, setMembers] = useState([]);
@@ -62,6 +76,11 @@ export default function LeaderboardAdmin() {
 
     const handleEdit = (member) => {
         setEditingId(member.id);
+
+        // Find correct order from predefined list if role matches, otherwise fallback to existing order
+        const roleIndex = rolesWithOrder.findIndex(r => r.toLowerCase() === (member.role || "").toLowerCase());
+        const derivedOrder = roleIndex !== -1 ? roleIndex + 1 : (member.positionOrder || 0);
+
         setForm({
             name: member.name || "",
             role: member.role || "",
@@ -69,7 +88,7 @@ export default function LeaderboardAdmin() {
             phone: member.phone || "",
             linkedin: member.linkedin || "",
             photo: member.photo || "",
-            positionOrder: member.positionOrder || 0
+            positionOrder: derivedOrder
         });
         setIsModalOpen(true);
     };
@@ -122,20 +141,6 @@ export default function LeaderboardAdmin() {
             m.faculty.toLowerCase().includes(searchTerm.toLowerCase())
         )
         .sort((a, b) => (a.positionOrder ?? 999) - (b.positionOrder ?? 999));
-
-    // List of roles for dropdown
-    const rolesWithOrder = [
-        "President", "Vice President", "Secretary", "Assistant Secretary", "Editor",
-        "Assistant Treasurer", "Sergeant at Arms", "Club Service", "Community Service",
-        "International Service", "Professional Development", "Finance",
-        "Membership Development", "Public Relations", "Sports and Recreational Activities"
-    ];
-
-    const faculties = [
-        "Faculty of Agricultural Sciences", "Faculty of Applied Sciences", "Faculty of Geomatics",
-        "Faculty of Management Studies", "Faculty of Medicine", "Faculty of Social Sciences and Languages",
-        "Faculty of Computing", "Faculty of Technology"
-    ];
 
     const LoadingSkeleton = () => (
         <div className="space-y-4">

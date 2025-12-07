@@ -182,7 +182,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <main className="flex-1 min-w-0 md:pt-0 pt-16">
          {/* Top Header (Desktop) - optional, can be kept simple or added here */}
          
-         <div className="p-4 md:p-8 lg:p-10 max-w-[1600px] mx-auto">
+         <div className="p-4 md:p-8 lg:p-10 max-w-[1600px] mx-auto transition-all duration-300">
             {children}
          </div>
       </main>

@@ -153,10 +153,10 @@ export default function AdminDashboard() {
             {/* Header */}
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Dashboard Overview</h1>
-                    <p className="text-gray-500 mt-1 font-medium">Welcome back, Admin. Here's what's happening today.</p>
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">Dashboard Overview</h1>
+                    <p className="text-sm md:text-base text-gray-500 mt-1 font-medium">Welcome back, Admin. Here's what's happening today.</p>
                 </div>
-                <div className="flex items-center gap-3 bg-white px-5 py-2.5 rounded-full shadow-sm border border-gray-100 text-sm font-medium text-gray-600">
+                <div className="self-start md:self-auto flex items-center gap-3 bg-white px-5 py-2.5 rounded-full shadow-sm border border-gray-100 text-sm font-medium text-gray-600 w-full md:w-auto justify-center md:justify-start">
                     <Calendar size={18} className="text-pink-600" />
                     {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                 </div>
@@ -238,17 +238,17 @@ export default function AdminDashboard() {
                                         </div>
                                         
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <div>
-                                                    <h4 className="font-bold text-gray-900 truncate text-lg">{req.fullName}</h4>
-                                                    <p className="text-sm text-gray-500 font-medium">{req.email}</p>
+                                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-2">
+                                                <div className="w-full sm:w-auto sm:min-w-0">
+                                                    <h4 className="font-bold text-gray-900 text-lg break-words sm:truncate">{req.fullName}</h4>
+                                                    <p className="text-sm text-gray-500 font-medium break-all sm:truncate">{req.email}</p>
                                                 </div>
                                                 {req.isVerified ? (
-                                                    <span className="shrink-0 px-3 py-1 bg-green-50 text-green-700 text-xs font-bold rounded-full border border-green-100 flex items-center gap-1">
+                                                    <span className="shrink-0 px-3 py-1 bg-green-50 text-green-700 text-xs font-bold rounded-full border border-green-100 flex items-center gap-1 w-fit">
                                                         <CheckCircle size={12} /> Verified
                                                     </span>
                                                 ) : (
-                                                    <span className="shrink-0 px-3 py-1 bg-gray-100 text-gray-500 text-xs font-bold rounded-full border border-gray-200">
+                                                    <span className="shrink-0 px-3 py-1 bg-gray-100 text-gray-500 text-xs font-bold rounded-full border border-gray-200 w-fit">
                                                         Unverified
                                                     </span>
                                                 )}
@@ -265,13 +265,13 @@ export default function AdminDashboard() {
                                                 </p>
                                             </div>
                                             
-                                            <div className="flex justify-between items-center mt-4">
+                                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-4 gap-3">
                                                  <p className="text-xs text-gray-400 font-medium">Submitted: {req.submittedAt?.toDate ? req.submittedAt.toDate().toLocaleString() : 'Just now'}</p>
                                                  
                                                  {req.isVerified && (
                                                     <Link 
                                                         href="/admin/requests"
-                                                        className="px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition"
+                                                        className="w-full sm:w-auto text-center px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition"
                                                     >
                                                         Process Request
                                                     </Link>
