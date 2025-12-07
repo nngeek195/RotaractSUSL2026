@@ -36,11 +36,9 @@ export async function POST(request) {
     let TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
     let TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "";
     
-    // Twilio Config
-    let TWILIO_SID = "";
-    let TWILIO_TOKEN = "";
-    let TWILIO_FROM = "";
-    let TWILIO_TO = "";
+    // InOut.bot Config
+    let INOUT_KEY = "";
+    let INOUT_PHONE = "";
 
     // Try fetching from Firestore Secure Settings (adminSettings/secure)
     try {
@@ -52,10 +50,8 @@ export async function POST(request) {
         if (data.telegramBotToken) TELEGRAM_BOT_TOKEN = data.telegramBotToken;
         if (data.telegramChatId) TELEGRAM_CHAT_ID = data.telegramChatId;
         
-        if (data.twilioAccountSid) TWILIO_SID = data.twilioAccountSid;
-        if (data.twilioAuthToken) TWILIO_TOKEN = data.twilioAuthToken;
-        if (data.twilioFromPhone) TWILIO_FROM = data.twilioFromPhone;
-        if (data.twilioToPhone) TWILIO_TO = data.twilioToPhone;
+        if (data.inoutApiKey) INOUT_KEY = data.inoutApiKey;
+        if (data.inoutPhoneNumber) INOUT_PHONE = data.inoutPhoneNumber;
       }
     } catch (dbError) {
       console.warn("Failed to fetch admin settings from Firestore (using env vars fallback):", dbError.message);
@@ -69,12 +65,27 @@ export async function POST(request) {
 
 👤 *Name:* ${fullName}
 📧 *Email:* ${email}
-📱 *Contact:* ${contact}
 🎓 *Faculty:* ${faculty}
 🏫 *Dept:* ${department || "N/A"}
-
-_Please check the Admin Dashboard to approve/reject._
     `.trim();
+
+    // --- VALIDATION FOR EXPLICIT PROVIDER ---
+    if (provider === 'telegram' && (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID)) {
+        return NextResponse.json({ error: "Telegram configuration missing", details: "Check Bot Token and Chat ID" }, { status: 400 });
+    }
+
+    if (provider === 'inout') {
+        const missing = [];
+        if (!INOUT_KEY) missing.push("API Key");
+        if (!INOUT_PHONE) missing.push("Recipient Phone Number");
+
+        if (missing.length > 0) {
+            return NextResponse.json({ 
+                error: "InOut.bot configuration missing", 
+                details: `Missing fields: ${missing.join(", ")}` 
+            }, { status: 400 });
+        }
+    }
 
     // --- 1. Telegram Notification ---
     if ((!provider || provider === 'telegram') && TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
@@ -94,56 +105,54 @@ _Please check the Admin Dashboard to approve/reject._
         results.push(promise);
     }
 
-    // --- 2. Twilio Notification (WhatsApp) ---
-    if ((!provider || provider === 'twilio') && TWILIO_SID && TWILIO_TOKEN && TWILIO_FROM && TWILIO_TO) {
-        const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`;
-        const auth = Buffer.from(`${TWILIO_SID}:${TWILIO_TOKEN}`).toString('base64');
+    // --- 2. InOut.bot Notification (WhatsApp) ---
+    if ((!provider || provider === 'inout') && INOUT_KEY && INOUT_PHONE) {
+        // InOut.bot strips newlines, so we use a single-line format
+        const cleanMessage = `🆕 Request | 👤 ${fullName} | 📧 ${email} | 🎓 ${faculty} | 🏫 ${department || "N/A"}`;
+        const encodedMessage = encodeURIComponent(cleanMessage);
         
-        // Ensure numbers are formatted for WhatsApp
-        const fromNumber = TWILIO_FROM.startsWith('whatsapp:') ? TWILIO_FROM : `whatsapp:${TWILIO_FROM}`;
-        const toNumber = TWILIO_TO.startsWith('whatsapp:') ? TWILIO_TO : `whatsapp:${TWILIO_TO}`;
-
-        const formData = new URLSearchParams();
-        formData.append('From', fromNumber);
-        formData.append('To', toNumber);
-        formData.append('Body', message); // WhatsApp supports Markdown
-
-        const promise = fetch(url, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Basic ${auth}`,
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: formData
-        }).then(async res => {
-            if (!res.ok) throw new Error(`Twilio WhatsApp Error: ${await res.text()}`);
-            return "Twilio WhatsApp sent";
+        const url = `https://api.inout.bot/send?apikey=${INOUT_KEY}&phone_number=${INOUT_PHONE}&message=${encodedMessage}`;
+        
+        const promise = fetch(url)
+        .then(async res => {
+            const text = await res.text();
+            if (!res.ok) throw new Error(`InOut.bot Error: ${text}`);
+            return `InOut.bot sent to ${INOUT_PHONE}`;
         });
         results.push(promise);
     }
 
     if (results.length === 0) {
+        // If we reached here without returning, it means no provider matched OR generic request with no config
         console.warn("Notification Skipped: No providers configured.");
-        return NextResponse.json({ message: "Skipped - No Config" }, { status: 200 });
+        return NextResponse.json({ 
+            error: "No notification providers configured", 
+            details: "Please configure Telegram or Twilio in Admin Settings." 
+        }, { status: 400 });
     }
 
     // Wait for all results
     const outcomes = await Promise.allSettled(results);
-    const errors = outcomes.filter(r => r.status === 'rejected').map(r => r.reason.message);
+    
+    // Log all outcomes for debugging
+    outcomes.forEach((o, i) => {
+        if (o.status === 'rejected') console.error(`Provider ${i} failed:`, o.reason);
+    });
 
-    if (errors.length > 0) {
-        console.error("Notification Errors:", errors);
-        // Only fail if ALL failed
-        if (!outcomes.some(r => r.status === 'fulfilled')) {
-            return NextResponse.json({ error: "Failed to notify", details: errors }, { status: 500 });
+    const failed = outcomes.filter(r => r.status === 'rejected');
+    const errors = failed.map(r => r.reason.message);
+
+    if (failed.length > 0) {
+        // If we tried multiple and at least one failed
+        if (failed.length === results.length) {
+             return NextResponse.json({ error: "Failed to notify", details: errors.join(", ") }, { status: 500 });
         }
-        // Partial success is still success for the client
-        return NextResponse.json({ message: "Notification sent (partial success)", errors });
+        return NextResponse.json({ message: "Notification sent (partial failure)", errors }, { status: 200 });
     }
 
-    return NextResponse.json({ message: "Notification sent" });
+    return NextResponse.json({ message: "Notification sent successfully" });
   } catch (error) {
     console.error("Error sending notification:", error);
-    return NextResponse.json({ error: "Failed to notify" }, { status: 500 });
+    return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });
   }
 }

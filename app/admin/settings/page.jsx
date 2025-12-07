@@ -15,6 +15,7 @@ export default function AdminSettings() {
     const [saving, setSaving] = useState(false);
     const [activeTab, setActiveTab] = useState("general");
     const [toast, setToast] = useState({ show: false, message: "" });
+    const [testLoading, setTestLoading] = useState(false);
 
     // Form State
     const [settings, setSettings] = useState({
@@ -34,11 +35,9 @@ export default function AdminSettings() {
         tiktokUrl: "",
         youtubeUrl: "",
 
-        // Twilio
-        twilioAccountSid: "",
-        twilioAuthToken: "",
-        twilioFromPhone: "",
-        twilioToPhone: ""
+        // InOut.bot WhatsApp
+        inoutApiKey: "",
+        inoutPhoneNumber: ""
     });
 
     useEffect(() => {
@@ -70,10 +69,8 @@ export default function AdminSettings() {
                 youtubeUrl: publicData.youtubeUrl || "",
                 telegramBotToken: secureData.telegramBotToken || "",
                 telegramChatId: secureData.telegramChatId || "",
-                twilioAccountSid: secureData.twilioAccountSid || "",
-                twilioAuthToken: secureData.twilioAuthToken || "",
-                twilioFromPhone: secureData.twilioFromPhone || "",
-                twilioToPhone: secureData.twilioToPhone || ""
+                inoutApiKey: secureData.inoutApiKey || "",
+                inoutPhoneNumber: secureData.inoutPhoneNumber || ""
             }));
         } catch (error) {
             console.error("Error fetching settings:", error);
@@ -107,10 +104,8 @@ export default function AdminSettings() {
             const secureData = {
                 telegramBotToken: settings.telegramBotToken,
                 telegramChatId: settings.telegramChatId,
-                twilioAccountSid: settings.twilioAccountSid,
-                twilioAuthToken: settings.twilioAuthToken,
-                twilioFromPhone: settings.twilioFromPhone,
-                twilioToPhone: settings.twilioToPhone
+                inoutApiKey: settings.inoutApiKey,
+                inoutPhoneNumber: settings.inoutPhoneNumber
             };
             await setDoc(doc(db, "adminSettings", "secure"), secureData, { merge: true });
 
@@ -154,8 +149,8 @@ export default function AdminSettings() {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all text-sm mb-1 ${activeTab === tab.id
-                                            ? "bg-blue-50 text-blue-700 shadow-sm"
-                                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                        ? "bg-blue-50 text-blue-700 shadow-sm"
+                                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                                         }`}
                                 >
                                     <tab.icon size={18} />
@@ -258,37 +253,52 @@ export default function AdminSettings() {
                                                 </div>
                                             </div>
 
-                                            {/* Twilio */}
+                                            {/* InOut.bot WhatsApp */}
                                             <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 space-y-6">
                                                 <div className="flex items-center gap-4 border-b border-gray-100 pb-6">
-                                                    <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl">
+                                                    <div className="p-3 bg-green-100 text-green-600 rounded-xl">
                                                         <MessageSquare size={24} />
                                                     </div>
                                                     <div>
-                                                        <h2 className="text-xl font-bold text-gray-900">Twilio (WhatsApp/SMS)</h2>
-                                                        <p className="text-gray-500 text-sm">Configure automated messaging via Twilio.</p>
+                                                        <h2 className="text-xl font-bold text-gray-900">InOut.bot (WhatsApp)</h2>
+                                                        <p className="text-gray-500 text-sm">Direct, free WhatsApp API. No Credit Card required.</p>
                                                     </div>
                                                 </div>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className="grid grid-cols-1 gap-6">
                                                     <div>
-                                                        <label className="block text-sm font-bold text-gray-700 mb-2">Account SID</label>
-                                                        <input
-                                                            name="twilioAccountSid"
-                                                            value={settings.twilioAccountSid}
-                                                            onChange={handleChange}
-                                                            className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-sm font-bold text-gray-700 mb-2">Auth Token</label>
+                                                        <label className="block text-sm font-bold text-gray-700 mb-2">InOut API Key</label>
                                                         <input
                                                             type="password"
-                                                            name="twilioAuthToken"
-                                                            value={settings.twilioAuthToken}
+                                                            name="inoutApiKey"
+                                                            value={settings.inoutApiKey}
                                                             onChange={handleChange}
+                                                            placeholder="Key from InOut (Send 'Create APIKey' to bot)"
                                                             className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm"
                                                         />
                                                     </div>
+                                                    <div>
+                                                        <label className="block text-sm font-bold text-gray-700 mb-2">Recipient Phone Number</label>
+                                                        <input
+                                                            name="inoutPhoneNumber"
+                                                            value={settings.inoutPhoneNumber}
+                                                            onChange={handleChange}
+                                                            placeholder="+94..."
+                                                            className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm"
+                                                        />
+                                                        <p className="text-xs text-gray-400 mt-1">International format (e.g. +9477...)</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex justify-end pt-4 border-t border-gray-100">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleTestNotification('inout')}
+                                                        disabled={testLoading}
+                                                        className="flex items-center gap-2 text-green-600 bg-green-50 hover:bg-green-100 px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+                                                    >
+                                                        {testLoading ? <Loader2 className="animate-spin" size={16} /> : <MessageSquare size={16} />}
+                                                        Send Test WhatsApp
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -350,12 +360,12 @@ export default function AdminSettings() {
                 </div>
             )}
 
-            {/* Sticky Save Bar */}
             <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-gray-200 p-4 z-40 lg:pl-[280px]">
                 <div className="max-w-7xl mx-auto flex justify-end gap-4 items-center px-4 md:px-8">
                     {toast.show && (
-                        <div className="flex items-center gap-2 text-green-600 bg-green-50 px-4 py-2 rounded-lg font-medium text-sm animate-in fade-in slide-in-from-bottom-2">
-                            <CheckCircle2 size={18} /> {toast.message}
+                        <div className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm animate-in fade-in slide-in-from-bottom-2 ${toast.type === "error" ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"
+                            }`}>
+                            {toast.type === "error" ? <Shield size={18} /> : <CheckCircle2 size={18} />} {toast.message}
                         </div>
                     )}
                     <button
@@ -368,6 +378,53 @@ export default function AdminSettings() {
                     </button>
                 </div>
             </div>
-        </div>
+        </div >
     );
+
+    async function handleTestNotification(provider) {
+        // validate settings
+        if (provider === 'inout' && (!settings.inoutApiKey || !settings.inoutPhoneNumber)) {
+            const msg = "Please save InOut.bot settings first!";
+            setToast({ show: true, message: msg, type: "error" });
+            alert(msg);
+            return;
+        }
+
+        setTestLoading(true);
+        try {
+            const res = await fetch('/api/notify-admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fullName: "Test Admin",
+                    email: "test@rotaractsusl.org",
+                    contact: "+94700000000",
+                    faculty: "Test Faculty",
+                    department: "Test Dept",
+                    provider
+                })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                // Find the success message for the requested provider
+                const resultMsg = data.results?.find(r => r.status === 'fulfilled' && r.value.includes(provider === 'inout' ? 'InOut' : 'Telegram'))?.value;
+                const msg = resultMsg || `${provider === 'inout' ? 'WhatsApp (InOut)' : 'Telegram'} test sent! Check your device.`;
+
+                setToast({ show: true, message: msg, type: "success" });
+                alert(msg);
+            } else {
+                throw new Error(data.error || data.details || "Failed to send");
+            }
+        } catch (error) {
+            console.error("Test failed:", error);
+            const msg = `Test failed: ${error.message}`;
+            setToast({ show: true, message: msg, type: "error" });
+            alert(msg);
+        } finally {
+            setTestLoading(false);
+            // Clear toast after 5s
+            setTimeout(() => setToast(prev => ({ ...prev, show: false })), 5000);
+        }
+    }
 }
