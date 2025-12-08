@@ -6,6 +6,7 @@ import { db } from "@/lib/firebase";
 import NavBar from "../components/Navbar.jsx";
 import Footer from "../components/Footer.jsx";
 import { Send, Plus, Trash2, CheckCircle, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
 
 export default function ReliefRequestPage() {
     const [formData, setFormData] = useState({
@@ -110,6 +111,21 @@ export default function ReliefRequestPage() {
                     }
                 })
             }).catch(err => console.error('Failed to update sheet:', err));
+
+            // Notify Admin (WhatsApp)
+            fetch('/api/notify-admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'relief_request',
+                    data: {
+                        schoolName: formData.schoolName,
+                        district: formData.district,
+                        contactPerson: formData.contact, // Using contact field as person/number mix
+                        contactNumber: formData.contact
+                    }
+                })
+            }).catch(err => console.error('Failed to notify admin:', err));
         } catch (err) {
             console.error("Error submitting request:", err);
             setError("Failed to submit request. Please try again.");
@@ -315,8 +331,10 @@ export default function ReliefRequestPage() {
                         <div className="space-y-3 mb-6">
                             <button
                                 onClick={() => {
-                                    navigator.clipboard.writeText(requestToken);
-                                    alert("Token copied to clipboard!");
+                                    const copyToken = () => {
+                                        navigator.clipboard.writeText(generatedToken);
+                                        toast.success("Token copied to clipboard!");
+                                    };
                                 }}
                                 className="w-full bg-blue-600 text-white py-3 rounded-lg font-poppins font-medium hover:bg-blue-700 transition"
                             >

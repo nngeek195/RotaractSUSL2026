@@ -4,6 +4,7 @@ import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc, query, orderBy,
 import { db } from '@/lib/firebase'
 import { Search, Filter, Download, CheckCircle, Clock, UserCheck, Trash2, Eye, X, Heart, Phone, Mail, MapPin, Package, Settings, Plus, Edit2, Save, ExternalLink, ClipboardList, Shield, ChevronRight, ChevronLeft } from 'lucide-react'
 import { useAuth } from '@/app/contexts/AuthContext'
+import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function ReliefAdminPage() {
@@ -148,10 +149,10 @@ export default function ReliefAdminPage() {
                 const docId = querySnapshot.docs[0].id
                 await updateDoc(doc(db, 'reliefConfig', docId), data)
             }
-            alert('Settings saved successfully!')
+            toast.success('Settings saved successfully!')
         } catch (error) {
             console.error('Error saving config:', error)
-            alert('Failed to save settings')
+            toast.error('Failed to save settings')
         } finally {
             setSavingConfig(false)
         }
@@ -162,12 +163,12 @@ export default function ReliefAdminPage() {
         e.preventDefault()
 
         if (!newItem.id || !newItem.name || !newItem.category) {
-            alert('Please fill in all required fields')
+            toast.error('Please fill in all required fields')
             return
         }
 
         if (reliefItems.some(item => item.id === newItem.id)) {
-            alert('Item ID already exists. Please use a unique ID.')
+            toast.error('Item ID already exists. Please use a unique ID.')
             return
         }
 
@@ -186,17 +187,17 @@ export default function ReliefAdminPage() {
             setNewItem({ id: '', name: '', nameSi: '', category: '', sortOrder: 0, globalFulfilled: 0 })
             setShowAddItemForm(false)
             // fetchReliefItems() - handled by onSnapshot
-            alert('Item added successfully!')
+            toast.success('Item added successfully!')
         } catch (error) {
             console.error('Error adding item:', error)
-            alert('Failed to add item')
+            toast.error('Failed to add item')
         }
     }
 
     // Update Relief Item
     const handleUpdateItem = async (docId) => {
         if (!editingItem.id || !editingItem.name || !editingItem.category) {
-            alert('Please fill in all required fields')
+            toast.error('Please fill in all required fields')
             return
         }
 
@@ -213,10 +214,10 @@ export default function ReliefAdminPage() {
 
             setEditingItem(null)
             // fetchReliefItems() - handled by onSnapshot
-            alert('Item updated successfully!')
+            toast.success('Item updated successfully!')
         } catch (error) {
             console.error('Error updating item:', error)
-            alert('Failed to update item')
+            toast.error('Failed to update item')
         }
     }
 
@@ -245,10 +246,10 @@ export default function ReliefAdminPage() {
         try {
             await deleteDoc(doc(db, 'reliefItems', docId))
             // fetchReliefItems() - handled by onSnapshot
-            alert('Item deleted successfully!')
+            toast.success('Item deleted successfully!')
         } catch (error) {
             console.error('Error deleting item:', error)
-            alert('Failed to delete item')
+            toast.error('Failed to delete item')
         }
     }
 
@@ -369,10 +370,10 @@ export default function ReliefAdminPage() {
                 setSelectedRequest(prev => ({ ...prev, status: newStatus }))
             }
 
-            alert('Status updated successfully!')
+            toast.success('Status updated successfully!')
         } catch (error) {
             console.error('Error updating status:', error)
-            alert('Failed to update status')
+            toast.error('Failed to update status')
         } finally {
             setUpdating(false)
         }
@@ -414,10 +415,10 @@ export default function ReliefAdminPage() {
                 setSelectedOffer(prev => ({ ...prev, status: newStatus }))
             }
 
-            alert('Status updated successfully!')
+            toast.success('Status updated successfully!')
         } catch (error) {
             console.error('Error updating status:', error)
-            alert('Failed to update status')
+            toast.error('Failed to update status')
         } finally {
             setUpdating(false)
         }
@@ -434,10 +435,10 @@ export default function ReliefAdminPage() {
             await deleteDoc(doc(db, 'materialRequests', requestId))
             setRequests(prev => prev.filter(req => req.id !== requestId))
             setShowRequestModal(false)
-            alert('Request deleted successfully')
+            toast.success('Request deleted successfully')
         } catch (error) {
             console.error('Error deleting request:', error)
-            alert('Failed to delete request')
+            toast.error('Failed to delete request')
         } finally {
             setUpdating(false)
         }
@@ -454,10 +455,10 @@ export default function ReliefAdminPage() {
             await deleteDoc(doc(db, 'donationOffers', offerId))
             setOffers(prev => prev.filter(offer => offer.id !== offerId))
             setShowOfferModal(false)
-            alert('Donation offer deleted successfully')
+            toast.success('Donation offer deleted successfully')
         } catch (error) {
             console.error('Error deleting offer:', error)
-            alert('Failed to delete offer')
+            toast.error('Failed to delete offer')
         } finally {
             setUpdating(false)
         }

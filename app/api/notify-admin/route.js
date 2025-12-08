@@ -4,7 +4,7 @@ import { getAdminDb } from "../../../lib/firebaseAdmin";
 export async function POST(request) {
   try {
     const body = await request.json();
-    let { fullName, email, contact, faculty, department, provider } = body;
+    let { type, data, provider, fullName, email, contact, faculty, department } = body;
 
     if (!email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
@@ -59,8 +59,54 @@ export async function POST(request) {
     
     const results = [];
 
-    // 3. Construct Message
-    const message = `
+    // --- MESSAGE CONSTRUCTION ---
+    if (type === 'relief_request') {
+        const { schoolName, district, contactPerson, contactNumber } = data;
+        message = `
+🆕 *New Relief Request*
+
+🏫 *School:* ${schoolName}
+📍 *District:* ${district}
+👤 *Contact:* ${contactPerson}
+📞 *Phone:* ${contactNumber}
+        `.trim();
+    } else if (type === 'donation_offer') {
+        const { donorName, district, itemsOffered, contactNumber, paymentSlip } = data;
+        message = `
+🎁 *New Donation Offer*
+
+👤 *Donor:* ${donorName}
+📍 *District:* ${district}
+📦 *Items:* ${itemsOffered || (paymentSlip ? "Money Donation (Slip)" : "Mixed Items")}
+📞 *Phone:* ${contactNumber}
+        `.trim();
+    } else {
+        // Default: Membership Request
+        let { fullName, email, contact, faculty, department } = data || body;
+
+        // Restore validation for membership requests
+        if (!email) {
+            return NextResponse.json({ error: "Email is required" }, { status: 400 });
+        }
+        
+        if (!fullName && email) {
+            // ... existing fetch logic ...
+             try {
+                const db = getAdminDb();
+                const pendingRef = db.collection("pendingRequests");
+                const snapshot = await pendingRef.where("email", "==", email).limit(1).get();
+        
+                if (!snapshot.empty) {
+                  const userData = snapshot.docs[0].data();
+                  fullName = userData.fullName;
+                  contact = userData.whatsapp;
+                  faculty = userData.faculty;
+                  department = userData.department;
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        message = `
 🆕 *New Membership Request*
 
 👤 *Name:* ${fullName}
@@ -68,6 +114,7 @@ export async function POST(request) {
 🎓 *Faculty:* ${faculty}
 🏫 *Dept:* ${department || "N/A"}
     `.trim();
+    }
 
     // --- VALIDATION FOR EXPLICIT PROVIDER ---
     if (provider === 'telegram' && (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID)) {
@@ -108,7 +155,7 @@ export async function POST(request) {
     // --- 2. InOut.bot Notification (WhatsApp) ---
     if ((!provider || provider === 'inout') && INOUT_KEY && INOUT_PHONE) {
         // InOut.bot strips newlines, so we use a single-line format
-        const cleanMessage = `🆕 Request | 👤 ${fullName} | 📧 ${email} | 🎓 ${faculty} | 🏫 ${department || "N/A"}`;
+        const cleanMessage = message.replace(/\n+/g, " | ").replace(/\*/g, ""); 
         const encodedMessage = encodeURIComponent(cleanMessage);
         
         const url = `https://api.inout.bot/send?apikey=${INOUT_KEY}&phone_number=${INOUT_PHONE}&message=${encodedMessage}`;

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { toast } from "sonner";
 import { db } from '../../lib/firebase';
 import { collection, query, where, getDocs, addDoc, serverTimestamp, orderBy, onSnapshot } from 'firebase/firestore';
 import {
@@ -260,16 +261,15 @@ export default function ReliefRequestsPage() {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Validation: 5MB Limit
         if (file.size > 5 * 1024 * 1024) {
-            alert("File size exceeds 5MB limit.");
+            toast.error("File size exceeds 5MB limit.");
             return;
         }
 
         // Validation: File Type
         const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
         if (!allowedTypes.includes(file.type)) {
-            alert("Invalid file type. Please upload PDF, JPEG, PNG, or WEBP.");
+            toast.error("Invalid file type. Please upload PDF, JPEG, PNG, or WEBP.");
             return;
         }
 
@@ -289,13 +289,13 @@ export default function ReliefRequestsPage() {
 
             if (data.secure_url) {
                 setDonationForm(prev => ({ ...prev, paymentSlip: data.secure_url }));
-                alert("Payment slip uploaded successfully!");
+                toast.success("Payment slip uploaded successfully!");
             } else {
                 throw new Error("Upload failed");
             }
         } catch (err) {
             console.error("Error uploading slip:", err);
-            alert("Failed to upload payment slip. Please try again.");
+            toast.error("Failed to upload payment slip. Please try again.");
         } finally {
             setUploadingSlip(false);
         }
@@ -305,7 +305,7 @@ export default function ReliefRequestsPage() {
         e.preventDefault();
 
         if (!donationForm.donorName || !donationForm.contactNumber) {
-            alert("Please fill in all required fields");
+            toast.error("Please fill in all required fields");
             return;
         }
 
@@ -322,17 +322,17 @@ export default function ReliefRequestsPage() {
             });
 
         if (selectedItems.length === 0 && !donationForm.itemsOffered && !donationForm.paymentSlip) {
-            alert("Please either select items from the list, type a description, or upload a payment slip.");
+            toast.error("Please select items, type a description, or upload a slip.");
             return;
         }
 
         if (!donationForm.district) {
-            alert("Please select your district");
+            toast.error("Please select your district");
             return;
         }
 
         if (donationForm.email && !/\S+@\S+\.\S+/.test(donationForm.email)) {
-            alert("Please enter a valid email address");
+            toast.error("Please enter a valid email address");
             return;
         }
 
@@ -360,7 +360,23 @@ export default function ReliefRequestsPage() {
                 })
             }).catch(err => console.error('Failed to update sheet:', err));
 
-            alert("Thank you! Your donation offer has been submitted successfully. Our team will contact you soon.");
+            // Notify Admin (WhatsApp)
+            fetch('/api/notify-admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'donation_offer',
+                    data: {
+                        donorName: donationForm.donorName,
+                        district: donationForm.district,
+                        itemsOffered: donationForm.itemsOffered || Object.keys(donationForm.items).length + " items selected",
+                        contactNumber: donationForm.contactNumber,
+                        paymentSlip: donationForm.paymentSlip
+                    }
+                })
+            }).catch(err => console.error('Failed to notify admin:', err));
+
+            toast.success("Donation offer submitted successfully! We will contact you soon.");
             setShowDonationForm(false);
             setDonationForm({
                 donorName: "",
@@ -374,7 +390,7 @@ export default function ReliefRequestsPage() {
             });
         } catch (error) {
             console.error("Error submitting donation:", error);
-            alert("Failed to submit donation offer. Please try again.");
+            toast.error("Failed to submit donation offer. Please try again.");
         } finally {
             setSubmittingDonation(false);
         }
@@ -384,7 +400,7 @@ export default function ReliefRequestsPage() {
         e.preventDefault();
 
         if (!requestForm.schoolName || !requestForm.district || !requestForm.contactPerson || !requestForm.contactNumber) {
-            alert("Please fill in all required fields");
+            toast.error("Please fill in all required fields");
             return;
         }
 
@@ -401,7 +417,7 @@ export default function ReliefRequestsPage() {
             });
 
         if (selectedItems.length === 0) {
-            alert("Please select at least one item with quantity");
+            toast.error("Please select at least one item with quantity");
             return;
         }
 
@@ -496,7 +512,7 @@ export default function ReliefRequestsPage() {
             // Refresh requests list - Automatic via onSnapshot
         } catch (error) {
             console.error("Error submitting request:", error);
-            alert("Failed to submit request. Please try again.");
+            toast.error("Failed to submit request. Please try again.");
         } finally {
             setSubmittingRequest(false);
         }
@@ -504,14 +520,14 @@ export default function ReliefRequestsPage() {
 
     const copyToken = () => {
         navigator.clipboard.writeText(generatedToken);
-        alert("Token copied to clipboard!");
+        toast.success("Token copied to clipboard!");
     };
 
     const handleTrackRequest = async (e) => {
         e.preventDefault();
 
         if (!trackToken.trim()) {
-            alert("Please enter your tracking token");
+            toast.error("Please enter your tracking token");
             return;
         }
 
@@ -521,14 +537,14 @@ export default function ReliefRequestsPage() {
             const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
-                alert("No request found with this token. Please check your token and try again.");
+                toast.error("No request found with this token.");
             } else {
                 // Redirect to manage-relief page with token
                 window.location.href = `/manage-relief?token=${trackToken.trim()}`;
             }
         } catch (error) {
             console.error("Error tracking request:", error);
-            alert("Failed to track request. Please try again.");
+            toast.error("Failed to track request. Please try again.");
         } finally {
             setTrackingRequest(false);
         }
