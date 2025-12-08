@@ -37,6 +37,7 @@ export default function UserHandling() {
     const [viewingMember, setViewingMember] = useState(null);
     const [newPosition, setNewPosition] = useState("");
     const [imageUrl, setImageUrl] = useState("");
+    const [viewingImage, setViewingImage] = useState(null); // Lightbox state
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -256,12 +257,21 @@ export default function UserHandling() {
                                             >
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-4">
-                                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white shadow-sm ${member.type === 'Executive'
-                                                            ? 'bg-gradient-to-br from-pink-500 to-rose-500'
-                                                            : 'bg-gradient-to-br from-blue-500 to-indigo-500'
-                                                            }`}>
-                                                            {member.fullName?.charAt(0)}
-                                                        </div>
+                                                        {/* Updated Avatar Logic */}
+                                                        {member.imageUrl ? (
+                                                            <img
+                                                                src={member.imageUrl}
+                                                                alt={member.fullName}
+                                                                className="w-10 h-10 rounded-full object-cover shadow-sm border border-gray-100"
+                                                            />
+                                                        ) : (
+                                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white shadow-sm ${member.type === 'Executive'
+                                                                ? 'bg-gradient-to-br from-pink-500 to-rose-500'
+                                                                : 'bg-gradient-to-br from-blue-500 to-indigo-500'
+                                                                }`}>
+                                                                {member.fullName?.charAt(0)}
+                                                            </div>
+                                                        )}
                                                         <div>
                                                             <h4 className="text-sm font-bold text-gray-900">{member.fullName}</h4>
                                                             <p className="text-xs text-gray-500">{member.email}</p>
@@ -335,12 +345,21 @@ export default function UserHandling() {
                                     >
                                         <div className="flex items-start justify-between">
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white shadow-sm ${member.type === 'Executive'
-                                                    ? 'bg-gradient-to-br from-pink-500 to-rose-500'
-                                                    : 'bg-gradient-to-br from-blue-500 to-indigo-500'
-                                                    }`}>
-                                                    {member.fullName?.charAt(0)}
-                                                </div>
+                                                {/* Updated Avatar Logic */}
+                                                {member.imageUrl ? (
+                                                    <img
+                                                        src={member.imageUrl}
+                                                        alt={member.fullName}
+                                                        className="w-10 h-10 rounded-full object-cover shadow-sm border border-gray-100"
+                                                    />
+                                                ) : (
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white shadow-sm ${member.type === 'Executive'
+                                                        ? 'bg-gradient-to-br from-pink-500 to-rose-500'
+                                                        : 'bg-gradient-to-br from-blue-500 to-indigo-500'
+                                                        }`}>
+                                                        {member.fullName?.charAt(0)}
+                                                    </div>
+                                                )}
                                                 <div>
                                                     <h4 className="text-sm font-bold text-gray-900">{member.fullName}</h4>
                                                     <p className="text-xs text-gray-500">{member.email}</p>
@@ -432,7 +451,12 @@ export default function UserHandling() {
                                     </button>
                                     <div className="w-24 h-24 mx-auto bg-white p-1 rounded-full shadow-lg mb-4">
                                         {viewingMember.imageUrl ? (
-                                            <img src={viewingMember.imageUrl} alt={viewingMember.fullName} className="w-full h-full rounded-full object-cover" />
+                                            <img
+                                                src={viewingMember.imageUrl}
+                                                alt={viewingMember.fullName}
+                                                onClick={() => setViewingImage(viewingMember.imageUrl)}
+                                                className="w-full h-full rounded-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                            />
                                         ) : (
                                             <div className={`w-full h-full rounded-full flex items-center justify-center text-3xl font-bold text-white ${viewingMember.type === 'Executive' ? 'bg-gradient-to-br from-pink-500 to-rose-500' : 'bg-gradient-to-br from-blue-500 to-indigo-500'}`}>
                                                 {viewingMember.fullName?.charAt(0)}
@@ -500,9 +524,18 @@ export default function UserHandling() {
 
                                     <div className="p-6 overflow-y-auto">
                                         <div className="flex items-center gap-4 mb-8 bg-blue-50 p-4 rounded-xl border border-blue-100">
-                                            <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-md">
-                                                {editingMember.fullName?.charAt(0)}
-                                            </div>
+                                            {/* Updated Avatar Logic */}
+                                            {editingMember.imageUrl ? (
+                                                <img
+                                                    src={editingMember.imageUrl}
+                                                    alt={editingMember.fullName}
+                                                    className="w-12 h-12 rounded-full object-cover shadow-md border border-blue-100"
+                                                />
+                                            ) : (
+                                                <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-md">
+                                                    {editingMember.fullName?.charAt(0)}
+                                                </div>
+                                            )}
                                             <div>
                                                 <h4 className="font-bold text-gray-900 text-lg">{editingMember.fullName}</h4>
                                                 <p className="text-sm text-blue-700 font-medium">Current: {editingMember.position || "Member"}</p>
@@ -574,6 +607,41 @@ export default function UserHandling() {
                     document.body
                 )
             }
+            {/* Lightbox Modal */}
+            {mounted && createPortal(
+                <AnimatePresence>
+                    {viewingImage && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/90 z-[99999] flex items-center justify-center p-4"
+                            onClick={() => setViewingImage(null)}
+                        >
+                            <motion.button
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                onClick={() => setViewingImage(null)}
+                                className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+                            >
+                                <X size={24} />
+                            </motion.button>
+
+                            <motion.img
+                                initial={{ scale: 0.9, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.9, opacity: 0 }}
+                                src={viewingImage}
+                                alt="Full size"
+                                className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+                                onClick={(e) => e.stopPropagation()}
+                            />
+                        </motion.div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
         </div >
     );
 }

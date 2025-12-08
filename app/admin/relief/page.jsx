@@ -28,6 +28,7 @@ export default function ReliefAdminPage() {
     const [offerDistrictFilter, setOfferDistrictFilter] = useState('all')
     const [selectedOffer, setSelectedOffer] = useState(null)
     const [showOfferModal, setShowOfferModal] = useState(false)
+    const [selectedSlip, setSelectedSlip] = useState(null) // Lightbox state
 
     const [updating, setUpdating] = useState(false)
 
@@ -719,6 +720,8 @@ export default function ReliefAdminPage() {
                                                         <th className="px-6 py-3">School Name</th>
                                                         <th className="px-6 py-3">District</th>
                                                         <th className="px-6 py-3">Contact</th>
+                                                        <th className="px-6 py-3">Requested Items</th>
+                                                        <th className="px-6 py-3">Address & Description</th>
                                                         <th className="px-6 py-3">Status</th>
                                                         <th className="px-6 py-3 text-right">Actions</th>
                                                     </tr>
@@ -726,22 +729,47 @@ export default function ReliefAdminPage() {
                                                 <tbody className="divide-y divide-gray-100">
                                                     {filteredRequests.map((request) => (
                                                         <tr key={request.id} className="hover:bg-gray-50 transition-colors group">
-                                                            <td className="px-6 py-4">
+                                                            <td className="px-6 py-4 align-top">
                                                                 <div className="font-semibold text-gray-900">{request.schoolName}</div>
-                                                                <div className="text-xs text-gray-400">{request.createdAt?.toDate?.()?.toLocaleDateString()}</div>
+                                                                <div className="text-xs text-pink-600 font-mono mt-0.5">{request.requestToken}</div>
+                                                                <div className="text-xs text-gray-400 mt-1">{request.createdAt?.toDate?.()?.toLocaleDateString()}</div>
                                                             </td>
-                                                            <td className="px-6 py-4 text-gray-600">
+                                                            <td className="px-6 py-4 align-top text-gray-600">
                                                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-100 text-gray-700 text-xs font-medium">
                                                                     <MapPin size={12} /> {request.district}
                                                                 </span>
                                                             </td>
-                                                            <td className="px-6 py-4">
+                                                            <td className="px-6 py-4 align-top">
                                                                 <div className="flex flex-col gap-0.5">
                                                                     <span className="text-gray-900 font-medium">{request.contactPerson}</span>
                                                                     <span className="text-gray-500 text-xs font-mono">{request.contactNumber}</span>
                                                                 </div>
                                                             </td>
-                                                            <td className="px-6 py-4">
+                                                            <td className="px-6 py-4 align-top">
+                                                                <div className="space-y-1">
+                                                                    {request.items?.map((item, idx) => (
+                                                                        <div key={idx} className="flex items-center justify-between text-xs gap-4 border-b border-gray-100 pb-1 last:border-0 last:pb-0">
+                                                                            <span className="text-gray-700">{item.name}</span>
+                                                                            <span className="font-bold text-pink-600 bg-pink-50 px-1.5 rounded">{item.quantity}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-6 py-4 align-top max-w-xs">
+                                                                {request.address && (
+                                                                    <div className="mb-2">
+                                                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide block">Address</span>
+                                                                        <span className="text-xs text-gray-700">{request.address}</span>
+                                                                    </div>
+                                                                )}
+                                                                {request.description && (
+                                                                    <div>
+                                                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide block">Description</span>
+                                                                        <p className="text-xs text-gray-600 leading-relaxed">{request.description}</p>
+                                                                    </div>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-6 py-4 align-top">
                                                                 <select
                                                                     value={request.status}
                                                                     onChange={(e) => handleUpdateRequestStatus(request.id, e.target.value)}
@@ -754,18 +782,8 @@ export default function ReliefAdminPage() {
                                                                     <option value="fulfilled">Fulfilled</option>
                                                                 </select>
                                                             </td>
-                                                            <td className="px-6 py-4 text-right">
+                                                            <td className="px-6 py-4 align-top text-right">
                                                                 <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            setSelectedRequest(request)
-                                                                            setShowRequestModal(true)
-                                                                        }}
-                                                                        className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                                                                        title="View Details"
-                                                                    >
-                                                                        <Eye size={16} />
-                                                                    </button>
                                                                     <button
                                                                         onClick={() => handleDeleteRequest(request.id)}
                                                                         className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
@@ -914,7 +932,8 @@ export default function ReliefAdminPage() {
                                                         <th className="px-6 py-3">Donor</th>
                                                         <th className="px-6 py-3">Contact</th>
                                                         <th className="px-6 py-3">District</th>
-                                                        <th className="px-6 py-3">Type/Items</th>
+                                                        <th className="px-6 py-3">Offer Details</th>
+                                                        <th className="px-6 py-3">Message</th>
                                                         <th className="px-6 py-3">Status</th>
                                                         <th className="px-6 py-3 text-right">Actions</th>
                                                     </tr>
@@ -922,31 +941,55 @@ export default function ReliefAdminPage() {
                                                 <tbody className="divide-y divide-gray-100">
                                                     {filteredOffers.map((offer) => (
                                                         <tr key={offer.id} className="hover:bg-gray-50 transition-colors group">
-                                                            <td className="px-6 py-4">
+                                                            <td className="px-6 py-4 align-top">
                                                                 <div className="font-semibold text-gray-900">{offer.donorName}</div>
                                                                 <div className="text-xs text-gray-400">{offer.createdAt?.toDate?.()?.toLocaleDateString()}</div>
                                                             </td>
-                                                            <td className="px-6 py-4">
+                                                            <td className="px-6 py-4 align-top">
                                                                 <div className="flex flex-col gap-0.5">
                                                                     <span className="text-gray-900 font-medium">{offer.contactNumber}</span>
                                                                     <span className="text-gray-500 text-xs truncate max-w-[150px]">{offer.email}</span>
                                                                 </div>
                                                             </td>
-                                                            <td className="px-6 py-4 text-gray-600">
+                                                            <td className="px-6 py-4 align-top text-gray-600">
                                                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-100 text-gray-700 text-xs font-medium">
                                                                     <MapPin size={12} /> {offer.district}
                                                                 </span>
                                                             </td>
-                                                            <td className="px-6 py-4">
+                                                            <td className="px-6 py-4 align-top">
                                                                 {offer.paymentSlip ? (
-                                                                    <a href={offer.paymentSlip} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-800 font-medium text-xs bg-blue-50 px-2 py-1 rounded-md border border-blue-100 transition">
-                                                                        <Download size={12} /> View Slip
-                                                                    </a>
+                                                                    <div>
+                                                                        <span className="text-xs font-bold text-green-600 block mb-1">Money Donation</span>
+                                                                        <button
+                                                                            onClick={() => setSelectedSlip(offer.paymentSlip)}
+                                                                            className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-800 font-medium text-xs bg-blue-50 px-2 py-1 rounded-md border border-blue-100 transition"
+                                                                        >
+                                                                            <Eye size={12} /> View Slip
+                                                                        </button>
+                                                                    </div>
                                                                 ) : (
-                                                                    <div className="text-xs text-gray-600 max-w-[200px] truncate" title={offer.itemsOffered}>{offer.itemsOffered}</div>
+                                                                    <div className="space-y-1">
+                                                                        {offer.items && offer.items.length > 0 ? (
+                                                                            offer.items.map((item, idx) => (
+                                                                                <div key={idx} className="flex items-center gap-2 text-xs">
+                                                                                    <span className="font-medium text-gray-900">{item.name}</span>
+                                                                                    <span className="text-gray-500">x{item.quantity}</span>
+                                                                                </div>
+                                                                            ))
+                                                                        ) : (
+                                                                            <div className="text-xs text-gray-600">{offer.itemsOffered}</div>
+                                                                        )}
+                                                                    </div>
                                                                 )}
                                                             </td>
-                                                            <td className="px-6 py-4">
+                                                            <td className="px-6 py-4 align-top max-w-xs">
+                                                                {offer.message ? (
+                                                                    <p className="text-xs text-gray-600 leading-relaxed line-clamp-3 hover:line-clamp-none transition-all">{offer.message}</p>
+                                                                ) : (
+                                                                    <span className="text-xs text-gray-400 italic">No message</span>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-6 py-4 align-top">
                                                                 <select
                                                                     value={offer.status}
                                                                     onChange={(e) => handleUpdateOfferStatus(offer.id, e.target.value)}
@@ -959,18 +1002,8 @@ export default function ReliefAdminPage() {
                                                                     <option value="completed">Completed</option>
                                                                 </select>
                                                             </td>
-                                                            <td className="px-6 py-4 text-right">
+                                                            <td className="px-6 py-4 align-top text-right">
                                                                 <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            setSelectedOffer(offer)
-                                                                            setShowOfferModal(true)
-                                                                        }}
-                                                                        className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                                                                        title="View Details"
-                                                                    >
-                                                                        <Eye size={16} />
-                                                                    </button>
                                                                     <button
                                                                         onClick={() => handleDeleteOffer(offer.id)}
                                                                         className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
@@ -1720,7 +1753,10 @@ export default function ReliefAdminPage() {
                                         <div>
                                             <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Payment Slip</p>
                                             <div className="border border-gray-200 rounded-xl p-4 bg-gray-50">
-                                                <a href={selectedOffer.paymentSlip} target="_blank" rel="noopener noreferrer" className="block relative group overflow-hidden rounded-lg mb-3">
+                                                <div
+                                                    onClick={() => setSelectedSlip(selectedOffer.paymentSlip)}
+                                                    className="block relative group overflow-hidden rounded-lg mb-3 cursor-pointer"
+                                                >
                                                     <img
                                                         src={selectedOffer.paymentSlip}
                                                         alt="Payment Slip"
@@ -1731,18 +1767,41 @@ export default function ReliefAdminPage() {
                                                         }}
                                                     />
                                                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                                                        <ExternalLink className="text-white opacity-0 group-hover:opacity-100 transform scale-75 group-hover:scale-100 transition-all drop-shadow-md" size={32} />
+                                                        <Eye className="text-white opacity-0 group-hover:opacity-100 transform scale-75 group-hover:scale-100 transition-all drop-shadow-md" size={32} />
                                                     </div>
-                                                </a>
+                                                </div>
                                                 <div className="flex justify-end">
-                                                    <a
-                                                        href={selectedOffer.paymentSlip}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
+                                                    <button
+                                                        onClick={async (e) => {
+                                                            e.stopPropagation();
+                                                            try {
+                                                                const response = await fetch(selectedOffer.paymentSlip);
+                                                                const blob = await response.blob();
+                                                                const url = window.URL.createObjectURL(blob);
+                                                                const link = document.createElement('a');
+                                                                link.href = url;
+
+                                                                // Determine extension from MIME type
+                                                                let extension = 'jpg';
+                                                                if (blob.type === 'application/pdf') extension = 'pdf';
+                                                                else if (blob.type === 'image/png') extension = 'png';
+                                                                else if (blob.type === 'image/jpeg') extension = 'jpg';
+
+                                                                link.download = `payment-slip-${Date.now()}.${extension}`;
+                                                                document.body.appendChild(link);
+                                                                link.click();
+                                                                document.body.removeChild(link);
+                                                                window.URL.revokeObjectURL(url);
+                                                            } catch (error) {
+                                                                console.error('Download failed:', error);
+                                                                // Fallback to direct navigation
+                                                                window.open(selectedOffer.paymentSlip, '_blank');
+                                                            }
+                                                        }}
                                                         className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition shadow-sm"
                                                     >
                                                         <Download size={16} /> Download Slip
-                                                    </a>
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -1786,6 +1845,79 @@ export default function ReliefAdminPage() {
                                         </div>
                                     </div>
                                 </div>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Slip Viewer Modal */}
+                <AnimatePresence>
+                    {selectedSlip && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
+                            onClick={() => setSelectedSlip(null)}
+                        >
+                            <button
+                                onClick={() => setSelectedSlip(null)}
+                                className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-[110]"
+                            >
+                                <X size={24} />
+                            </button>
+
+                            <motion.div
+                                initial={{ scale: 0.9, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.9, opacity: 0 }}
+                                className="relative max-w-4xl w-full max-h-[90vh] flex flex-col items-center"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                {selectedSlip?.toLowerCase().includes('.pdf') ? (
+                                    <iframe
+                                        src={selectedSlip}
+                                        title="Payment Slip PDF"
+                                        className="w-full h-[80vh] rounded-lg shadow-2xl mb-6 bg-white"
+                                    />
+                                ) : (
+                                    <img
+                                        src={selectedSlip}
+                                        alt="Payment Slip Full Size"
+                                        className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl mb-6"
+                                    />
+                                )}
+
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            const response = await fetch(selectedSlip);
+                                            const blob = await response.blob();
+                                            const url = window.URL.createObjectURL(blob);
+                                            const link = document.createElement('a');
+                                            link.href = url;
+
+                                            // Determine extension from MIME type
+                                            let extension = 'jpg';
+                                            if (blob.type === 'application/pdf') extension = 'pdf';
+                                            else if (blob.type === 'image/png') extension = 'png';
+                                            else if (blob.type === 'image/jpeg') extension = 'jpg';
+
+                                            link.download = `payment-slip-${Date.now()}.${extension}`;
+                                            document.body.appendChild(link);
+                                            link.click();
+                                            document.body.removeChild(link);
+                                            window.URL.revokeObjectURL(url);
+                                        } catch (error) {
+                                            console.error('Download failed:', error);
+                                            // Fallback to direct navigation if fetch fails
+                                            window.open(selectedSlip, '_blank');
+                                        }
+                                    }}
+                                    className="px-6 py-3 bg-white text-gray-900 rounded-full font-bold shadow-lg hover:bg-gray-100 transition flex items-center gap-2"
+                                >
+                                    <Download size={20} /> Download Slip
+                                </button>
                             </motion.div>
                         </motion.div>
                     )}
