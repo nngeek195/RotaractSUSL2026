@@ -574,7 +574,7 @@ export default function ReliefRequestsPage() {
                     </motion.div>
 
                     <motion.h1 variants={itemVariants} className="font-playfair text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-                        Connecting Needs with <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">Generosity</span>
+                        Hold their future with <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">your heart</span>
                     </motion.h1>
 
                     <motion.p variants={itemVariants} className="font-poppins text-lg text-gray-600 mb-10 leading-relaxed max-w-2xl mx-auto">
@@ -643,14 +643,14 @@ export default function ReliefRequestsPage() {
                         </div>
                     </motion.div>
 
-                    <motion.div variants={itemVariants} className="bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-2xl p-6 shadow-xl relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
+                    <motion.div variants={itemVariants} className="bg-white/80 backdrop-blur-md border border-white/20 rounded-2xl p-6 shadow-xl relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
                         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <User size={80} className="text-white" />
+                            <User size={80} className="text-blue-600" />
                         </div>
-                        <p className="font-poppins text-sm text-blue-100 mb-1 font-semibold uppercase tracking-wider">Assigned</p>
-                        <p className="font-playfair text-5xl font-bold text-white">{counts.assigned}</p>
-                        <div className="w-full bg-white/20 h-1 mt-4 rounded-full overflow-hidden">
-                            <div className="h-full bg-white w-1/2" />
+                        <p className="font-poppins text-sm text-gray-500 mb-1 font-semibold uppercase tracking-wider">Assigned</p>
+                        <p className="font-playfair text-5xl font-bold text-gray-900">{counts.assigned}</p>
+                        <div className="w-full bg-gray-100 h-1 mt-4 rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-600 w-1/2" />
                         </div>
                     </motion.div>
 
