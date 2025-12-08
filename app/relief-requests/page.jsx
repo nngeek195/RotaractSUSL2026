@@ -13,6 +13,9 @@ import { CldUploadWidget } from 'next-cloudinary';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
+const CLOUDINARY_UPLOAD_URL = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_URL || "https://api.cloudinary.com/v1_1/dvqoiqzxe/image/upload";
+const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "donations";
+
 const ITEM_ICONS = {
     notebooks: <Notebook size={32} className="text-blue-500" />,
     pens: <PenTool size={32} className="text-purple-500" />,
@@ -490,8 +493,7 @@ export default function ReliefRequestsPage() {
                 items: {} // Reset to empty object
             });
 
-            // Refresh requests list
-            fetchRequests();
+            // Refresh requests list - Automatic via onSnapshot
         } catch (error) {
             console.error("Error submitting request:", error);
             alert("Failed to submit request. Please try again.");
