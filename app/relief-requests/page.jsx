@@ -573,13 +573,12 @@ export default function ReliefRequestsPage() {
                         <span>Flood Relief Initiative 2025</span>
                     </motion.div>
 
-                    <motion.h1 variants={itemVariants} className="font-playfair text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-                        Hold their future with <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">your heart</span>
+                    <motion.h1 variants={itemVariants} className="font-playfair text-6xl md:text-8xl font-black text-gray-900 mb-2 leading-tight tracking-tight uppercase">
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-700 to-red-600">EMBRACE</span>
                     </motion.h1>
 
-                    <motion.p variants={itemVariants} className="font-poppins text-lg text-gray-600 mb-10 leading-relaxed max-w-2xl mx-auto">
-                        Browse verified material requests from flood-affected schools or submit your own needs.
-                        Together, we can rebuild our community&apos;s future.
+                    <motion.p variants={itemVariants} className="font-poppins text-xl md:text-2xl font-bold text-gray-800 mb-10 uppercase tracking-wide">
+                        Hold the future with your heart
                     </motion.p>
 
                     {/* Action Buttons */}
@@ -624,6 +623,125 @@ export default function ReliefRequestsPage() {
                         </motion.button>
                     </motion.div>
                 </motion.div>
+
+                {/* EMBRACE Campaign Section */}
+                <motion.div
+                    variants={containerVariants}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true }}
+                    className="mb-20"
+                >
+                    <div className="bg-white/60 backdrop-blur-xl border border-white/40 rounded-[2.5rem] p-8 md:p-12 shadow-xl overflow-hidden relative">
+                        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-red-600/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+
+                        <div className="text-center mb-12 relative z-10">
+                            <motion.p variants={itemVariants} className="font-serif italic text-2xl text-gray-600 mb-8">
+                                "If you are ready to DONATE then we are ready to RECEIVE"
+                            </motion.p>
+                            <motion.div variants={itemVariants} className="inline-block bg-gray-900 text-white px-8 py-3 rounded-full font-bold font-poppins text-lg uppercase shadow-lg">
+                                Drop off your DONATIONS to the below LOCATIONS
+                            </motion.div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+                            {/* Location 1 */}
+                            <motion.div variants={itemVariants} className="bg-white/80 p-6 rounded-2xl border-l-4 border-red-600 shadow-sm hover:shadow-md transition-all">
+                                <h3 className="font-bold font-poppins text-lg text-gray-900 mb-1">Sabaragamuwa University of Sri Lanka</h3>
+                                <p className="text-sm font-bold text-red-600 mb-2">Sweet Magic Cake Shop</p>
+                                <p className="text-gray-600 text-sm mb-3">100m downwards from the main gate, SUSL</p>
+                                <div className="space-y-1 text-sm font-medium text-gray-700">
+                                    <div className="flex items-center gap-2">
+                                        <Phone size={14} className="text-red-500" />
+                                        <span>074 096 7846 | 071 111 9658 (Chamodya)</span>
+                                    </div>
+                                </div>
+                            </motion.div>
+
+                            {/* Location 2 */}
+                            <motion.div variants={itemVariants} className="bg-white/80 p-6 rounded-2xl border-l-4 border-red-600 shadow-sm hover:shadow-md transition-all">
+                                <h3 className="font-bold font-poppins text-lg text-gray-900 mb-1">Saegis Campus</h3>
+                                <p className="text-gray-600 text-sm mb-3">135 S.De S. Jayasinghe Mawatha, Nugegoda</p>
+                                <div className="space-y-1 text-sm font-medium text-gray-700">
+                                    <div className="flex items-center gap-2">
+                                        <Phone size={14} className="text-red-500" />
+                                        <span>075 958 1531 (Megana)</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Phone size={14} className="text-red-500" />
+                                        <span>076 708 0996 (Kavith)</span>
+                                    </div>
+                                </div>
+                            </motion.div>
+
+                            {/* Location 3 */}
+                            <motion.div variants={itemVariants} className="bg-white/80 p-6 rounded-2xl border-l-4 border-red-600 shadow-sm hover:shadow-md transition-all">
+                                <h3 className="font-bold font-poppins text-lg text-gray-900 mb-1">New Batti Express Online Gift Shop</h3>
+                                <p className="text-gray-600 text-sm mb-3">No. 149, New Kalmunai Road, Kallady, Batticaloa</p>
+                                <div className="space-y-1 text-sm font-medium text-gray-700">
+                                    <div className="flex items-center gap-2">
+                                        <Phone size={14} className="text-red-500" />
+                                        <span>075 999 5051 (David Shyam)</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Phone size={14} className="text-red-500" />
+                                        <span>077 177 9915 (Aishwariya Rudura)</span>
+                                    </div>
+                                </div>
+                            </motion.div>
+
+                            {/* Location 4 */}
+                            <motion.div variants={itemVariants} className="bg-white/80 p-6 rounded-2xl border-l-4 border-red-600 shadow-sm hover:shadow-md transition-all">
+                                <h3 className="font-bold font-poppins text-lg text-gray-900 mb-1">NIBM Kandy</h3>
+                                <p className="text-gray-600 text-sm mb-3">No. 2, Asgiri Vihara Mawatha, Kandy</p>
+                                <div className="space-y-1 text-sm font-medium text-gray-700">
+                                    <div className="flex items-center gap-2">
+                                        <Phone size={14} className="text-red-500" />
+                                        <span>076 743 2486 (Rtr. Nusna)</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Phone size={14} className="text-red-500" />
+                                        <span>071 978 7517 (Rtr. Kalhara)</span>
+                                    </div>
+                                </div>
+                            </motion.div>
+
+                            {/* Location 5 */}
+                            <motion.div variants={itemVariants} className="bg-white/80 p-6 rounded-2xl border-l-4 border-red-600 shadow-sm hover:shadow-md transition-all">
+                                <h3 className="font-bold font-poppins text-lg text-gray-900 mb-1">Mannar Island</h3>
+                                <p className="text-gray-600 text-sm mb-3">Hotel Ahash, Eluthoor, Mannar</p>
+                                <div className="space-y-1 text-sm font-medium text-gray-700">
+                                    <div className="flex items-center gap-2">
+                                        <Phone size={14} className="text-red-500" />
+                                        <span>076 311 9670 (Rtr. Thayavu Goerge)</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Phone size={14} className="text-red-500" />
+                                        <span>074 293 0304 (Rtr. Jayanisha Thinakaran)</span>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        </div>
+
+                        <div className="mt-8 pt-6 border-t border-gray-200 text-center">
+                            <p className="font-poppins text-sm text-gray-600 mb-2">
+                                A joint initiative by Rotaract Clubs of Batticaloa, CfPS Law School, Chunnakam, Colombo Heritage, Colombo North, Kandy Hill Capital, Kandy Metropolitan, Mannar Town, Moratuwa, NIBM Kandy, Ratmalana, Saegis Campus, Sabaragamuwa University, University of Colombo School of Computing, Wayamba University of Sri Lanka, Wellawatte
+                            </p>
+                            <p className="font-bold text-xs text-gray-500 uppercase tracking-widest mt-4">
+                                For More Details
+                            </p>
+                            <div className="flex flex-wrap justify-center gap-4 mt-2 text-sm font-bold text-gray-800">
+                                <span>078 2479942 - President (Rtr. Krishan Basnayaka)</span>
+                                <span className="hidden md:inline text-gray-300">|</span>
+                                <span>070 2524820 - Community Service Director (Rtr. Udara Subasinghe)</span>
+                                <span className="hidden md:inline text-gray-300">|</span>
+                                <span>071 7771822 - Project Chair (Rtr. Dulyani Jayathilaka)</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </motion.div>
+
                 {/* Stats Cards */}
                 <motion.div
                     variants={containerVariants}
