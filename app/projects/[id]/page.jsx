@@ -284,7 +284,7 @@ export default function ProjectDetailsPage() {
                         Project Gallery
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {project.galleryImages.slice(0, 6).map((image, index) => (
+                        {project.galleryImages.map((image, index) => (
                             <div
                                 key={index}
                                 className="h-[300px] rounded-[22px] overflow-hidden"
