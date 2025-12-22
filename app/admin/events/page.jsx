@@ -5,7 +5,7 @@ import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, Timestamp } fro
 import { db } from "@/lib/firebase";
 import {
     Calendar, MapPin, Edit, Trash, CheckCircle, Plus, Users, Loader2,
-    X, Image as ImageIcon, Search, Filter, ArrowRight
+    X, Image as ImageIcon, Search, Filter, ArrowRight, Eye, Star
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
@@ -33,8 +33,19 @@ export default function EventHandling() {
     // Upload States
     const [uploading, setUploading] = useState(false);
     const [uploadMessage, setUploadMessage] = useState("");
-    const [selectedFile, setSelectedFile] = useState(null);
-    const fileInputRef = useRef(null);
+
+    // File States
+    const [selectedCoverFile, setSelectedCoverFile] = useState(null);
+    const [globalGalleryFiles, setGlobalGalleryFiles] = useState([]);
+    const [projectGalleryFiles, setProjectGalleryFiles] = useState([]);
+
+    // Existing URLs (for editing)
+    const [existingGlobalImages, setExistingGlobalImages] = useState([]);
+    const [existingProjectImages, setExistingProjectImages] = useState([]);
+
+    const coverInputRef = useRef(null);
+    const globalInputRef = useRef(null);
+    const projectInputRef = useRef(null);
 
     const [formData, setFormData] = useState({
         title: "",
@@ -78,45 +89,23 @@ export default function EventHandling() {
         setLoading(false);
     };
 
-    const uploadImage = async () => {
-        if (!selectedFile) return formData.imageUrl;
-
-        const sanitizeFolderName = (name) =>
-            name.toLowerCase()
-                .trim()
-                .replace(/[^a-z0-9\s-]/g, "")
-                .replace(/\s+/g, "-");
-
-        const folderName = sanitizeFolderName(formData.title || "untitled");
-
+    // Helper to upload a single file
+    const uploadSingleFile = async (file, folderName) => {
         const formDataUpload = new FormData();
-        formDataUpload.append("file", selectedFile);
+        formDataUpload.append("file", file);
         formDataUpload.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
         formDataUpload.append("folder", `Projects/${folderName}`);
 
-        setUploading(true);
-        setUploadMessage("");
+        const res = await fetch(CLOUDINARY_UPLOAD_URL, {
+            method: "POST",
+            body: formDataUpload,
+        });
 
-        try {
-            const res = await fetch(CLOUDINARY_UPLOAD_URL, {
-                method: "POST",
-                body: formDataUpload,
-            });
-
-            const data = await res.json();
-
-            if (data.secure_url) {
-                setUploadMessage("Image uploaded successfully.");
-                return data.secure_url;
-            } else {
-                throw new Error("Upload failed");
-            }
-        } catch (err) {
-            console.error(err);
-            setUploadMessage("Image upload error.");
-            throw err;
-        } finally {
-            setUploading(false);
+        const data = await res.json();
+        if (data.secure_url) {
+            return data.secure_url;
+        } else {
+            throw new Error("Upload failed");
         }
     };
 
@@ -134,8 +123,17 @@ export default function EventHandling() {
             imageUrl: "",
             participants: ""
         });
-        setSelectedFile(null);
-        if (fileInputRef.current) fileInputRef.current.value = "";
+
+        setSelectedCoverFile(null);
+        setGlobalGalleryFiles([]);
+        setProjectGalleryFiles([]);
+        setExistingGlobalImages([]);
+        setExistingProjectImages([]);
+
+        if (coverInputRef.current) coverInputRef.current.value = "";
+        if (globalInputRef.current) globalInputRef.current.value = "";
+        if (projectInputRef.current) projectInputRef.current.value = "";
+
         setIsEditing(false);
         setCurrentEventId(null);
         setIsMarkingAsDone(false);
@@ -152,6 +150,15 @@ export default function EventHandling() {
         setIsEditing(true);
         setCurrentEventId(event.id);
         setIsMarkingAsDone(false);
+
+        // Split existing gallery images into categories
+        const gallery = event.galleryImages || [];
+        const globalDocs = gallery.filter(img => img.featured);
+        const projectDocs = gallery.filter(img => !img.featured);
+
+        setExistingGlobalImages(globalDocs);
+        setExistingProjectImages(projectDocs);
+
         setFormData({
             title: event.title,
             location: event.location,
@@ -167,6 +174,14 @@ export default function EventHandling() {
         setIsEditing(true);
         setCurrentEventId(event.id);
         setIsMarkingAsDone(true);
+
+        const gallery = event.galleryImages || [];
+        const globalDocs = gallery.filter(img => img.featured);
+        const projectDocs = gallery.filter(img => !img.featured);
+
+        setExistingGlobalImages(globalDocs);
+        setExistingProjectImages(projectDocs);
+
         setFormData({
             title: event.title,
             location: event.location,
@@ -178,11 +193,29 @@ export default function EventHandling() {
         setIsModalOpen(true);
     };
 
+    // Remove file from selection
+    const removeNewFile = (type, index) => {
+        if (type === 'global') {
+            setGlobalGalleryFiles(prev => prev.filter((_, i) => i !== index));
+        } else if (type === 'project') {
+            setProjectGalleryFiles(prev => prev.filter((_, i) => i !== index));
+        }
+    };
+
+    // Remove existing image
+    const removeExistingImage = (type, index) => {
+        if (type === 'global') {
+            setExistingGlobalImages(prev => prev.filter((_, i) => i !== index));
+        } else if (type === 'project') {
+            setExistingProjectImages(prev => prev.filter((_, i) => i !== index));
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!isEditing && !selectedFile) {
-            alert("Please select an image for the new project.");
+        if (!isEditing && !selectedCoverFile) {
+            alert("Please select a cover image for the new project.");
             return;
         }
 
@@ -192,12 +225,40 @@ export default function EventHandling() {
         }
 
         setLoading(true);
+        setUploading(true);
+        setUploadMessage("Uploading images...");
 
         try {
+            const sanitizeFolderName = (name) =>
+                name.toLowerCase()
+                    .trim()
+                    .replace(/[^a-z0-9\s-]/g, "")
+                    .replace(/\s+/g, "-");
+            const folderName = sanitizeFolderName(formData.title || "untitled");
+
+            // 1. Upload Cover Image if changed
             let imageUrl = formData.imageUrl;
-            if (selectedFile) {
-                imageUrl = await uploadImage();
+            if (selectedCoverFile) {
+                imageUrl = await uploadSingleFile(selectedCoverFile, folderName);
             }
+
+            // 2. Upload New Global Gallery Images
+            const newGlobalUrls = await Promise.all(
+                globalGalleryFiles.map(file => uploadSingleFile(file, folderName))
+            );
+
+            // 3. Upload New Project Gallery Images
+            const newProjectUrls = await Promise.all(
+                projectGalleryFiles.map(file => uploadSingleFile(file, folderName))
+            );
+
+            // 4. Construct Final Gallery Array
+            const finalGallery = [
+                ...existingGlobalImages, // Keep existing tagged as featured
+                ...newGlobalUrls.map(url => ({ url, featured: true })),
+                ...existingProjectImages, // Keep existing tagged as not featured
+                ...newProjectUrls.map(url => ({ url, featured: false }))
+            ];
 
             const eventData = {
                 title: formData.title,
@@ -205,6 +266,7 @@ export default function EventHandling() {
                 date: formData.date,
                 description: formData.description,
                 imageUrl: imageUrl,
+                galleryImages: finalGallery,
                 updatedAt: Timestamp.now()
             };
 
@@ -218,7 +280,6 @@ export default function EventHandling() {
                 await updateDoc(doc(db, "events", currentEventId), eventData);
                 alert("Project marked as completed!");
             } else if (isEditing) {
-                // Keep existing status if just editing details
                 await updateDoc(doc(db, "events", currentEventId), eventData);
                 alert("Event updated successfully!");
             } else {
@@ -231,9 +292,11 @@ export default function EventHandling() {
             fetchEvents();
         } catch (error) {
             console.error("Error saving event:", error);
-            alert("Failed to save event.");
+            alert("Failed to save event. Check console for details.");
         } finally {
             setLoading(false);
+            setUploading(false);
+            setUploadMessage("");
         }
     };
 
@@ -242,7 +305,6 @@ export default function EventHandling() {
         try {
             await deleteDoc(doc(db, "events", id));
             setEvents(prev => prev.filter(e => e.id !== id));
-            // Recalculate stats locally or refetch
             setStats(prev => ({ ...prev, total: prev.total - 1 }));
         } catch (error) {
             console.error("Error deleting:", error);
@@ -373,8 +435,8 @@ export default function EventHandling() {
 
                                     <div className="absolute top-4 right-4 flex gap-2">
                                         <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm backdrop-blur-md ${event.status === 'upcoming'
-                                                ? 'bg-pink-500/90 text-white'
-                                                : 'bg-green-500/90 text-white'
+                                            ? 'bg-pink-500/90 text-white'
+                                            : 'bg-green-500/90 text-white'
                                             }`}>
                                             {event.status}
                                         </span>
@@ -471,6 +533,7 @@ export default function EventHandling() {
                                 <div className="p-6 overflow-y-auto">
                                     <form id="eventForm" onSubmit={handleSubmit} className="space-y-6">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {/* Basic Info */}
                                             <div className="col-span-2">
                                                 <label className="block text-sm font-bold text-gray-700 mb-2">Project Title</label>
                                                 <input
@@ -478,8 +541,7 @@ export default function EventHandling() {
                                                     value={formData.title}
                                                     onChange={handleInputChange}
                                                     required
-                                                    placeholder="e.g. Annual Blood Drive 2024"
-                                                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                                                 />
                                             </div>
 
@@ -492,8 +554,7 @@ export default function EventHandling() {
                                                         value={formData.location}
                                                         onChange={handleInputChange}
                                                         required
-                                                        placeholder="Colombo"
-                                                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                                                     />
                                                 </div>
                                             </div>
@@ -508,55 +569,30 @@ export default function EventHandling() {
                                                         value={formData.date}
                                                         onChange={handleInputChange}
                                                         required
-                                                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                                                     />
                                                 </div>
                                             </div>
 
-                                            <div className="col-span-2">
-                                                <label className="block text-sm font-bold text-gray-700 mb-2">Cover Image</label>
-                                                <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:bg-gray-50 transition-colors relative">
+                                            {/* Cover Image Upload */}
+                                            <div className="col-span-2 text-center">
+                                                <label className="block text-sm font-bold text-gray-700 mb-2 text-left">Cover Image</label>
+                                                <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition-colors relative">
                                                     <input
                                                         type="file"
                                                         accept="image/*"
-                                                        onChange={(e) => setSelectedFile(e.target.files[0])}
-                                                        ref={fileInputRef}
+                                                        onChange={(e) => setSelectedCoverFile(e.target.files[0])}
+                                                        ref={coverInputRef}
                                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                                     />
-
-                                                    {selectedFile ? (
-                                                        <div className="relative h-48 w-full rounded-lg overflow-hidden group">
-                                                            <img
-                                                                src={URL.createObjectURL(selectedFile)}
-                                                                alt="Preview"
-                                                                className="w-full h-full object-cover"
-                                                            />
-                                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                <span className="text-white font-bold text-sm">Click to Change</span>
-                                                            </div>
-                                                        </div>
+                                                    {selectedCoverFile ? (
+                                                        <div className="h-40 w-full rounded-lg overflow-hidden"><img src={URL.createObjectURL(selectedCoverFile)} className="w-full h-full object-cover" /></div>
                                                     ) : formData.imageUrl ? (
-                                                        <div className="relative h-48 w-full rounded-lg overflow-hidden group">
-                                                            <img
-                                                                src={formData.imageUrl}
-                                                                alt="Current"
-                                                                className="w-full h-full object-cover"
-                                                            />
-                                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                <span className="text-white font-bold text-sm">Click to Change</span>
-                                                            </div>
-                                                        </div>
+                                                        <div className="h-40 w-full rounded-lg overflow-hidden"><img src={formData.imageUrl} className="w-full h-full object-cover" /></div>
                                                     ) : (
-                                                        <div className="py-8">
-                                                            <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                                                                <ImageIcon size={24} />
-                                                            </div>
-                                                            <p className="text-sm font-bold text-gray-700">Click to upload cover image</p>
-                                                            <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</p>
-                                                        </div>
+                                                        <div className="py-6 text-gray-400">Click to upload cover <ImageIcon className="mx-auto mt-2" /></div>
                                                     )}
                                                 </div>
-                                                {uploadMessage && <p className="text-xs font-bold text-green-600 mt-2">{uploadMessage}</p>}
                                             </div>
 
                                             <div className="col-span-2">
@@ -566,20 +602,109 @@ export default function EventHandling() {
                                                     value={formData.description}
                                                     onChange={handleInputChange}
                                                     required
-                                                    rows="4"
-                                                    placeholder="Detailed description of the project..."
-                                                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                                    rows="3"
+                                                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                                                 />
                                             </div>
 
-                                            {/* Participants Field - Only for 'Mark as Done' or 'Completed' view editing */}
+                                            {/* --- GALLERY SECTIONS --- */}
+                                            <div className="col-span-2 border-t border-gray-100 pt-6">
+                                                <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                                    <ImageIcon className="text-pink-600" /> Project Gallery
+                                                </h4>
+
+                                                {/* 1. Global (Featured) Gallery Section */}
+                                                <div className="mb-6 bg-pink-50 p-4 rounded-xl border border-pink-100">
+                                                    <div className="flex justify-between items-center mb-3">
+                                                        <label className="text-sm font-bold text-pink-900 flex items-center gap-2">
+                                                            <Star size={16} fill="currentColor" /> Global Gallery Images
+                                                        </label>
+                                                        <span className="text-[10px] uppercase font-bold text-pink-500 bg-white px-2 py-1 rounded-full">Shows on Gallery Page</span>
+                                                    </div>
+
+                                                    {/* Existing Global */}
+                                                    {existingGlobalImages.length > 0 && (
+                                                        <div className="grid grid-cols-4 gap-2 mb-3">
+                                                            {existingGlobalImages.map((img, idx) => (
+                                                                <div key={idx} className="relative h-20 rounded-lg overflow-hidden group">
+                                                                    <img src={img.url} className="w-full h-full object-cover" />
+                                                                    <button type="button" onClick={() => removeExistingImage('global', idx)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"><X size={12} /></button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                    {/* New Global Uploads */}
+                                                    <input
+                                                        type="file"
+                                                        multiple
+                                                        accept="image/*"
+                                                        ref={globalInputRef}
+                                                        onChange={(e) => setGlobalGalleryFiles(prev => [...prev, ...Array.from(e.target.files)])}
+                                                        className="block w-full text-sm text-pink-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-pink-100 file:text-pink-700 hover:file:bg-pink-200 mb-3"
+                                                    />
+                                                    {globalGalleryFiles.length > 0 && (
+                                                        <div className="grid grid-cols-4 gap-2">
+                                                            {globalGalleryFiles.map((file, idx) => (
+                                                                <div key={idx} className="relative h-20 rounded-lg overflow-hidden group border border-pink-200">
+                                                                    <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" />
+                                                                    <button type="button" onClick={() => removeNewFile('global', idx)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"><X size={12} /></button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* 2. Project Only (Not Featured) Gallery Section */}
+                                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                                                    <div className="flex justify-between items-center mb-3">
+                                                        <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                                            <ImageIcon size={16} /> Project-Only Images
+                                                        </label>
+                                                        <span className="text-[10px] uppercase font-bold text-gray-500 bg-white px-2 py-1 rounded-full">Only on Project Page</span>
+                                                    </div>
+
+                                                    {/* Existing Project Only */}
+                                                    {existingProjectImages.length > 0 && (
+                                                        <div className="grid grid-cols-4 gap-2 mb-3">
+                                                            {existingProjectImages.map((img, idx) => (
+                                                                <div key={idx} className="relative h-20 rounded-lg overflow-hidden group">
+                                                                    <img src={img.url} className="w-full h-full object-cover grayscale" />
+                                                                    <button type="button" onClick={() => removeExistingImage('project', idx)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"><X size={12} /></button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                    {/* New Project Uploads */}
+                                                    <input
+                                                        type="file"
+                                                        multiple
+                                                        accept="image/*"
+                                                        ref={projectInputRef}
+                                                        onChange={(e) => setProjectGalleryFiles(prev => [...prev, ...Array.from(e.target.files)])}
+                                                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-gray-200 file:text-gray-700 hover:file:bg-gray-300 mb-3"
+                                                    />
+                                                    {projectGalleryFiles.length > 0 && (
+                                                        <div className="grid grid-cols-4 gap-2">
+                                                            {projectGalleryFiles.map((file, idx) => (
+                                                                <div key={idx} className="relative h-20 rounded-lg overflow-hidden group border border-gray-200">
+                                                                    <img src={URL.createObjectURL(file)} className="w-full h-full object-cover grayscale" />
+                                                                    <button type="button" onClick={() => removeNewFile('project', idx)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"><X size={12} /></button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Participants Field */}
                                             {(isMarkingAsDone || (isEditing && view === 'completed')) && (
-                                                <div className="col-span-2 bg-blue-50 p-4 rounded-xl border border-blue-100">
+                                                <div className="col-span-2 bg-blue-50 p-4 rounded-xl border border-blue-100 mt-4">
                                                     <label className="block text-sm font-bold text-blue-900 mb-1 flex items-center gap-2">
-                                                        <Users size={16} />
-                                                        Participants (Required for Completion)
+                                                        <Users size={16} /> Participants (Required for Completion)
                                                     </label>
-                                                    <p className="text-xs text-blue-600 mb-3 font-medium">Add participant emails separated by commas to award points.</p>
+                                                    <p className="text-xs text-blue-600 mb-3 font-medium">Add participant emails separated by commas.</p>
                                                     <textarea
                                                         name="participants"
                                                         value={formData.participants}
@@ -613,8 +738,8 @@ export default function EventHandling() {
                                             }
                                         `}
                                     >
-                                        {loading ? <Loader2 className="animate-spin" size={16} /> : <ArrowRight size={16} />}
-                                        {isMarkingAsDone ? "Complete Project" : isEditing ? "Save Changes" : "Create Project"}
+                                        {uploading ? <Loader2 className="animate-spin" size={16} /> : <ArrowRight size={16} />}
+                                        {uploading ? "Uploading..." : isMarkingAsDone ? "Complete Project" : isEditing ? "Save Changes" : "Create Project"}
                                     </button>
                                 </div>
                             </motion.div>

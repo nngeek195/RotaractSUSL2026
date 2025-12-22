@@ -284,18 +284,22 @@ export default function ProjectDetailsPage() {
                         Project Gallery
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {project.galleryImages.map((image, index) => (
-                            <div
-                                key={index}
-                                className="h-[300px] rounded-[22px] overflow-hidden"
-                            >
-                                <img
-                                    src={image}
-                                    alt={`Gallery ${index + 1}`}
-                                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                                />
-                            </div>
-                        ))}
+                        {project.galleryImages.map((image, index) => {
+                            // Handle both legacy string arrays and new object arrays
+                            const imageUrl = typeof image === 'string' ? image : image.url;
+                            return (
+                                <div
+                                    key={index}
+                                    className="h-[300px] rounded-[22px] overflow-hidden"
+                                >
+                                    <img
+                                        src={imageUrl}
+                                        alt={`Gallery ${index + 1}`}
+                                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                    />
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}

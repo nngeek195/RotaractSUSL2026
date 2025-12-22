@@ -7,6 +7,9 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import MotionWrapper from '../components/MotionWrapper';
 
+import { db } from "@/lib/firebase";
+import { collection, getDocs } from "firebase/firestore";
+
 // Gallery page - Figma node 161-233 ("Moments of Impact")
 export default function Gallery() {
     const [galleryImages, setGalleryImages] = useState([]);
@@ -23,24 +26,47 @@ export default function Gallery() {
     ];
 
     useEffect(() => {
-        fetchGalleryImages();
+        fetchAllImages();
     }, []);
 
-    const fetchGalleryImages = async () => {
+    const fetchAllImages = async () => {
         try {
             setLoading(true);
-            const response = await fetch('/api/gallery', {
+
+            // 1. Fetch Cloudinary Images
+            const cloudinaryPromise = fetch('/api/gallery', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ expression: 'asset_folder="Gallery"' })
+            }).then(res => res.ok ? res.json() : { images: [] });
+
+            // 2. Fetch Featured Project Images from Firestore
+            const firestorePromise = getDocs(collection(db, "events")).then(snapshot => {
+                let featuredImages = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.galleryImages && Array.isArray(data.galleryImages)) {
+                        const projectFeatured = data.galleryImages
+                            .filter(img => img.featured === true)
+                            .map(img => ({
+                                url: img.url,
+                                derived: true,
+                                date: data.date ? new Date(data.date) : new Date(0) // Capture date for sorting
+                            }));
+                        featuredImages = [...featuredImages, ...projectFeatured];
+                    }
+                });
+                // Sort featured images by date (newest first)
+                return featuredImages.sort((a, b) => b.date - a.date);
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch gallery images');
-            }
+            const [cloudinaryData, projectImages] = await Promise.all([cloudinaryPromise, firestorePromise]);
 
-            const data = await response.json();
-            setGalleryImages(data.images || []);
+            // Merge: Project images (latest) first, then existing Cloudinary images
+            const allImages = [...projectImages, ...(cloudinaryData.images || [])];
+
+            setGalleryImages(allImages);
+
         } catch (err) {
             console.error('Error fetching gallery:', err);
             setError(err.message);

@@ -6,7 +6,8 @@ import { db } from "@/lib/firebase";
 import {
     Edit, Save, X, Plus, Trash2, Image as ImageIcon,
     MessageSquare, Users as UsersIcon, DollarSign, Calendar,
-    Loader2, ChevronRight, LayoutGrid, FileText, Share2, MapPin
+    Loader2, ChevronRight, LayoutGrid, FileText, Share2, MapPin,
+    Star
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -37,7 +38,6 @@ export default function ProjectDetailsManagement() {
         status: "upcoming",
         description: "",
         mainImage: "",
-        galleryImages: [],
         testimonials: [],
         partners: [],
         category: "",
@@ -45,10 +45,14 @@ export default function ProjectDetailsManagement() {
         longDescription: "",
     });
 
+    // Separated Gallery States
+    const [globalGalleryImages, setGlobalGalleryImages] = useState([]); // { url, featured: true }
+    const [projectGalleryImages, setProjectGalleryImages] = useState([]); // { url, featured: false }
+
     // Upload States
-    const [newGalleryUrl, setNewGalleryUrl] = useState("");
     const [uploadingMain, setUploadingMain] = useState(false);
-    const [uploadingGallery, setUploadingGallery] = useState(false);
+    const [uploadingGlobal, setUploadingGlobal] = useState(false);
+    const [uploadingProject, setUploadingProject] = useState(false);
 
     useEffect(() => {
         fetchProjects();
@@ -76,6 +80,27 @@ export default function ProjectDetailsManagement() {
         setEditingProject(project);
         setActiveTab("overview");
 
+        // Split existing gallery into Global vs Project
+        const rawGallery = project.galleryImages || [];
+        const globalImgs = [];
+        const projectImgs = [];
+
+        rawGallery.forEach(item => {
+            if (typeof item === 'string') {
+                // Backward compatibility: Assume string URLs are standard Project images unless verified otherwise
+                projectImgs.push({ url: item, featured: false });
+            } else if (item && typeof item === 'object') {
+                if (item.featured) {
+                    globalImgs.push(item);
+                } else {
+                    projectImgs.push(item);
+                }
+            }
+        });
+
+        setGlobalGalleryImages(globalImgs);
+        setProjectGalleryImages(projectImgs);
+
         // Populate Form
         setFormData({
             title: project.title || project.name || "",
@@ -84,7 +109,6 @@ export default function ProjectDetailsManagement() {
             status: (project.status || "upcoming").toLowerCase(),
             description: project.description || "",
             mainImage: project.imageUrl || project.image || "",
-            galleryImages: project.galleryImages || [],
             testimonials: project.testimonials || [],
             partners: project.partners || [],
             category: project.category || "Community Development",
@@ -101,6 +125,12 @@ export default function ProjectDetailsManagement() {
         if (!editingProject) return;
         setSaving(true);
         try {
+            // Combine gallery arrays
+            const combinedGallery = [
+                ...globalGalleryImages.map(img => ({ url: img.url, featured: true })),
+                ...projectGalleryImages.map(img => ({ url: img.url, featured: false }))
+            ];
+
             const updateData = {
                 title: formData.title,
                 name: formData.title, // Compatibility
@@ -109,7 +139,7 @@ export default function ProjectDetailsManagement() {
                 status: formData.status,
                 description: formData.description,
                 imageUrl: formData.mainImage,
-                galleryImages: formData.galleryImages,
+                galleryImages: combinedGallery,
                 testimonials: formData.testimonials,
                 partners: formData.partners,
                 category: formData.category,
@@ -142,16 +172,23 @@ export default function ProjectDetailsManagement() {
         const folderName = sanitizeFolderName(formData.title || "project");
         const formDataUpload = new FormData();
         formDataUpload.append("file", file);
-        formDataUpload.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+        // We pass the folder path to our internal API
         formDataUpload.append("folder", `Projects/${folderName}${folderSubpath}`);
 
-        const res = await fetch(CLOUDINARY_UPLOAD_URL, {
+        // Call our internal API route instead of direct Cloudinary URL
+        const res = await fetch("/api/upload", {
             method: "POST",
             body: formDataUpload,
         });
+
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || "Upload failed");
+        }
+
         const data = await res.json();
         if (data.secure_url) return data.secure_url;
-        throw new Error("Upload failed");
+        throw new Error("Upload failed: No URL returned");
     };
 
     const onMainImageUpload = async (e) => {
@@ -168,18 +205,35 @@ export default function ProjectDetailsManagement() {
         }
     };
 
-    const onGalleryUpload = async (e) => {
+    const onGlobalGalleryUpload = async (e) => {
         const files = Array.from(e.target.files || []);
         if (files.length === 0) return;
-        setUploadingGallery(true);
+        setUploadingGlobal(true);
         try {
             const promises = files.map(file => handleUploadImage(file, "/gallery"));
             const urls = await Promise.all(promises);
-            handleInputChange("galleryImages", [...formData.galleryImages, ...urls]);
+            const newImages = urls.map(url => ({ url, featured: true }));
+            setGlobalGalleryImages(prev => [...prev, ...newImages]);
         } catch (err) {
             alert("Some images failed to upload.");
         } finally {
-            setUploadingGallery(false);
+            setUploadingGlobal(false);
+        }
+    };
+
+    const onProjectGalleryUpload = async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+        setUploadingProject(true);
+        try {
+            const promises = files.map(file => handleUploadImage(file, "/gallery"));
+            const urls = await Promise.all(promises);
+            const newImages = urls.map(url => ({ url, featured: false }));
+            setProjectGalleryImages(prev => [...prev, ...newImages]);
+        } catch (err) {
+            alert("Some images failed to upload.");
+        } finally {
+            setUploadingProject(false);
         }
     };
 
@@ -453,33 +507,29 @@ export default function ProjectDetailsManagement() {
                                                     </div>
                                                 </div>
 
-                                                {/* Gallery */}
-                                                <div>
+                                                {/* Global Gallery (Featured) */}
+                                                <div className="p-6 bg-pink-50 rounded-2xl border border-pink-100">
                                                     <div className="flex justify-between items-center mb-4">
-                                                        <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                                                            <LayoutGrid className="text-purple-500" size={20} /> Project Gallery
-                                                        </h3>
-                                                        <label className={`cursor-pointer px-4 py-2 bg-purple-50 text-purple-700 rounded-lg text-sm font-bold hover:bg-purple-100 transition-colors flex items-center gap-2 ${uploadingGallery ? 'opacity-50 pointer-events-none' : ''}`}>
-                                                            {uploadingGallery ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />}
-                                                            Upload Images
-                                                            <input type="file" className="hidden" multiple accept="image/*" onChange={onGalleryUpload} />
+                                                        <div>
+                                                            <h3 className="font-bold text-pink-900 flex items-center gap-2">
+                                                                <Star className="text-pink-600" size={20} fill="currentColor" /> Global Gallery Images
+                                                            </h3>
+                                                            <p className="text-xs text-pink-600 mt-1">These images appear on the main site Gallery page.</p>
+                                                        </div>
+                                                        <label className={`cursor-pointer px-4 py-2 bg-white text-pink-600 rounded-lg text-sm font-bold hover:bg-pink-50 transition-colors flex items-center gap-2 border border-pink-200 ${uploadingGlobal ? 'opacity-50 pointer-events-none' : ''}`}>
+                                                            {uploadingGlobal ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />}
+                                                            Upload New
+                                                            <input type="file" className="hidden" multiple accept="image/*" onChange={onGlobalGalleryUpload} />
                                                         </label>
                                                     </div>
 
                                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                                        {formData.galleryImages.map((url, idx) => (
-                                                            <div key={idx} className="relative group aspect-square bg-gray-100 rounded-xl overflow-hidden border border-gray-100">
-                                                                <img src={url} alt={`Gallery ${idx}`} className="w-full h-full object-cover" />
+                                                        {globalGalleryImages.map((img, idx) => (
+                                                            <div key={idx} className="relative group aspect-square bg-white rounded-xl overflow-hidden border border-pink-200">
+                                                                <img src={img.url} alt={`Global ${idx}`} className="w-full h-full object-cover" />
                                                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                                                     <button
-                                                                        onClick={() => handleInputChange("mainImage", url)}
-                                                                        className="p-2 bg-white rounded-lg text-gray-900 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                                                                        title="Set as Main"
-                                                                    >
-                                                                        <ImageIcon size={16} />
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => handleInputChange("galleryImages", formData.galleryImages.filter(img => img !== url))}
+                                                                        onClick={() => setGlobalGalleryImages(prev => prev.filter((_, i) => i !== idx))}
                                                                         className="p-2 bg-white rounded-lg text-gray-900 hover:bg-red-50 hover:text-red-600 transition-colors"
                                                                         title="Remove"
                                                                     >
@@ -488,13 +538,53 @@ export default function ProjectDetailsManagement() {
                                                                 </div>
                                                             </div>
                                                         ))}
-                                                        {formData.galleryImages.length === 0 && (
-                                                            <div className="col-span-full py-12 text-center text-gray-400 bg-gray-50 rounded-xl border-dashed border-2 border-gray-200">
-                                                                No gallery images yet.
+                                                        {globalGalleryImages.length === 0 && (
+                                                            <div className="col-span-full py-8 text-center text-pink-300 bg-white/50 rounded-xl border-dashed border-2 border-pink-200">
+                                                                No global images yet. Upload some to feature them!
                                                             </div>
                                                         )}
                                                     </div>
                                                 </div>
+
+                                                {/* Project Only Gallery */}
+                                                <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100">
+                                                    <div className="flex justify-between items-center mb-4">
+                                                        <div>
+                                                            <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                                                                <ImageIcon className="text-gray-500" size={20} /> Project-Only Images
+                                                            </h3>
+                                                            <p className="text-xs text-gray-500 mt-1">These images appear ONLY on this project's details page.</p>
+                                                        </div>
+                                                        <label className={`cursor-pointer px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-100 transition-colors flex items-center gap-2 border border-gray-200 ${uploadingProject ? 'opacity-50 pointer-events-none' : ''}`}>
+                                                            {uploadingProject ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />}
+                                                            Upload New
+                                                            <input type="file" className="hidden" multiple accept="image/*" onChange={onProjectGalleryUpload} />
+                                                        </label>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                        {projectGalleryImages.map((img, idx) => (
+                                                            <div key={idx} className="relative group aspect-square bg-white rounded-xl overflow-hidden border border-gray-200">
+                                                                <img src={img.url} alt={`Project ${idx}`} className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all" />
+                                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                                    <button
+                                                                        onClick={() => setProjectGalleryImages(prev => prev.filter((_, i) => i !== idx))}
+                                                                        className="p-2 bg-white rounded-lg text-gray-900 hover:bg-red-50 hover:text-red-600 transition-colors"
+                                                                        title="Remove"
+                                                                    >
+                                                                        <Trash2 size={16} />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                        {projectGalleryImages.length === 0 && (
+                                                            <div className="col-span-full py-8 text-center text-gray-400 bg-white/50 rounded-xl border-dashed border-2 border-gray-200">
+                                                                No project-only images.
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
                                             </div>
                                         )}
 
