@@ -2,6 +2,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./contexts/AuthContext"; // Ensure this path matches where you saved AuthContext
 import { Toaster } from 'sonner';
+import Snow from "./components/Snow";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,6 +17,7 @@ export default function RootLayout({ children }) {
       <body className={inter.className}>
         <AuthProvider>
           <Toaster richColors position="top-center" />
+          <Snow />
           {children}
         </AuthProvider>
       </body>

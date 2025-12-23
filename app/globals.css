@@ -21,3 +21,12 @@ body {
     )
     rgb(var(--background-start-rgb));
 }
+
+@keyframes fall {
+  0% {
+    transform: translateY(-10vh) translateX(0);
+  }
+  100% {
+    transform: translateY(110vh) translateX(20px);
+  }
+}
