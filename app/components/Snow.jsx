@@ -6,6 +6,18 @@ const Snow = () => {
   const [snowflakes, setSnowflakes] = useState([]);
 
   useEffect(() => {
+    // Check if current date is within Christmas season (Dec 20 - Dec 31)
+    const now = new Date();
+    const month = now.getMonth(); // 0-indexed, 11 is December
+    const day = now.getDate();
+
+    const isChristmasSeason = month === 11 && day >= 20 && day <= 31;
+
+    if (!isChristmasSeason) {
+      setSnowflakes([]);
+      return;
+    }
+
     // Generate a fixed number of snowflakes
     const flakes = Array.from({ length: 50 }).map((_, i) => ({
       id: i,
