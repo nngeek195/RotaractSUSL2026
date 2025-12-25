@@ -7,8 +7,12 @@ import Snow from "./components/Snow";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
+  metadataBase: new URL('https://www.rotaractsusl.org'),
   title: "Rotaract SUSL",
-  description: "Serve. Grow. Lead.",
+  description: "Official website of Rotaract Club of Sabaragamuwa University of Sri Lanka.",
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({ children }) {

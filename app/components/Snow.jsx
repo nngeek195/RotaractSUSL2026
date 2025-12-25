@@ -26,6 +26,7 @@ const Snow = () => {
       animationDuration: 10 + Math.random() * 10, // Random fall speed
       opacity: Math.random(), // Random opacity
       size: Math.random() * 5 + 5, // Random size
+      type: Math.random() > 0.5 ? 'char' : 'dot', // Randomly choose between char and dot
     }));
     setSnowflakes(flakes);
   }, []);
@@ -35,17 +36,22 @@ const Snow = () => {
       {snowflakes.map((flake) => (
         <div
           key={flake.id}
-          className="absolute bg-white rounded-full opacity-80"
+          className={`absolute ${flake.type === 'dot' ? 'bg-white rounded-full' : 'text-white'}`}
           style={{
             left: `${flake.left}%`,
             top: `-20px`,
-            width: `${flake.size}px`,
-            height: `${flake.size}px`,
+            width: flake.type === 'dot' ? `${flake.size}px` : 'auto',
+            height: flake.type === 'dot' ? `${flake.size}px` : 'auto',
+            fontSize: flake.type === 'char' ? `${flake.size * 2}px` : undefined,
             opacity: flake.opacity,
             animation: `fall ${flake.animationDuration}s linear infinite`,
             animationDelay: `-${flake.animationDelay}s`,
+            lineHeight: 1,
+            userSelect: 'none',
           }}
-        />
+        >
+          {flake.type === 'char' ? '❄' : null}
+        </div>
       ))}
     </div>
   );
