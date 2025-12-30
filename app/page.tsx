@@ -868,16 +868,16 @@ export default function Home() {
                     : "https://placehold.co/300x300?text=Director+of+Month"
                 }
                 alt="Director of the Month"
-                className="bg-white rounded-[32px] h-[320px] mb-6 flex-shrink-0 w-full object-cover"
+                className="bg-white rounded-[32px] h-[320px] mb-6 flex-shrink-0 w-full object-contain"
               />
               <p className="font-playfair font-medium text-[28px] text-white mb-1">
-                {directorOfMonth?.name || "Director Name"}
+                {directorOfMonth?.name || "\u00A0"}
               </p>
               <p className="font-poppins text-[19px] text-[#d9d9d9] mb-6">
-                {directorOfMonth?.faculty || "Director Faculty"}
+                {directorOfMonth?.faculty || "\u00A0"}
               </p>
               <p className="font-poppins font-medium italic text-[17px] text-white leading-relaxed">
-                {directorOfMonth?.quote || "Director quote goes here."}
+                {directorOfMonth?.quote || "\u00A0"}
               </p>
             </MotionWrapper>
 
@@ -896,17 +896,17 @@ export default function Home() {
                     : "https://placehold.co/300x300?text=Rotaractor+of+Month"
                 }
                 alt="Rotaractor of the Month"
-                className="bg-white rounded-[32px] h-[320px] mb-6 flex-shrink-0 w-full object-cover"
+                className="bg-white rounded-[32px] h-[320px] mb-6 flex-shrink-0 w-full object-contain"
               />
 
               <p className="font-playfair font-medium text-[28px] text-white mb-1">
-                {rotaractorOfMonth?.name || "Rotaractor Name"}
+                {rotaractorOfMonth?.name || "\u00A0"}
               </p>
               <p className="font-poppins text-[19px] text-[#d9d9d9] mb-6">
-                {rotaractorOfMonth?.faculty || "Rotaractor Faculty"}
+                {rotaractorOfMonth?.faculty || "\u00A0"}
               </p>
               <p className="font-poppins font-medium italic text-[17px] text-white leading-relaxed">
-                {rotaractorOfMonth?.quote || "Rotaractor quote goes here."}
+                {rotaractorOfMonth?.quote || "\u00A0"}
               </p>
             </MotionWrapper>
           </div>
