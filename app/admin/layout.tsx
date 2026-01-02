@@ -16,7 +16,8 @@ import {
   Heart,
   Settings,
   ChevronRight,
-  Shield
+  Shield,
+  BookOpen
 } from "lucide-react";
 import { auth } from "@/lib/firebase";
 
@@ -112,6 +113,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <NavItem href="/admin/users" icon={Users} label="Members & Users" />
                 <NavItem href="/admin/requests" icon={Clock} label="Pending Requests" />
                 <NavItem href="/admin/events" icon={Calendar} label="Events & Projects" />
+                <NavItem href="/admin/magazines" icon={BookOpen} label="Magazines" />
                 <NavItem href="/admin/project-details" icon={FileText} label="Project Reports" />
             </ul>
             </div>

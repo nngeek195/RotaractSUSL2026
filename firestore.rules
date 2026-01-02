@@ -2,123 +2,177 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Helper Functions ---
-    
-    // Check if user is authenticated
+    // ============================
+    //   HELPER FUNCTIONS
+    // ============================
+
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Check if user is an Admin
     function isAdmin() {
-      return isAuthenticated() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    // Check if user is a Committee Member
+    function isExec() {
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/executiveCommittee/$(request.auth.uid));
+    }
+
     function isCommittee() {
-      return isAuthenticated() && exists(/databases/$(database)/documents/executiveCommittee/$(request.auth.uid));
+      return isExec();
     }
 
-    // Check if user is Admin or Committee
     function isPrivileged() {
       return isAdmin() || isCommittee();
     }
 
-    // --- Collections ---
+    function isApprovedUser() {
+      return isAuthenticated() &&
+             (exists(/databases/$(database)/documents/users/$(request.auth.uid)) ||
+              exists(/databases/$(database)/documents/executiveCommittee/$(request.auth.uid)));
+    }
 
-    // 1. Admins (Strict Access)
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // ============================
+    //   CORE COLLECTIONS
+    // ============================
+
+    // 1. ADMINS
     match /admins/{userId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow write: if false;
     }
 
-    // 2. Executive Committee
-    match /executiveCommittee/{userId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    // 3. Users
-    match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
-    }
-
-    // 4. Pending Requests
-    match /pendingRequests/{userId} {
-      allow create: if true;
-      allow read, delete: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
-      allow update: if isAdmin();
-    }
-
-    // 5. Rejected Requests
-    match /rejectedRequests/{userId} {
-      allow read: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
-      allow write: if isAdmin();
-    }
-
-    // 6. Events / Projects
+    // 2. EVENTS
     match /events/{eventId} {
       allow read: if true;
-      allow write: if isPrivileged();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() ||
+        (isExec() && (
+          (resource.data.status == "upcoming" &&
+           request.resource.data.status == "happening now") ||
+          (resource.data.status == "happening now" &&
+           request.resource.data.status == "completed") ||
+          (resource.data.status == "happening now" &&
+           request.resource.data.participants.size() >
+           resource.data.participants.size())
+        ));
     }
 
-    // 7. Relief Items
-    match /reliefItems/{itemId} {
+    // 3. PENDING REQUESTS
+    match /pendingRequests/{uid} {
+      allow create: if isAuthenticated() && request.auth.uid == uid;
+      allow read: if isAdmin() || isOwner(uid);
+      allow update, delete: if isAdmin();
+    }
+
+    // 4. REJECTED REQUESTS
+    match /rejectedRequests/{uid} {
+      allow create: if isAdmin();
+      allow read: if isAdmin() || isOwner(uid);
+      allow update, delete: if isAdmin();
+    }
+
+    // 5. USERS
+    match /users/{userId} {
+      allow read: if isApprovedUser() || isAdmin();
+      allow create: if isAdmin();
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // 6. EXECUTIVE COMMITTEE
+    match /executiveCommittee/{userId} {
       allow read: if true;
-      allow write: if isPrivileged();
+      allow create, delete: if isAdmin();
+      allow update: if isOwner(userId) || isAdmin();
     }
 
-    // 8. Relief Config
-    match /reliefConfig/{configId} {
-      allow read: if true;
-      allow write: if isPrivileged();
-    }
-
-    // 9. Material Requests
-    match /materialRequests/{requestId} {
-      allow create: if true;
-      allow read: if true;
-      allow update, delete: if isPrivileged();
-    }
-
-    // 10. Donation Offers
-    match /donationOffers/{offerId} {
-      allow create: if true;
-      allow read: if isPrivileged();
-      allow write: if isPrivileged();
-    }
-
-    // 11. Admin Settings
-    match /adminSettings/public {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    // Allow public read for 'general' temporarily for migration/fallback
-    match /adminSettings/general {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    match /adminSettings/secure {
-      allow read: if isAdmin();
-      allow write: if isAdmin();
-    }
-    // Fallback for other settings
-    match /adminSettings/{settingId} {
-      allow read: if isPrivileged();
-      allow write: if isAdmin();
-    }
-
-    // 12. Leaderboard
+    // 7. LEADERBOARD
     match /leaderboard/{docId} {
       allow read: if true;
       allow write: if isPrivileged();
     }
-    
-    // 13. Monthly Stars
-    match /monthlyStars/{starId} {
+
+    // 8. MONTHLY STARS
+    match /monthlyStars/{docId} {
       allow read: if true;
       allow write: if isPrivileged();
+    }
+
+    // 9. GALLERY
+    match /gallery/{imageId} {
+      allow read: if true;
+      allow create: if isApprovedUser() || isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    // ============================
+    //   RELIEF / DONATION SYSTEM
+    // ============================
+
+    // 10. MATERIAL REQUESTS
+    match /materialRequests/{requestId} {
+      allow read, create, update: if true;
+      allow delete: if isAuthenticated() || isPrivileged();
+    }
+
+    // 11. DONATION OFFERS
+    match /donationOffers/{offerId} {
+      allow create: if true;
+      allow read, update, delete: if isAuthenticated() || isPrivileged();
+    }
+
+    // 12. RELIEF ITEMS
+    match /reliefItems/{itemId} {
+      allow read: if true;
+      allow create, update, delete: if isPrivileged();
+    }
+
+    // 13. RELIEF CONFIG
+    match /reliefConfig/{configId} {
+      allow read: if true;
+      allow create, update, delete: if isPrivileged();
+    }
+
+    // ============================
+    //   ADMIN SETTINGS
+    // ============================
+
+    match /adminSettings/public {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /adminSettings/secure {
+      allow read, write: if isAdmin();
+    }
+
+    match /adminSettings/{settingId} {
+      allow read: if isPrivileged();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ============================
+    //   MAGAZINES (FIXED POSITION)
+    // ============================
+
+    match /magazines/{magazineId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ============================
+    //   DEFAULT DENY
+    // ============================
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

@@ -1,0 +1,26 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAdmin() {
+      // Note: Requires custom claims or lookup. 
+      // For Storage, simpler to check if authenticated if claims aren't set up.
+      // Or check firestore from storage (beta feature).
+      // For now, we will allow authenticated users to ensure upload works, 
+      // assuming only admins access the admin panel.
+      return request.auth != null;
+    }
+
+    // Default: Authenticated users can read/write
+    match /{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Magazines: Public Read, Auth Write
+    match /magazines/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}

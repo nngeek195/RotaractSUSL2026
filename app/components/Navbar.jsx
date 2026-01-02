@@ -44,6 +44,7 @@ export default function Navbar({ currentPage = 'home' }) {
                         <NavLink href="/" label="Home" active={currentPage === 'home'} />
                         <NavLink href="/about" label="About" active={currentPage === 'about'} />
                         <NavLink href="/projects" label="Projects" active={currentPage === 'projects'} />
+                        <NavLink href="/magazine" label="E-Magazine" active={currentPage === 'magazine'} />
                         <NavLink href="/relief-requests" label="🇱🇰 Relief" active={currentPage === 'relief'} />
                         <NavLink href="/gallery" label="Gallery" active={currentPage === 'gallery'} />
                         <NavLink href="/leadership" label="Leadership" active={currentPage === 'leadership'} />
@@ -127,6 +128,7 @@ export default function Navbar({ currentPage = 'home' }) {
                     <MobileNavLink href="/" label="Home" active={currentPage === 'home'} onClick={closeMenu} />
                     <MobileNavLink href="/about" label="About" active={currentPage === 'about'} onClick={closeMenu} />
                     <MobileNavLink href="/projects" label="Projects" active={currentPage === 'projects'} onClick={closeMenu} />
+                    <MobileNavLink href="/magazine" label="E-Magazine" active={currentPage === 'magazine'} onClick={closeMenu} />
                     <MobileNavLink href="/relief-requests" label="🇱🇰 Relief" active={currentPage === 'relief-requests'} onClick={closeMenu} />
                     <MobileNavLink href="/gallery" label="Gallery" active={currentPage === 'gallery'} onClick={closeMenu} />
                     <MobileNavLink href="/leadership" label="Leadership" active={currentPage === 'leadership'} onClick={closeMenu} />
