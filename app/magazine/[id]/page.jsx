@@ -5,7 +5,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import NavBar from "../../components/Navbar";
 import Footer from "../../components/Footer";
-import { Loader2, ArrowLeft, ExternalLink } from "lucide-react";
+import { Loader2, ArrowLeft, ExternalLink, BookOpen } from "lucide-react";
 import Link from "next/link";
 
 export default function MagazineViewer({ params }) {
@@ -50,12 +50,26 @@ export default function MagazineViewer({ params }) {
         fetchMagazine();
     }, [id]);
 
+    const [iframeLoading, setIframeLoading] = useState(true);
+
     if (loading) return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
             <NavBar currentPage="magazine" />
-            <div className="flex-grow flex items-center justify-center">
-                <Loader2 className="animate-spin text-pink-600" size={40} />
+
+            <div className="flex-grow flex flex-col max-w-[1440px] mx-auto w-full px-4 md:px-8 py-6 animate-pulse">
+                {/* Header Skeleton */}
+                <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="w-32 h-10 bg-gray-200 rounded-xl"></div>
+                    <div className="flex flex-col items-center md:items-end gap-2">
+                        <div className="w-48 h-8 bg-gray-200 rounded"></div>
+                        <div className="w-24 h-4 bg-gray-200 rounded"></div>
+                    </div>
+                </div>
+
+                {/* Viewer Skeleton */}
+                <div className="flex-grow bg-gray-200 rounded-2xl min-h-[80vh]"></div>
             </div>
+
             <Footer />
         </div>
     );
@@ -95,18 +109,17 @@ export default function MagazineViewer({ params }) {
 
                 {/* PDF Viewer Container */}
                 <div className="flex-grow bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden relative min-h-[80vh]">
+                    {iframeLoading && (
+                        <div className="absolute inset-0 z-10 bg-gray-200 animate-pulse rounded-2xl" />
+                    )}
                     <iframe
                         src={magazine.pdfUrl}
                         className="absolute inset-0 w-full h-full border-0"
                         title={magazine.title}
                         allow="autoplay; fullscreen"
                         allowFullScreen
+                        onLoad={() => setIframeLoading(false)}
                     />
-                </div>
-
-                {/* Fallback Link for usability */}
-                <div className="mt-4 text-center text-sm text-gray-500">
-                    Having trouble viewing within the site? <a href={magazine.pdfUrl} target="_blank" rel="noopener noreferrer" className="text-pink-600 font-bold hover:underline inline-flex items-center gap-1">Open in new tab <ExternalLink size={12} /></a>
                 </div>
             </div>
 
