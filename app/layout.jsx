@@ -23,6 +23,11 @@ export default function RootLayout({ children }) {
           <Toaster richColors position="top-center" />
           <Snow />
           {children}
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `console.log("%c Curious? 👀 \\nCheck out the creators at %c/developers", "color: #ec4899; font-size: 16px; font-weight: bold;", "color: #3b82f6; font-size: 16px; font-weight: bold; text-decoration: underline;")`
+            }}
+          />
         </AuthProvider>
       </body>
     </html>

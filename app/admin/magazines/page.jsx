@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { collection, addDoc, getDocs, doc, deleteDoc, Timestamp, orderBy, query } from "firebase/firestore";
+import { collection, addDoc, getDocs, doc, deleteDoc, updateDoc, Timestamp, orderBy, query } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import {
     BookOpen, Upload, Trash, Plus, Loader2,
-    X, Image as ImageIcon, CheckCircle, Link as LinkIcon
+    X, Image as ImageIcon, CheckCircle, Link as LinkIcon, Edit
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
@@ -23,6 +23,7 @@ export default function MagazineManagement() {
     const [uploading, setUploading] = useState(false);
     const [uploadMessage, setUploadMessage] = useState("");
     const [mounted, setMounted] = useState(false);
+    const [editingId, setEditingId] = useState(null);
 
     // File States
     const [selectedCoverFile, setSelectedCoverFile] = useState(null);
@@ -71,10 +72,24 @@ export default function MagazineManagement() {
         setSelectedCoverFile(null);
         if (coverInputRef.current) coverInputRef.current.value = "";
         setUploadMessage("");
+        setEditingId(null);
     };
 
     const openCreateModal = () => {
         resetForm();
+        setEditingId(null);
+        setIsModalOpen(true);
+    };
+
+    const handleEdit = (mag) => {
+        setFormData({
+            title: mag.title,
+            date: mag.date,
+            description: mag.description,
+            pdfLink: mag.pdfSource === 'fliphtml5' ? mag.pdfUrl : '', // Fallback for other types
+        });
+        setEditingId(mag.id);
+        setSelectedCoverFile(null); // Reset file input, current cover is kept unless changed
         setIsModalOpen(true);
     };
 
@@ -101,7 +116,8 @@ export default function MagazineManagement() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!selectedCoverFile) {
+        // Validation: For create, cover is required. For edit, it's optional.
+        if (!editingId && !selectedCoverFile) {
             alert("Please select a cover image.");
             return;
         }
@@ -121,34 +137,56 @@ export default function MagazineManagement() {
         }
 
         setUploading(true);
-        setUploadMessage("Publishing magazine...");
+        setUploadMessage(editingId ? "Updating magazine..." : "Publishing magazine...");
 
         try {
-            // 1. Upload Cover Image (Cloudinary)
-            const coverUrl = await uploadImageToCloudinary(selectedCoverFile);
+            let coverUrl = null;
 
-            // 2. Save to Firestore
+            // 1. Upload Cover Image (Cloudinary) if selected
+            if (selectedCoverFile) {
+                coverUrl = await uploadImageToCloudinary(selectedCoverFile);
+            }
+
+            // 2. Save/Update Firestore
             setUploadMessage("Finalizing...");
+
             const magazineData = {
                 title: formData.title,
                 date: formData.date,
                 description: formData.description,
-                coverUrl: coverUrl,
-                pdfUrl: cleanUrl, // Storing cleaned URL
+                pdfUrl: cleanUrl,
                 pdfSource: "fliphtml5",
-                createdAt: Timestamp.now()
+                updatedAt: Timestamp.now()
             };
 
-            await addDoc(collection(db, "magazines"), magazineData);
+            // Only update coverUrl if a new one was uploaded
+            if (coverUrl) {
+                magazineData.coverUrl = coverUrl;
+            }
 
-            alert("Magazine published successfully!");
+            if (editingId) {
+                await updateDoc(doc(db, "magazines", editingId), magazineData);
+                alert("Magazine updated successfully!");
+                // Update local state instead of full refetch for smoother UX
+                setMagazines(prev => prev.map(m => m.id === editingId ? { ...m, ...magazineData, coverUrl: coverUrl || m.coverUrl } : m));
+            } else {
+                magazineData.createdAt = Timestamp.now();
+                // For create, coverUrl is mandatory, effectively guaranteed by validation above
+                if (!coverUrl) throw new Error("Cover URL missing for new magazine");
+                magazineData.coverUrl = coverUrl;
+
+                const docRef = await addDoc(collection(db, "magazines"), magazineData);
+                setMagazines(prev => [{ id: docRef.id, ...magazineData }, ...prev]); // Optimistic add or reload
+                alert("Magazine published successfully!");
+                fetchMagazines(); // Refresh to be sure
+            }
+
             setIsModalOpen(false);
             resetForm();
-            fetchMagazines();
 
         } catch (error) {
-            console.error("Error publishing magazine:", error);
-            alert("Failed to publish magazine. Please try again.");
+            console.error("Error saving magazine:", error);
+            alert("Failed to save magazine. Please try again.");
         } finally {
             setUploading(false);
             setUploadMessage("");
@@ -224,12 +262,20 @@ export default function MagazineManagement() {
                                     >
                                         <BookOpen size={16} /> Read Now
                                     </a>
-                                    <button
-                                        onClick={() => handleDelete(mag.id)}
-                                        className="text-gray-400 hover:text-red-500 transition-colors p-2 hover:bg-red-50 rounded-lg"
-                                    >
-                                        <Trash size={18} />
-                                    </button>
+                                    <div className="flex gap-1">
+                                        <button
+                                            onClick={() => handleEdit(mag)}
+                                            className="text-gray-400 hover:text-blue-600 transition-colors p-2 hover:bg-blue-50 rounded-lg"
+                                        >
+                                            <Edit size={18} />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(mag.id)}
+                                            className="text-gray-400 hover:text-red-500 transition-colors p-2 hover:bg-red-50 rounded-lg"
+                                        >
+                                            <Trash size={18} />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -257,7 +303,7 @@ export default function MagazineManagement() {
                             >
                                 <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                                     <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                                        <Upload className="text-pink-600" /> Publish Magazine
+                                        <Upload className="text-pink-600" /> {editingId ? "Edit Magazine" : "Publish Magazine"}
                                     </h3>
                                     {!uploading && (
                                         <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
@@ -324,7 +370,12 @@ export default function MagazineManagement() {
                                                 {selectedCoverFile ? (
                                                     <div className="text-center">
                                                         <CheckCircle className="mx-auto text-green-500 mb-1" size={24} />
-                                                        <span className="text-xs text-green-600 font-bold">Selected</span>
+                                                        <span className="text-xs text-green-600 font-bold">New Image Selected</span>
+                                                    </div>
+                                                ) : editingId ? (
+                                                    <div className="text-center text-gray-400">
+                                                        <ImageIcon className="mx-auto mb-1" size={20} />
+                                                        <span className="text-xs">Upload New Cover (Optional)</span>
                                                     </div>
                                                 ) : (
                                                     <div className="text-center text-gray-400">
@@ -359,7 +410,7 @@ export default function MagazineManagement() {
                                         disabled={uploading}
                                         className="px-6 py-2.5 bg-gray-900 text-white font-bold rounded-xl hover:bg-gray-800 transition-all shadow-lg shadow-gray-900/10 text-sm flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                                     >
-                                        {uploading ? "Publishing..." : "Publish Magazine"}
+                                        {uploading ? "Processing..." : editingId ? "Save Changes" : "Publish Magazine"}
                                     </button>
                                 </div>
                             </motion.div>
