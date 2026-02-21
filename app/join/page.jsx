@@ -28,6 +28,7 @@ const facultyData = {
     ],
     "Faculty of Computing": [
         "Department of Computing and Information Systems",
+        "Department of Information Systems",
         "Department of Software Engineering",
         "Department of Data Science"
     ],
