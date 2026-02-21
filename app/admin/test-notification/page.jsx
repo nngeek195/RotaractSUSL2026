@@ -28,7 +28,7 @@ export default function TestNotification() {
             if (res.ok) {
                 setResult({ success: true, message: data.message });
             } else {
-                setResult({ success: false, message: data.error || (data.details ? JSON.stringify(data.details) : "Unknown error") });
+                setResult({ success: false, message: data.details || data.error || "Unknown error" });
             }
         } catch (error) {
             setResult({ success: false, message: error.message });
@@ -54,12 +54,12 @@ export default function TestNotification() {
                     Test Telegram
                 </button>
                 <button
-                    onClick={() => handleTest('twilio')}
+                    onClick={() => handleTest('waha')}
                     disabled={loading}
                     className="w-full flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50"
                 >
                     {loading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
-                    Test Twilio (WhatsApp)
+                    Test WAHA (WhatsApp)
                 </button>
             </div>
 

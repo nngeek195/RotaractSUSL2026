@@ -35,9 +35,11 @@ export default function AdminSettings() {
         tiktokUrl: "",
         youtubeUrl: "",
 
-        // InOut.bot WhatsApp
-        inoutApiKey: "",
-        inoutPhoneNumber: ""
+        // WAHA (WhatsApp HTTP API)
+        wahaApiUrl: "",
+        wahaApiKey: "",
+        wahaSession: "default",
+        wahaRecipient: ""
     });
 
     useEffect(() => {
@@ -69,8 +71,10 @@ export default function AdminSettings() {
                 youtubeUrl: publicData.youtubeUrl || "",
                 telegramBotToken: secureData.telegramBotToken || "",
                 telegramChatId: secureData.telegramChatId || "",
-                inoutApiKey: secureData.inoutApiKey || "",
-                inoutPhoneNumber: secureData.inoutPhoneNumber || ""
+                wahaApiUrl: secureData.wahaApiUrl || "",
+                wahaApiKey: secureData.wahaApiKey || secureData.inoutApiKey || "",
+                wahaSession: secureData.wahaSession || "default",
+                wahaRecipient: secureData.wahaRecipient || secureData.inoutPhoneNumber || ""
             }));
         } catch (error) {
             console.error("Error fetching settings:", error);
@@ -104,8 +108,10 @@ export default function AdminSettings() {
             const secureData = {
                 telegramBotToken: settings.telegramBotToken,
                 telegramChatId: settings.telegramChatId,
-                inoutApiKey: settings.inoutApiKey,
-                inoutPhoneNumber: settings.inoutPhoneNumber
+                wahaApiUrl: settings.wahaApiUrl,
+                wahaApiKey: settings.wahaApiKey,
+                wahaSession: settings.wahaSession,
+                wahaRecipient: settings.wahaRecipient
             };
             await setDoc(doc(db, "adminSettings", "secure"), secureData, { merge: true });
 
@@ -209,7 +215,7 @@ export default function AdminSettings() {
                                                         name="whatsappPhone"
                                                         value={settings.whatsappPhone}
                                                         onChange={handleChange}
-                                                        placeholder="+94..."
+                                                        placeholder="+9477... or 9477...@c.us"
                                                         className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
                                                     />
                                                 </div>
@@ -253,51 +259,72 @@ export default function AdminSettings() {
                                                 </div>
                                             </div>
 
-                                            {/* InOut.bot WhatsApp */}
+                                            {/* WAHA (WhatsApp) */}
                                             <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 space-y-6">
                                                 <div className="flex items-center gap-4 border-b border-gray-100 pb-6">
                                                     <div className="p-3 bg-green-100 text-green-600 rounded-xl">
                                                         <MessageSquare size={24} />
                                                     </div>
                                                     <div>
-                                                        <h2 className="text-xl font-bold text-gray-900">InOut.bot (WhatsApp)</h2>
-                                                        <p className="text-gray-500 text-sm">Direct, free WhatsApp API. No Credit Card required.</p>
+                                                        <h2 className="text-xl font-bold text-gray-900">WAHA (WhatsApp)</h2>
+                                                        <p className="text-gray-500 text-sm">Use your WAHA server to send WhatsApp notifications.</p>
                                                     </div>
                                                 </div>
                                                 <div className="grid grid-cols-1 gap-6">
                                                     <div>
-                                                        <label className="block text-sm font-bold text-gray-700 mb-2">InOut API Key</label>
+                                                        <label className="block text-sm font-bold text-gray-700 mb-2">WAHA API Key (optional)</label>
                                                         <input
                                                             type="password"
-                                                            name="inoutApiKey"
-                                                            value={settings.inoutApiKey}
+                                                            name="wahaApiKey"
+                                                            value={settings.wahaApiKey}
                                                             onChange={handleChange}
-                                                            placeholder="Key from InOut (Send 'Create APIKey' to bot)"
+                                                            placeholder="Optional if your WAHA instance is open or IP-restricted"
                                                             className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm"
                                                         />
                                                     </div>
                                                     <div>
-                                                        <label className="block text-sm font-bold text-gray-700 mb-2">Recipient Phone Number</label>
+                                                        <label className="block text-sm font-bold text-gray-700 mb-2">Recipient (phone or chatId)</label>
                                                         <input
-                                                            name="inoutPhoneNumber"
-                                                            value={settings.inoutPhoneNumber}
+                                                            name="wahaRecipient"
+                                                            value={settings.wahaRecipient}
                                                             onChange={handleChange}
-                                                            placeholder="+94..."
+                                                            placeholder="+9477... or 9477...@c.us"
                                                             className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm"
                                                         />
-                                                        <p className="text-xs text-gray-400 mt-1">International format (e.g. +9477...)</p>
+                                                        <p className="text-xs text-gray-400 mt-1">Use E.164 phone or a full WAHA chatId.</p>
                                                     </div>
                                                 </div>
+                                                    <div>
+                                                        <label className="block text-sm font-bold text-gray-700 mb-2">WAHA API URL</label>
+                                                        <input
+                                                            name="wahaApiUrl"
+                                                            value={settings.wahaApiUrl}
+                                                            onChange={handleChange}
+                                                            placeholder="http://localhost:3000"
+                                                            className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-bold text-gray-700 mb-2">WAHA Session</label>
+                                                        <input
+                                                            name="wahaSession"
+                                                            value={settings.wahaSession}
+                                                            onChange={handleChange}
+                                                            placeholder="default"
+                                                            className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm"
+                                                        />
+                                                        <p className="text-xs text-gray-400 mt-1">Usually <code>default</code> unless you configured another session.</p>
+                                                    </div>
 
                                                 <div className="flex justify-end pt-4 border-t border-gray-100">
                                                     <button
                                                         type="button"
-                                                        onClick={() => handleTestNotification('inout')}
+                                                        onClick={() => handleTestNotification('waha')}
                                                         disabled={testLoading}
                                                         className="flex items-center gap-2 text-green-600 bg-green-50 hover:bg-green-100 px-4 py-2 rounded-lg font-medium text-sm transition-colors"
                                                     >
                                                         {testLoading ? <Loader2 className="animate-spin" size={16} /> : <MessageSquare size={16} />}
-                                                        Send Test WhatsApp
+                                                        Send Test WAHA
                                                     </button>
                                                 </div>
                                             </div>
@@ -383,8 +410,8 @@ export default function AdminSettings() {
 
     async function handleTestNotification(provider) {
         // validate settings
-        if (provider === 'inout' && (!settings.inoutApiKey || !settings.inoutPhoneNumber)) {
-            const msg = "Please save InOut.bot settings first!";
+        if (provider === 'waha' && (!settings.wahaApiUrl || !settings.wahaRecipient)) {
+            const msg = "Please save WAHA settings first!";
             setToast({ show: true, message: msg, type: "error" });
             alert(msg);
             return;
@@ -408,13 +435,13 @@ export default function AdminSettings() {
             const data = await res.json();
             if (res.ok) {
                 // Find the success message for the requested provider
-                const resultMsg = data.results?.find(r => r.status === 'fulfilled' && r.value.includes(provider === 'inout' ? 'InOut' : 'Telegram'))?.value;
-                const msg = resultMsg || `${provider === 'inout' ? 'WhatsApp (InOut)' : 'Telegram'} test sent! Check your device.`;
+                const resultMsg = data.results?.find(r => r.status === 'fulfilled' && String(r.value).includes(provider === 'waha' ? 'WAHA' : 'Telegram'))?.value;
+                const msg = resultMsg || `${provider === 'waha' ? 'WhatsApp (WAHA)' : 'Telegram'} test sent! Check your device.`;
 
                 setToast({ show: true, message: msg, type: "success" });
                 alert(msg);
             } else {
-                throw new Error(data.error || data.details || "Failed to send");
+                throw new Error(data.details || data.error || "Failed to send");
             }
         } catch (error) {
             console.error("Test failed:", error);

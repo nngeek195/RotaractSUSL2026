@@ -30,11 +30,20 @@ function VerifyEmailContent() {
 
                     // 3. Trigger WhatsApp Notification (API handles data fetch)
                     if (email) {
-                        fetch('/api/notify-admin', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ email })
-                        }).catch(err => console.error("Notification trigger failed:", err));
+                        try {
+                            const notifyRes = await fetch('/api/notify-admin', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ provider: 'waha', email })
+                            });
+
+                            if (!notifyRes.ok) {
+                                const notifyResult = await notifyRes.json().catch(() => ({}));
+                                console.error("WhatsApp notification failed:", notifyResult);
+                            }
+                        } catch (err) {
+                            console.error("Notification trigger failed:", err);
+                        }
                     }
 
                     // Redirect to login after 3 seconds

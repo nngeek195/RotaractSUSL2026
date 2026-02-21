@@ -117,9 +117,42 @@ function LoginContent() {
                 return;
             }
 
-            // 2. Role-Based Routing Logic
-            // Check pending requests
+            // 2. Notify admin on first verified login while request is still pending
+            const pendingSnap = await getDoc(doc(db, "pendingRequests", user.uid));
+            if (pendingSnap.exists()) {
+                const pendingData = pendingSnap.data();
+                const alreadyNotified = !!pendingData.verificationNotifiedAt;
 
+                if (!alreadyNotified) {
+                    try {
+                        const res = await fetch('/api/notify-admin', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                provider: 'waha',
+                                email: user.email || email,
+                                fullName: pendingData.fullName,
+                                contact: pendingData.whatsapp,
+                                faculty: pendingData.faculty,
+                                department: pendingData.department
+                            })
+                        });
+
+                        if (res.ok) {
+                            await updateDoc(doc(db, "pendingRequests", user.uid), {
+                                verificationNotifiedAt: new Date()
+                            });
+                        } else {
+                            const result = await res.json().catch(() => ({}));
+                            console.error("WhatsApp notification failed:", result);
+                        }
+                    } catch (notifyErr) {
+                        console.error("WhatsApp notification error:", notifyErr);
+                    }
+                }
+            }
+
+            // 3. Role-Based Routing Logic
             // Check Executive Committee Collection
             const execSnap = await getDoc(doc(db, "executiveCommittee", user.uid));
             if (execSnap.exists()) {
