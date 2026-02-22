@@ -219,11 +219,6 @@ export default function EventHandling() {
             return;
         }
 
-        if (isMarkingAsDone && !formData.participants) {
-            alert("Please add participants to mark this project as completed.");
-            return;
-        }
-
         setLoading(true);
         setUploading(true);
         setUploadMessage("Uploading images...");
@@ -702,9 +697,9 @@ export default function EventHandling() {
                                             {(isMarkingAsDone || (isEditing && view === 'completed')) && (
                                                 <div className="col-span-2 bg-blue-50 p-4 rounded-xl border border-blue-100 mt-4">
                                                     <label className="block text-sm font-bold text-blue-900 mb-1 flex items-center gap-2">
-                                                        <Users size={16} /> Participants (Required for Completion)
+                                                        <Users size={16} /> Participants (Optional)
                                                     </label>
-                                                    <p className="text-xs text-blue-600 mb-3 font-medium">Add participant emails separated by commas.</p>
+                                                    <p className="text-xs text-blue-600 mb-3 font-medium">Add participant emails separated by commas if available.</p>
                                                     <textarea
                                                         name="participants"
                                                         value={formData.participants}
