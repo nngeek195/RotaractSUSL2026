@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react'
 import { collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { Heart, Phone, Mail, MapPin, Package, Trash2, Eye, X, CheckCircle, Clock } from 'lucide-react'
+import { toast } from 'sonner'
+import { confirmToast } from '@/lib/confirmToast'
 
 export default function DonationOffersPage() {
     const [offers, setOffers] = useState([])
@@ -35,7 +37,7 @@ export default function DonationOffersPage() {
             setFilteredOffers(offersData)
         } catch (error) {
             console.error('Error fetching offers:', error)
-            alert('Failed to load donation offers')
+            toast.error('Failed to load donation offers')
         } finally {
             setLoading(false)
         }
@@ -81,17 +83,17 @@ export default function DonationOffersPage() {
                 setSelectedOffer(prev => ({ ...prev, status: newStatus }))
             }
 
-            alert('Status updated successfully!')
+            toast.success('Status updated successfully!')
         } catch (error) {
             console.error('Error updating status:', error)
-            alert('Failed to update status')
+            toast.error('Failed to update status')
         } finally {
             setUpdating(false)
         }
     }
 
     const handleDeleteOffer = async (offerId) => {
-        if (!confirm('Are you sure you want to delete this donation offer?')) {
+        if (!(await confirmToast({ message: 'Are you sure you want to delete this donation offer?', confirmLabel: "Delete" }))) {
             return
         }
 
@@ -100,10 +102,10 @@ export default function DonationOffersPage() {
             await deleteDoc(doc(db, 'donationOffers', offerId))
             setOffers(prev => prev.filter(offer => offer.id !== offerId))
             setShowModal(false)
-            alert('Donation offer deleted successfully')
+            toast.success('Donation offer deleted successfully')
         } catch (error) {
             console.error('Error deleting offer:', error)
-            alert('Failed to delete offer')
+            toast.error('Failed to delete offer')
         } finally {
             setUpdating(false)
         }

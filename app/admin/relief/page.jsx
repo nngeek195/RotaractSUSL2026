@@ -5,6 +5,7 @@ import { db } from '@/lib/firebase'
 import { Search, Filter, Download, CheckCircle, Clock, UserCheck, Trash2, Eye, X, Heart, Phone, Mail, MapPin, Package, Settings, Plus, Edit2, Save, ExternalLink, ClipboardList, Shield, ChevronRight, ChevronLeft } from 'lucide-react'
 import { useAuth } from '@/app/contexts/AuthContext'
 import { toast } from 'sonner';
+import { confirmToast } from '@/lib/confirmToast'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function ReliefAdminPage() {
@@ -239,7 +240,7 @@ export default function ReliefAdminPage() {
 
     // Delete Relief Item
     const handleDeleteItem = async (docId, itemName) => {
-        if (!confirm(`Are you sure you want to delete "${itemName}"? This may affect existing requests.`)) {
+        if (!(await confirmToast({ message: `Are you sure you want to delete "${itemName}"?`, description: "This may affect existing requests.", confirmLabel: "Delete" }))) {
             return
         }
 
@@ -426,7 +427,7 @@ export default function ReliefAdminPage() {
 
     // Delete request
     const handleDeleteRequest = async (requestId) => {
-        if (!confirm('Are you sure you want to delete this request?')) {
+        if (!(await confirmToast({ message: 'Are you sure you want to delete this request?', confirmLabel: "Delete" }))) {
             return
         }
 
@@ -446,7 +447,7 @@ export default function ReliefAdminPage() {
 
     // Delete offer
     const handleDeleteOffer = async (offerId) => {
-        if (!confirm('Are you sure you want to delete this donation offer?')) {
+        if (!(await confirmToast({ message: 'Are you sure you want to delete this donation offer?', confirmLabel: "Delete" }))) {
             return
         }
 

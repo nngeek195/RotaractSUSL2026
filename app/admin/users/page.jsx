@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
+import { toast } from "sonner";
+import { confirmToast } from "@/lib/confirmToast";
 
 // Define the executive roles
 const executiveRoles = [
@@ -130,14 +132,14 @@ export default function UserHandling() {
             // Optional: Success toast here
         } catch (error) {
             console.error("Update failed:", error);
-            alert("Failed to update role");
+            toast.error("Failed to update role");
         } finally {
             setLoading(false);
         }
     };
 
     const handleDelete = async (member) => {
-        if (!confirm(`Permanently remove ${member.fullName}?`)) return;
+        if (!(await confirmToast({ message: `Permanently remove ${member.fullName}?`, confirmLabel: "Delete" }))) return;
         try {
             await deleteDoc(doc(db, member.collection, member.id));
             setAllMembers(prev => prev.filter(m => m.id !== member.id));

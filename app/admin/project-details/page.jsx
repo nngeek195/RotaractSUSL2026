@@ -10,6 +10,7 @@ import {
     Star
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 
 const CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/dvqoiqzxe/image/upload";
 const CLOUDINARY_UPLOAD_PRESET = "projects";
@@ -154,10 +155,10 @@ export default function ProjectDetailsManagement() {
                 p.id === editingProject.id ? { ...p, ...updateData } : p
             ));
 
-            alert("Project saved successfully!");
+            toast.success("Project saved successfully!");
         } catch (error) {
             console.error("Error updating project:", error);
-            alert("Failed to update project.");
+            toast.error("Failed to update project.");
         } finally {
             setSaving(false);
         }
@@ -199,7 +200,7 @@ export default function ProjectDetailsManagement() {
             const url = await handleUploadImage(file, "");
             handleInputChange("mainImage", url);
         } catch (err) {
-            alert("Upload failed.");
+            toast.error("Upload failed.");
         } finally {
             setUploadingMain(false);
         }
@@ -215,7 +216,7 @@ export default function ProjectDetailsManagement() {
             const newImages = urls.map(url => ({ url, featured: true }));
             setGlobalGalleryImages(prev => [...prev, ...newImages]);
         } catch (err) {
-            alert("Some images failed to upload.");
+            toast.error("Some images failed to upload.");
         } finally {
             setUploadingGlobal(false);
         }
@@ -231,7 +232,7 @@ export default function ProjectDetailsManagement() {
             const newImages = urls.map(url => ({ url, featured: false }));
             setProjectGalleryImages(prev => [...prev, ...newImages]);
         } catch (err) {
-            alert("Some images failed to upload.");
+            toast.error("Some images failed to upload.");
         } finally {
             setUploadingProject(false);
         }

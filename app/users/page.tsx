@@ -6,6 +6,7 @@ import { auth, db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import { User, Mail, Phone, Award, LogOut, Loader2, MapPin, BookOpen } from "lucide-react";
+import { toast } from "sonner";
 
 interface UserProfile {
     fullName: string;
@@ -45,7 +46,7 @@ export default function Profile() {
                 // 3. If still not found (maybe they are an admin logging into profile?)
                 if (!userDoc.exists()) {
                     // Handle edge case or redirect to admin
-                    alert("Profile not found. If you are an Admin, please use the Admin Dashboard.");
+                    toast.error("Profile not found. If you are an Admin, please use the Admin Dashboard.");
                     router.push("/");
                     return;
                 }

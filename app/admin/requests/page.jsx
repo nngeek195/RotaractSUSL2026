@@ -10,6 +10,7 @@ import {
     GraduationCap, Briefcase
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 
 // --- Helper Functions ---
 
@@ -139,11 +140,11 @@ export default function PendingRequests() {
             setRequests(prev => prev.filter(req => req.id !== id));
             setShowRoleModal(false);
             setSelectedRequest(null);
-            alert(`User Approved! Welcome email sent to ${selectedRequest.email}`);
+            toast.success(`User Approved! Welcome email sent to ${selectedRequest.email}`);
 
         } catch (error) {
             console.error("Error approving user:", error);
-            alert("User approved, but sending the email failed. Please verify email settings and try again.");
+            toast.error("User approved, but sending the email failed. Please verify email settings and try again.");
         }
     };
 
@@ -151,7 +152,7 @@ export default function PendingRequests() {
     const handleReject = async (request, providedReason) => {
         const trimmed = (providedReason || '').trim();
         if (!trimmed) {
-            alert('Rejection reason is required.');
+            toast.error('Rejection reason is required.');
             return;
         }
 
@@ -196,10 +197,10 @@ export default function PendingRequests() {
             setRequests(prev => prev.filter(r => r.id !== request.id));
             setRejectingId(null);
             setRejectReason('');
-            alert('User rejected, removed, and notified with the provided reason.');
+            toast.success('User rejected, removed, and notified with the provided reason.');
         } catch (e) {
             console.error(e);
-            alert('Failed to reject user.');
+            toast.error('Failed to reject user.');
         }
     };
 

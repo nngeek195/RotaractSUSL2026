@@ -6,6 +6,7 @@ import Footer from '../components/Footer';
 import { Mail, Phone, MapPin, Send, Loader2, Clock, CheckCircle } from 'lucide-react';
 import { images } from '../../assets/images';
 import MotionWrapper from '../components/MotionWrapper';
+import { toast } from "sonner";
 
 export default function ContactPage() {
     const [formData, setFormData] = useState({
@@ -86,11 +87,11 @@ export default function ContactPage() {
                 setFormData({ name: '', email: '', subject: '', message: '' });
                 setTimeout(() => setSuccess(false), 5000);
             } else {
-                alert('Failed to send message. Please try again later.');
+                toast.error('Failed to send message. Please try again later.');
             }
         } catch (error) {
             console.error('Error sending message:', error);
-            alert('An error occurred. Please try again.');
+            toast.error('An error occurred. Please try again.');
         } finally {
             setLoading(false);
         }

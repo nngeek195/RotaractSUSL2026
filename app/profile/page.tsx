@@ -14,6 +14,8 @@ import {
 import { images } from '../../assets/images';
 import NavBar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { toast } from "sonner";
+import { confirmToast } from "@/lib/confirmToast";
 
 const CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/dvqoiqzxe/image/upload";
 const CLOUDINARY_UPLOAD_PRESET = "projects";
@@ -115,7 +117,7 @@ export default function Profile() {
 
     // START EVENT LOGIC
     const handleStartProject = async (project: any) => {
-        if (!confirm(`Are you ready to START "${project.name || project.title}"?\n\nThis will make the event LIVE and mark your attendance automatically.`)) return;
+        if (!(await confirmToast({ message: `Are you ready to START "${project.name || project.title}"?`, description: "This will make the event LIVE and mark your attendance automatically.", confirmLabel: "Start" }))) return;
 
         try {
             const eventRef = doc(db, "events", project.id);
@@ -147,13 +149,13 @@ export default function Profile() {
 
         } catch (err) {
             console.error(err);
-            alert("Error starting project.");
+            toast.error("Error starting project.");
         }
     };
 
     // END EVENT LOGIC
     const handleEndProject = async (project: any) => {
-        if (!confirm(`Are you sure you want to END "${project.name || project.title}"?\n\nThis will move it to Completed history.`)) return;
+        if (!(await confirmToast({ message: `Are you sure you want to END "${project.name || project.title}"?`, description: "This will move it to Completed history.", confirmLabel: "End" }))) return;
 
         try {
             const eventRef = doc(db, "events", project.id);
@@ -172,11 +174,11 @@ export default function Profile() {
                 item.id === project.id ? { ...item, status: "completed" } : item
             ));
 
-            alert("Event marked as Completed.");
+            toast.success("Event marked as Completed.");
 
         } catch (err) {
             console.error(err);
-            alert("Error ending project.");
+            toast.error("Error ending project.");
         }
     };
 
@@ -194,11 +196,11 @@ export default function Profile() {
             await updateDoc(eventRef, {
                 participants: arrayUnion(attendanceEmail)
             });
-            alert(`✅ Added ${attendanceEmail} to ${selectedProject.name || selectedProject.title}`);
+            toast.success(`Added ${attendanceEmail} to ${selectedProject.name || selectedProject.title}`);
             setAttendanceEmail("");
         } catch (err) {
             console.error(err);
-            alert("Error adding participant.");
+            toast.error("Error adding participant.");
         }
     };
 
@@ -208,14 +210,14 @@ export default function Profile() {
 
         // Check file size (5MB limit)
         if (file.size > 5 * 1024 * 1024) {
-            alert("File size exceeds 5MB limit.");
+            toast.error("File size exceeds 5MB limit.");
             return;
         }
 
         // Check file type
         const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
         if (!allowedTypes.includes(file.type)) {
-            alert("Invalid file type. Please upload JPEG, PNG, or WEBP.");
+            toast.error("Invalid file type. Please upload JPEG, PNG, or WEBP.");
             return;
         }
 
@@ -240,13 +242,13 @@ export default function Profile() {
 
                 // Update Local State
                 setProfile((prev: any) => ({ ...prev, imageUrl: data.secure_url }));
-                alert("Profile picture updated successfully!");
+                toast.success("Profile picture updated successfully!");
             } else {
                 throw new Error("Upload failed");
             }
         } catch (err) {
             console.error("Error uploading image:", err);
-            alert("Failed to upload profile picture. Please try again.");
+            toast.error("Failed to upload profile picture. Please try again.");
         } finally {
             setUploadingImage(false);
         }
@@ -274,14 +276,14 @@ export default function Profile() {
             try {
                 const eventRef = doc(db, "events", selectedProject.id);
                 await updateDoc(eventRef, { participants: arrayUnion(decodedText) });
-                alert(`✅ Member ${decodedText} added!`);
+                toast.success(`Member ${decodedText} added!`);
 
                 // Reset Modal View
                 emailForm.style.display = "block";
                 if (closeBtn) closeBtn.style.display = "block";
                 qrScannerDiv.style.display = "none";
             } catch (err) {
-                alert("Error adding scanned member.");
+                toast.error("Error adding scanned member.");
             }
         }, (err) => { });
     };

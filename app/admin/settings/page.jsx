@@ -119,7 +119,7 @@ export default function AdminSettings() {
             setTimeout(() => setToast({ show: false, message: "" }), 3000);
         } catch (error) {
             console.error("Error saving settings:", error);
-            alert("Failed to save settings.");
+            setToast({ show: true, message: "Failed to save settings.", type: "error" });
         } finally {
             setSaving(false);
         }
@@ -413,7 +413,6 @@ export default function AdminSettings() {
         if (provider === 'waha' && (!settings.wahaApiUrl || !settings.wahaRecipient)) {
             const msg = "Please save WAHA settings first!";
             setToast({ show: true, message: msg, type: "error" });
-            alert(msg);
             return;
         }
 
@@ -439,7 +438,6 @@ export default function AdminSettings() {
                 const msg = resultMsg || `${provider === 'waha' ? 'WhatsApp (WAHA)' : 'Telegram'} test sent! Check your device.`;
 
                 setToast({ show: true, message: msg, type: "success" });
-                alert(msg);
             } else {
                 throw new Error(data.details || data.error || "Failed to send");
             }
@@ -447,7 +445,6 @@ export default function AdminSettings() {
             console.error("Test failed:", error);
             const msg = `Test failed: ${error.message}`;
             setToast({ show: true, message: msg, type: "error" });
-            alert(msg);
         } finally {
             setTestLoading(false);
             // Clear toast after 5s

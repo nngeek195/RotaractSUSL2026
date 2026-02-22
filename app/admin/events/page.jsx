@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
+import { toast } from "sonner";
+import { confirmToast } from "@/lib/confirmToast";
 
 const CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/dvqoiqzxe/image/upload";
 const CLOUDINARY_UPLOAD_PRESET = "projects";
@@ -215,7 +217,7 @@ export default function EventHandling() {
         e.preventDefault();
 
         if (!isEditing && !selectedCoverFile) {
-            alert("Please select a cover image for the new project.");
+            toast.error("Please select a cover image for the new project.");
             return;
         }
 
@@ -273,21 +275,21 @@ export default function EventHandling() {
             if (isMarkingAsDone) {
                 eventData.status = "completed";
                 await updateDoc(doc(db, "events", currentEventId), eventData);
-                alert("Project marked as completed!");
+                toast.success("Project marked as completed!");
             } else if (isEditing) {
                 await updateDoc(doc(db, "events", currentEventId), eventData);
-                alert("Event updated successfully!");
+                toast.success("Event updated successfully!");
             } else {
                 eventData.status = "upcoming";
                 await addDoc(collection(db, "events"), eventData);
-                alert("Event created successfully!");
+                toast.success("Event created successfully!");
             }
 
             resetForm();
             fetchEvents();
         } catch (error) {
             console.error("Error saving event:", error);
-            alert("Failed to save event. Check console for details.");
+            toast.error("Failed to save event. Check console for details.");
         } finally {
             setLoading(false);
             setUploading(false);
@@ -296,7 +298,7 @@ export default function EventHandling() {
     };
 
     const handleDelete = async (id) => {
-        if (!confirm("Delete this event permanently?")) return;
+        if (!(await confirmToast({ message: "Delete this event permanently?", confirmLabel: "Delete" }))) return;
         try {
             await deleteDoc(doc(db, "events", id));
             setEvents(prev => prev.filter(e => e.id !== id));

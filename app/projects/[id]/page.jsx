@@ -8,6 +8,7 @@ import { images } from '../../../assets/images.js';
 import Footer from "../../components/Footer.jsx";
 import NavBar from "../../components/Navbar.jsx";
 import { ArrowLeft, MapPin, Calendar, Share2 } from 'lucide-react';
+import { toast } from "sonner";
 
 export default function ProjectDetailsPage() {
     const params = useParams();
@@ -89,7 +90,7 @@ export default function ProjectDetailsPage() {
         } else {
             // Fallback: copy to clipboard
             navigator.clipboard.writeText(window.location.href);
-            alert('Link copied to clipboard!');
+            toast.success('Link copied to clipboard!');
         }
     };
 

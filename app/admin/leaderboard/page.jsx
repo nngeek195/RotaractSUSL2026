@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
+import { toast } from "sonner";
+import { confirmToast } from "@/lib/confirmToast";
 
 // List of roles for dropdown
 const rolesWithOrder = [
@@ -94,7 +96,7 @@ export default function LeaderboardAdmin() {
     };
 
     const handleDelete = async (id) => {
-        if (!confirm("Delete this member permanently?")) return;
+        if (!(await confirmToast({ message: "Delete this member permanently?", confirmLabel: "Delete" }))) return;
         try {
             await deleteDoc(doc(db, "leaderboard", id));
             setMembers(prev => prev.filter(m => m.id !== id));
@@ -118,7 +120,7 @@ export default function LeaderboardAdmin() {
             closeModal();
         } catch (error) {
             console.error("Error saving:", error);
-            alert("Failed to save member.");
+            toast.error("Failed to save member.");
         }
     };
 

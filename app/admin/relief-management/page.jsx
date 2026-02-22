@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react'
 import { collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { Search, Filter, Download, CheckCircle, Clock, UserCheck, Trash2, Eye, X } from 'lucide-react'
+import { toast } from 'sonner'
+import { confirmToast } from '@/lib/confirmToast'
 
 export default function ReliefManagementPage() {
     const [requests, setRequests] = useState([])
@@ -33,7 +35,7 @@ export default function ReliefManagementPage() {
             setFilteredRequests(requestsData)
         } catch (error) {
             console.error('Error fetching requests:', error)
-            alert('Failed to load requests')
+            toast.error('Failed to load requests')
         } finally {
             setLoading(false)
         }
@@ -95,10 +97,10 @@ export default function ReliefManagementPage() {
                 setSelectedRequest(prev => ({ ...prev, status: newStatus }))
             }
 
-            alert('Status updated successfully!')
+            toast.success('Status updated successfully!')
         } catch (error) {
             console.error('Error updating status:', error)
-            alert('Failed to update status')
+            toast.error('Failed to update status')
         } finally {
             setUpdating(false)
         }
@@ -106,7 +108,7 @@ export default function ReliefManagementPage() {
 
     // Delete request
     const handleDeleteRequest = async (requestId) => {
-        if (!confirm('Are you sure you want to delete this request? This action cannot be undone.')) {
+        if (!(await confirmToast({ message: 'Are you sure you want to delete this request?', description: 'This action cannot be undone.', confirmLabel: 'Delete' }))) {
             return
         }
 
@@ -115,10 +117,10 @@ export default function ReliefManagementPage() {
             await deleteDoc(doc(db, 'materialRequests', requestId))
             setRequests(prev => prev.filter(req => req.id !== requestId))
             setShowModal(false)
-            alert('Request deleted successfully')
+            toast.success('Request deleted successfully')
         } catch (error) {
             console.error('Error deleting request:', error)
-            alert('Failed to delete request')
+            toast.error('Failed to delete request')
         } finally {
             setUpdating(false)
         }

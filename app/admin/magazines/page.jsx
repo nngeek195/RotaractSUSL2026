@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
+import { toast } from "sonner";
+import { confirmToast } from "@/lib/confirmToast";
 
 const CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/dvqoiqzxe/image/upload";
 const CLOUDINARY_UPLOAD_PRESET = "projects";
@@ -118,12 +120,12 @@ export default function MagazineManagement() {
 
         // Validation: For create, cover is required. For edit, it's optional.
         if (!editingId && !selectedCoverFile) {
-            alert("Please select a cover image.");
+            toast.error("Please select a cover image.");
             return;
         }
 
         if (!formData.pdfLink) {
-            alert("Please enter the FlipHTML5 link or embed code.");
+            toast.error("Please enter the FlipHTML5 link or embed code.");
             return;
         }
 
@@ -166,7 +168,7 @@ export default function MagazineManagement() {
 
             if (editingId) {
                 await updateDoc(doc(db, "magazines", editingId), magazineData);
-                alert("Magazine updated successfully!");
+                toast.success("Magazine updated successfully!");
                 // Update local state instead of full refetch for smoother UX
                 setMagazines(prev => prev.map(m => m.id === editingId ? { ...m, ...magazineData, coverUrl: coverUrl || m.coverUrl } : m));
             } else {
@@ -177,7 +179,7 @@ export default function MagazineManagement() {
 
                 const docRef = await addDoc(collection(db, "magazines"), magazineData);
                 setMagazines(prev => [{ id: docRef.id, ...magazineData }, ...prev]); // Optimistic add or reload
-                alert("Magazine published successfully!");
+                toast.success("Magazine published successfully!");
                 fetchMagazines(); // Refresh to be sure
             }
 
@@ -186,7 +188,7 @@ export default function MagazineManagement() {
 
         } catch (error) {
             console.error("Error saving magazine:", error);
-            alert("Failed to save magazine. Please try again.");
+            toast.error("Failed to save magazine. Please try again.");
         } finally {
             setUploading(false);
             setUploadMessage("");
@@ -194,13 +196,13 @@ export default function MagazineManagement() {
     };
 
     const handleDelete = async (id) => {
-        if (!confirm("Delete this magazine permanently?")) return;
+        if (!(await confirmToast({ message: "Delete this magazine permanently?", confirmLabel: "Delete" }))) return;
         try {
             await deleteDoc(doc(db, "magazines", id));
             setMagazines(prev => prev.filter(m => m.id !== id));
         } catch (error) {
             console.error("Error deleting:", error);
-            alert("Failed to delete magazine.");
+            toast.error("Failed to delete magazine.");
         }
     };
 
