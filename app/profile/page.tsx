@@ -359,6 +359,14 @@ export default function Profile() {
                                 <InfoRow label="Name" value={profile.fullName} />
                                 <InfoRow label="Faculty" value={profile.faculty} />
                                 <InfoRow label="Department" value={profile.department} />
+                                <div className="pt-2">
+                                    <button
+                                        onClick={handleLogout}
+                                        className="w-full flex items-center justify-center gap-2 text-white bg-pink-600 hover:bg-pink-700 transition font-poppins font-bold text-sm px-4 py-3 rounded-xl shadow-md"
+                                    >
+                                        <LogOut size={16} /> Sign Out
+                                    </button>
+                                </div>
                             </div>
 
                             {/* QR Code */}
@@ -433,12 +441,6 @@ export default function Profile() {
                                 </div>
                             )}
 
-                            {/* Logout Button */}
-                            <div className="flex justify-end mt-10">
-                                <button onClick={handleLogout} className="flex items-center gap-2 text-gray-400 hover:text-pink-600 transition font-poppins font-medium text-sm px-4 py-2 rounded-full hover:bg-pink-50">
-                                    <LogOut size={16} /> Sign Out
-                                </button>
-                            </div>
                         </div>
                     </div>
 
