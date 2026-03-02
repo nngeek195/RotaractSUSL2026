@@ -5,7 +5,7 @@ import { db } from "@/lib/firebase";
 import { collection, getDocs, setDoc, doc } from "firebase/firestore";
 import {
     Upload, Save, Loader2, User, Trophy, Quote,
-    Smartphone, RotateCw, CheckCircle2, AlertCircle
+    Smartphone, RotateCw, CheckCircle2, AlertCircle, X
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -14,6 +14,7 @@ const CLOUDINARY_UPLOAD_PRESET = "monthly_stars_upload";
 
 const initialState = {
     image: "",
+    images: [],
     name: "",
     faculty: "",
     quote: "",
@@ -41,8 +42,13 @@ export default function MonthlyStarsAdmin() {
             const querySnapshot = await getDocs(collection(db, "monthlyStars"));
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
-                if (doc.id === "director") setDirectorData(data);
-                if (doc.id === "rotaractor") setRotaractorData(data);
+                const normalizedData = {
+                    ...initialState,
+                    ...data,
+                    images: Array.isArray(data.images) ? data.images : (data.image ? [data.image] : []),
+                };
+                if (doc.id === "director") setDirectorData(normalizedData);
+                if (doc.id === "rotaractor") setRotaractorData(normalizedData);
             });
         } catch (error) {
             console.error("Error fetching data:", error);
@@ -51,24 +57,49 @@ export default function MonthlyStarsAdmin() {
         setLoading(false);
     };
 
-    const handleImageUpload = async (file) => {
-        if (!file) return;
-
+    const uploadImageToCloudinary = async (file) => {
         const formData = new FormData();
         formData.append("file", file);
         formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
         formData.append("folder", "MonthlyStars");
+        const res = await fetch(CLOUDINARY_UPLOAD_URL, { method: "POST", body: formData });
+        const data = await res.json();
+        return data?.public_id || "";
+    };
 
+    const handleImageUpload = async (files) => {
+        if (!files || files.length === 0) return;
         setSaving(true); // Re-using saving spinner for upload
         try {
-            const res = await fetch(CLOUDINARY_UPLOAD_URL, { method: "POST", body: formData });
-            const data = await res.json();
-
-            if (data.public_id) {
-                setCurrentData(prev => ({ ...prev, image: data.public_id }));
+            const selectedFiles = Array.from(files);
+            if (activeTab === "director") {
+                const publicId = await uploadImageToCloudinary(selectedFiles[0]);
+                if (!publicId) {
+                    showToast("Upload failed", "error");
+                    return;
+                }
+                setCurrentData((prev) => ({ ...prev, image: publicId }));
                 showToast("Image uploaded successfully");
             } else {
-                showToast("Upload failed", "error");
+                const uploadedIds = [];
+                for (const file of selectedFiles) {
+                    const publicId = await uploadImageToCloudinary(file);
+                    if (publicId) uploadedIds.push(publicId);
+                }
+                if (uploadedIds.length === 0) {
+                    showToast("Upload failed", "error");
+                    return;
+                }
+                setCurrentData((prev) => {
+                    const existingImages = Array.isArray(prev.images) ? prev.images : (prev.image ? [prev.image] : []);
+                    const nextImages = [...existingImages, ...uploadedIds];
+                    return {
+                        ...prev,
+                        images: nextImages,
+                        image: nextImages[0] || "",
+                    };
+                });
+                showToast(`${uploadedIds.length} flyer(s) uploaded successfully`);
             }
         } catch (err) {
             console.error("Upload error:", err);
@@ -77,10 +108,29 @@ export default function MonthlyStarsAdmin() {
         setSaving(false);
     };
 
+    const removeRotaractorImage = (indexToRemove) => {
+        setRotaractorData((prev) => {
+            const nextImages = (prev.images || []).filter((_, index) => index !== indexToRemove);
+            return {
+                ...prev,
+                images: nextImages,
+                image: nextImages[0] || "",
+            };
+        });
+    };
+
     const handleSave = async () => {
         setSaving(true);
         try {
-            await setDoc(doc(db, "monthlyStars", activeTab), { ...currentData, type: activeTab });
+            const payload = { ...currentData, type: activeTab };
+            if (activeTab === "rotaractor") {
+                const normalizedImages = Array.isArray(currentData.images) ? currentData.images : (currentData.image ? [currentData.image] : []);
+                payload.images = normalizedImages;
+                payload.image = normalizedImages[0] || "";
+            } else {
+                delete payload.images;
+            }
+            await setDoc(doc(db, "monthlyStars", activeTab), payload);
             showToast(`${activeTab === 'director' ? 'Director' : 'Rotaractor'} updated successfully!`);
         } catch (err) {
             console.error("Save error:", err);
@@ -141,22 +191,54 @@ export default function MonthlyStarsAdmin() {
                         <div className="space-y-6">
                             {/* Image Upload */}
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Profile Image</label>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">
+                                    {activeTab === "rotaractor" ? "Flyers" : "Profile Image"}
+                                </label>
                                 <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer relative group">
                                     <input
                                         type="file"
                                         accept="image/*"
-                                        onChange={(e) => handleImageUpload(e.target.files[0])}
+                                        multiple={activeTab === "rotaractor"}
+                                        onChange={(e) => handleImageUpload(e.target.files)}
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                     />
                                     <div className="flex flex-col items-center gap-3 text-gray-500 group-hover:text-blue-600">
                                         <div className="p-3 bg-gray-50 rounded-full group-hover:bg-white transition-colors">
                                             <Upload size={24} />
                                         </div>
-                                        <p className="font-medium text-sm">Click to upload or drag and drop</p>
-                                        <p className="text-xs text-gray-400">SVG, PNG, JPG (MAX. 800x800px)</p>
+                                        <p className="font-medium text-sm">
+                                            {activeTab === "rotaractor"
+                                                ? "Click to upload one or more flyers"
+                                                : "Click to upload or drag and drop"}
+                                        </p>
+                                        <p className="text-xs text-gray-400">
+                                            {activeTab === "rotaractor"
+                                                ? "You can upload multiple flyer images"
+                                                : "SVG, PNG, JPG (MAX. 800x800px)"}
+                                        </p>
                                     </div>
                                 </div>
+                                {activeTab === "rotaractor" && (
+                                    <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3">
+                                        {(rotaractorData.images || []).map((publicId, index) => (
+                                            <div key={`${publicId}-${index}`} className="relative rounded-lg overflow-hidden border border-gray-200">
+                                                <img
+                                                    src={`https://res.cloudinary.com/dvqoiqzxe/image/upload/${publicId}`}
+                                                    alt={`Rotaractor flyer ${index + 1}`}
+                                                    className="w-full h-28 object-cover"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeRotaractorImage(index)}
+                                                    className="absolute top-2 right-2 bg-black/70 text-white rounded-full p-1 hover:bg-black"
+                                                    title="Remove flyer"
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Form Fields */}
@@ -235,9 +317,13 @@ export default function MonthlyStarsAdmin() {
 
                                         {/* Image */}
                                         <div className="w-48 h-48 bg-white/10 rounded-full mb-6 p-1 relative overflow-hidden ring-4 ring-white/20">
-                                            {currentData.image ? (
+                                            {(activeTab === "rotaractor"
+                                                ? (currentData.images?.[0] || currentData.image)
+                                                : currentData.image) ? (
                                                 <img
-                                                    src={`https://res.cloudinary.com/dvqoiqzxe/image/upload/${currentData.image}`}
+                                                    src={`https://res.cloudinary.com/dvqoiqzxe/image/upload/${activeTab === "rotaractor"
+                                                        ? (currentData.images?.[0] || currentData.image)
+                                                        : currentData.image}`}
                                                     alt="Preview"
                                                     className="w-full h-full rounded-full object-cover"
                                                 />

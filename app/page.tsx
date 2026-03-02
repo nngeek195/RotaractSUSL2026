@@ -119,6 +119,7 @@ export default function Home() {
   // --- Dynamic Data (Monthly Stars) ---
   type MonthlyStar = {
     image: string;
+    images?: string[];
     name: string;
     faculty: string;
     quote: string;
@@ -129,6 +130,7 @@ export default function Home() {
   );
   const [rotaractorOfMonth, setRotaractorOfMonth] =
     useState<MonthlyStar | null>(null);
+  const [rotaractorFlyerIndex, setRotaractorFlyerIndex] = useState(0);
   useEffect(() => {
     // Fetch monthly stars from Firestore
     const fetchMonthlyStars = async () => {
@@ -143,6 +145,26 @@ export default function Home() {
     };
     fetchMonthlyStars();
   }, []);
+  const rotaractorFlyers = useMemo(() => {
+    if (!rotaractorOfMonth) return [];
+    if (
+      Array.isArray(rotaractorOfMonth.images) &&
+      rotaractorOfMonth.images.length > 0
+    ) {
+      return rotaractorOfMonth.images;
+    }
+    if (rotaractorOfMonth.image) return [rotaractorOfMonth.image];
+    return [];
+  }, [rotaractorOfMonth]);
+
+  useEffect(() => {
+    setRotaractorFlyerIndex(0);
+    if (rotaractorFlyers.length <= 1) return;
+    const intervalId = setInterval(() => {
+      setRotaractorFlyerIndex((prev) => (prev + 1) % rotaractorFlyers.length);
+    }, 3000);
+    return () => clearInterval(intervalId);
+  }, [rotaractorFlyers]);
   type LeadershipMember = {
     id: string;
     name?: string;
@@ -659,7 +681,7 @@ export default function Home() {
                     : "https://placehold.co/300x300?text=Director+of+Month"
                 }
                 alt="Director of the Month"
-                className="bg-white rounded-[32px] h-[320px] mb-6 flex-shrink-0 w-full object-contain"
+                className="rounded-[32px] h-[360px] lg:h-[420px] mb-6 flex-shrink-0 w-full object-contain"
               />
               <p className="font-playfair font-medium text-[28px] text-white mb-1">
                 {directorOfMonth?.name || "\u00A0"}
@@ -682,13 +704,30 @@ export default function Home() {
               </p>
               <img
                 src={
-                  rotaractorOfMonth?.image
-                    ? `https://res.cloudinary.com/dvqoiqzxe/image/upload/${rotaractorOfMonth.image}`
+                  rotaractorFlyers.length > 0
+                    ? `https://res.cloudinary.com/dvqoiqzxe/image/upload/${rotaractorFlyers[rotaractorFlyerIndex]}`
                     : "https://placehold.co/300x300?text=Rotaractor+of+Month"
                 }
                 alt="Rotaractor of the Month"
-                className="bg-white rounded-[32px] h-[320px] mb-6 flex-shrink-0 w-full object-contain"
+                className="rounded-[32px] h-[360px] lg:h-[420px] mb-6 flex-shrink-0 w-full object-contain"
               />
+              {rotaractorFlyers.length > 1 && (
+                <div className="flex items-center justify-center gap-2 mb-4">
+                  {rotaractorFlyers.map((_, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => setRotaractorFlyerIndex(index)}
+                      className={`w-2.5 h-2.5 rounded-full transition ${
+                        index === rotaractorFlyerIndex
+                          ? "bg-white"
+                          : "bg-white/40 hover:bg-white/70"
+                      }`}
+                      aria-label={`Show Rotaractor flyer ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
 
               <p className="font-playfair font-medium text-[28px] text-white mb-1">
                 {rotaractorOfMonth?.name || "\u00A0"}
