@@ -176,11 +176,11 @@ export default function ProjectDetailsPage() {
                                 About the Project
                             </h2>
                             <div className="space-y-4">
-                                <p className="font-poppins text-[#707070] text-base leading-[26px]">
+                                <p className="font-poppins text-[#707070] text-base leading-[26px] whitespace-pre-line">
                                     {project.description || 'This transformative initiative represents our commitment to Service Above Self, bringing together passionate Rotaractors to address critical needs in the Sabaragamuwa region. Through careful planning and dedicated execution, we\'ve created a sustainable impact that will benefit the community for years to come.'}
                                 </p>
                                 {project.longDescription && (
-                                    <p className="font-poppins text-[#707070] text-base leading-[26px]">
+                                    <p className="font-poppins text-[#707070] text-base leading-[26px] whitespace-pre-line">
                                         {project.longDescription}
                                     </p>
                                 )}
