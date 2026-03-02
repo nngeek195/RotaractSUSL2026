@@ -2,9 +2,8 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { auth, db } from '../../lib/firebase';
+import { auth } from '../../lib/firebase';
 import { applyActionCode, checkActionCode } from 'firebase/auth';
-import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Mail, CheckCircle, XCircle, Loader } from 'lucide-react';
 
 function VerifyEmailContent() {
@@ -19,30 +18,25 @@ function VerifyEmailContent() {
 
             if (mode === 'verifyEmail' && oobCode) {
                 try {
-                    // 1. Check the code first to get the email address
+                    // 1. Validate verification code and read email
                     const info = await checkActionCode(auth, oobCode);
-                    const email = info['data']['email'];
+                    const email = info?.data?.email;
 
                     // 2. Apply the verification code
                     await applyActionCode(auth, oobCode);
 
                     setStatus('success');
 
-                    // 3. Trigger WhatsApp Notification (API handles data fetch)
+                    // 3. Trigger post-verification notification (Telegram + WAHA)
                     if (email) {
                         try {
-                            const notifyRes = await fetch('/api/notify-admin', {
+                            await fetch('/api/notify-admin', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ provider: 'waha', email })
+                                body: JSON.stringify({ email })
                             });
-
-                            if (!notifyRes.ok) {
-                                const notifyResult = await notifyRes.json().catch(() => ({}));
-                                console.error("WhatsApp notification failed:", notifyResult);
-                            }
-                        } catch (err) {
-                            console.error("Notification trigger failed:", err);
+                        } catch (notifyError) {
+                            console.error('Post-verification notification failed:', notifyError);
                         }
                     }
 

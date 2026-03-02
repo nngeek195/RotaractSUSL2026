@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAdminDb } from "../../../lib/firebaseAdmin";
+import { getAdminAuth, getAdminDb } from "../../../lib/firebaseAdmin";
 
 function normalizeChatId(value) {
   if (!value) return "";
@@ -7,6 +7,14 @@ function normalizeChatId(value) {
   if (trimmed.endsWith("@c.us") || trimmed.endsWith("@g.us")) return trimmed;
   const digits = trimmed.replace(/[^\d]/g, "");
   return digits ? `${digits}@c.us` : "";
+}
+
+function buildWahaSendTextUrl(rawUrl) {
+  const base = String(rawUrl || "").trim().replace(/\/+$/, "");
+  if (!base) return "";
+  if (/\/api\/sendText$/i.test(base)) return base;
+  if (/\/api$/i.test(base)) return `${base}/sendText`;
+  return `${base}/api/sendText`;
 }
 
 function buildMessage({ type, data, payload }) {
@@ -32,6 +40,18 @@ function buildMessage({ type, data, payload }) {
     ].join("\n");
   }
 
+  if (type === "contact_message") {
+    const { name, email, subject, message } = data || {};
+    return [
+      "New Contact Message",
+      `Name: ${name || "N/A"}`,
+      `Email: ${email || "N/A"}`,
+      `Subject: ${subject || "N/A"}`,
+      "Message:",
+      message || "N/A",
+    ].join("\n");
+  }
+
   return [
     "New Membership Request",
     `Name: ${payload.fullName || "N/A"}`,
@@ -48,28 +68,57 @@ export async function POST(request) {
     let { type, data, provider, fullName, email, contact, faculty, department } = body;
 
     const isMembershipRequest = !type || type === "membership";
+    let pendingDocRef = null;
+    let pendingData = null;
 
     // Membership notification requires an email to resolve pending request details.
     if (isMembershipRequest && !email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    // Fill missing membership details from pendingRequests.
-    if (isMembershipRequest && !fullName && email) {
+    // Resolve membership details from pendingRequests and dedupe repeated notifications.
+    if (isMembershipRequest && email) {
       try {
         const db = getAdminDb();
         const pendingRef = db.collection("pendingRequests");
         const snapshot = await pendingRef.where("email", "==", email).limit(1).get();
 
         if (!snapshot.empty) {
-          const userData = snapshot.docs[0].data();
-          fullName = userData.fullName;
-          contact = userData.whatsapp;
-          faculty = userData.faculty;
-          department = userData.department;
+          pendingDocRef = snapshot.docs[0].ref;
+          pendingData = snapshot.docs[0].data();
+
+          // Already notified once after verification - no-op success
+          if (pendingData.verificationNotifiedAt) {
+            return NextResponse.json({ message: "Already notified after verification" }, { status: 200 });
+          }
+
+          if (!fullName) fullName = pendingData.fullName;
+          if (!contact) contact = pendingData.whatsapp;
+          if (!faculty) faculty = pendingData.faculty;
+          if (!department) department = pendingData.department;
         }
       } catch (dbError) {
         console.error("Failed to fetch user details from Firestore:", dbError);
+      }
+    }
+
+    // Ensure membership notifications are sent only after email verification.
+    if (isMembershipRequest && email) {
+      try {
+        const auth = getAdminAuth();
+        const userRecord = await auth.getUserByEmail(email);
+        if (!userRecord.emailVerified) {
+          return NextResponse.json(
+            { error: "Email is not verified yet" },
+            { status: 400 }
+          );
+        }
+      } catch (authError) {
+        console.error("Failed to verify auth user:", authError);
+        return NextResponse.json(
+          { error: "Unable to verify user email status" },
+          { status: 400 }
+        );
       }
     }
 
@@ -153,9 +202,11 @@ export async function POST(request) {
 
     // --- 2. WAHA Notification ---
     if ((!provider || provider === "waha") && WAHA_API_URL && WAHA_RECIPIENT) {
-      const baseUrl = WAHA_API_URL.replace(/\/+$/, "");
-      const wahaUrl = `${baseUrl}/api/sendText`;
+      const wahaUrl = buildWahaSendTextUrl(WAHA_API_URL);
       const chatId = normalizeChatId(WAHA_RECIPIENT);
+      const looksLocalhost = /(^https?:\/\/)?(localhost|127\.0\.0\.1)(:\d+)?/i.test(
+        String(WAHA_API_URL || "").trim()
+      );
 
       const headers = { "Content-Type": "application/json" };
       if (WAHA_API_KEY) {
@@ -163,19 +214,29 @@ export async function POST(request) {
         headers["X-Api-Key"] = WAHA_API_KEY;
       }
 
-      const wahaPromise = fetch(wahaUrl, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          chatId,
-          text: message,
-          session: WAHA_SESSION || "default",
-        }),
-      }).then(async (res) => {
-        const responseText = await res.text();
-        if (!res.ok) throw new Error(`WAHA Error: ${responseText}`);
-        return `WAHA sent to ${chatId}`;
-      });
+      const wahaPromise = (async () => {
+        try {
+          const res = await fetch(wahaUrl, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              chatId,
+              text: message,
+              session: WAHA_SESSION || "default",
+            }),
+          });
+          const responseText = await res.text();
+          if (!res.ok) throw new Error(`WAHA Error: ${responseText}`);
+          return `WAHA sent to ${chatId}`;
+        } catch (err) {
+          const hint = looksLocalhost
+            ? " WAHA API URL uses localhost/127.0.0.1; this is not reachable from deployed server environments."
+            : "";
+          throw new Error(
+            `WAHA network/request failed at ${wahaUrl}. ${err?.message || String(err)}${hint}`
+          );
+        }
+      })();
 
       results.push(wahaPromise);
     }
@@ -201,6 +262,18 @@ export async function POST(request) {
         return NextResponse.json({ error: errors[0] || "Failed to notify", details: errors.join(", "), results: serializedOutcomes }, { status: 500 });
       }
       return NextResponse.json({ message: "Notification sent (partial failure)", errors, results: serializedOutcomes }, { status: 200 });
+    }
+
+    // Mark as notified once (membership flow only).
+    if (isMembershipRequest && pendingDocRef) {
+      try {
+        await pendingDocRef.set(
+          { verificationNotifiedAt: new Date() },
+          { merge: true }
+        );
+      } catch (markError) {
+        console.warn("Failed to save verificationNotifiedAt:", markError?.message || markError);
+      }
     }
 
     return NextResponse.json({ message: "Notification sent successfully", results: serializedOutcomes });

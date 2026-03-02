@@ -317,15 +317,27 @@ export default function AdminSettings() {
                                                     </div>
 
                                                 <div className="flex justify-end pt-4 border-t border-gray-100">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleTestNotification('waha')}
-                                                        disabled={testLoading}
-                                                        className="flex items-center gap-2 text-green-600 bg-green-50 hover:bg-green-100 px-4 py-2 rounded-lg font-medium text-sm transition-colors"
-                                                    >
-                                                        {testLoading ? <Loader2 className="animate-spin" size={16} /> : <MessageSquare size={16} />}
-                                                        Send Test WAHA
-                                                    </button>
+                                                    <div className="flex flex-wrap gap-2 justify-end">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleTestNotification('waha')}
+                                                            disabled={testLoading}
+                                                            className="flex items-center gap-2 text-green-600 bg-green-50 hover:bg-green-100 px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+                                                        >
+                                                            {testLoading ? <Loader2 className="animate-spin" size={16} /> : <MessageSquare size={16} />}
+                                                            Send Test WAHA
+                                                        </button>
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleTestNotification('verified_join')}
+                                                            disabled={testLoading}
+                                                            className="flex items-center gap-2 text-blue-700 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+                                                        >
+                                                            {testLoading ? <Loader2 className="animate-spin" size={16} /> : <Bell size={16} />}
+                                                            Test Verified Join Notification
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -415,27 +427,67 @@ export default function AdminSettings() {
             setToast({ show: true, message: msg, type: "error" });
             return;
         }
+        if (provider === 'verified_join' && (!settings.telegramBotToken && !settings.wahaApiUrl)) {
+            const msg = "Please configure Telegram or WAHA first!";
+            setToast({ show: true, message: msg, type: "error" });
+            return;
+        }
 
         setTestLoading(true);
         try {
+            const payload =
+                provider === 'verified_join'
+                    ? {
+                        type: 'verified_join_test',
+                        fullName: "Verified Test User",
+                        email: "verified.test@rotaractsusl.org",
+                        contact: "+94700000000",
+                        faculty: "Faculty of Applied Sciences",
+                        department: "Department of Computing and Information Systems"
+                    }
+                    : {
+                        fullName: "Test Admin",
+                        email: "test@rotaractsusl.org",
+                        contact: "+94700000000",
+                        faculty: "Test Faculty",
+                        department: "Test Dept",
+                        provider
+                    };
+
             const res = await fetch('/api/notify-admin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    fullName: "Test Admin",
-                    email: "test@rotaractsusl.org",
-                    contact: "+94700000000",
-                    faculty: "Test Faculty",
-                    department: "Test Dept",
-                    provider
-                })
+                body: JSON.stringify(payload)
             });
 
             const data = await res.json();
             if (res.ok) {
-                // Find the success message for the requested provider
-                const resultMsg = data.results?.find(r => r.status === 'fulfilled' && String(r.value).includes(provider === 'waha' ? 'WAHA' : 'Telegram'))?.value;
-                const msg = resultMsg || `${provider === 'waha' ? 'WhatsApp (WAHA)' : 'Telegram'} test sent! Check your device.`;
+                let msg = "";
+                if (provider === 'verified_join') {
+                    const successCount = (data.results || []).filter(r => r.status === 'fulfilled').length;
+                    const failedErrors = (data.results || [])
+                        .filter(r => r.status === 'rejected')
+                        .map(r => r.reason)
+                        .filter(Boolean);
+
+                    if (failedErrors.length > 0) {
+                        const details = failedErrors[0];
+                        setToast({
+                            show: true,
+                            message: `Verified join test partial success (${successCount} ok). WAHA/Telegram error: ${details}`,
+                            type: "error"
+                        });
+                        return;
+                    }
+
+                    msg = successCount > 0
+                        ? `Verified join test sent (${successCount} channel(s) succeeded).`
+                        : "Verified join test request processed.";
+                } else {
+                    // Find the success message for the requested provider
+                    const resultMsg = data.results?.find(r => r.status === 'fulfilled' && String(r.value).includes(provider === 'waha' ? 'WAHA' : 'Telegram'))?.value;
+                    msg = resultMsg || `${provider === 'waha' ? 'WhatsApp (WAHA)' : 'Telegram'} test sent! Check your device.`;
+                }
 
                 setToast({ show: true, message: msg, type: "success" });
             } else {

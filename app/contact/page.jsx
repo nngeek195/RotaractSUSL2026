@@ -66,7 +66,7 @@ export default function ContactPage() {
         setLoading(true);
 
         try {
-            const res = await fetch('/api/send-email', {
+            const emailRes = await fetch('/api/send-email', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -82,7 +82,27 @@ export default function ContactPage() {
                 })
             });
 
-            if (res.ok) {
+            if (emailRes.ok) {
+                // Forward contact message to Telegram channel using admin-configured bot settings
+                try {
+                    await fetch('/api/notify-admin', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            provider: 'telegram',
+                            type: 'contact_message',
+                            data: {
+                                name: formData.name,
+                                email: formData.email,
+                                subject: formData.subject,
+                                message: formData.message
+                            }
+                        })
+                    });
+                } catch (notifyError) {
+                    console.error('Telegram forward failed:', notifyError);
+                }
+
                 setSuccess(true);
                 setFormData({ name: '', email: '', subject: '', message: '' });
                 setTimeout(() => setSuccess(false), 5000);

@@ -14,6 +14,7 @@ import { collection, getDocs } from "firebase/firestore";
 export default function Gallery() {
     const [galleryImages, setGalleryImages] = useState([]);
     const [selectedImage, setSelectedImage] = useState(null);
+    const [downloading, setDownloading] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -82,6 +83,29 @@ export default function Gallery() {
         alt: `Gallery Image ${index + 1}`,
         span: layoutPattern[index % layoutPattern.length],
     }));
+
+    const handleDownloadImage = async (imageUrl) => {
+        if (!imageUrl || downloading) return;
+        try {
+            setDownloading(true);
+            const response = await fetch(imageUrl);
+            const blob = await response.blob();
+            const objectUrl = URL.createObjectURL(blob);
+
+            const fileNameFromUrl = imageUrl.split("/").pop()?.split("?")[0] || `gallery-image-${Date.now()}.jpg`;
+            const link = document.createElement("a");
+            link.href = objectUrl;
+            link.download = fileNameFromUrl;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(objectUrl);
+        } catch (err) {
+            console.error("Download failed:", err);
+        } finally {
+            setDownloading(false);
+        }
+    };
 
     return (
         <div className="bg-white min-h-screen flex flex-col">
@@ -175,14 +199,34 @@ export default function Gallery() {
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
                     onClick={() => setSelectedImage(null)}
                 >
-                    <button
-                        className="absolute top-6 right-6 text-white hover:text-gray-300 transition-colors z-50"
-                        onClick={() => setSelectedImage(null)}
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-10 h-10">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
+                    <div className="absolute top-6 right-6 z-50 flex items-center gap-2">
+                        <button
+                            type="button"
+                            className="text-white hover:text-gray-200 transition-colors bg-black/40 p-2.5 rounded-lg border border-white/20"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownloadImage(selectedImage);
+                            }}
+                            title="Download image"
+                            aria-label="Download image"
+                            disabled={downloading}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 16V4m0 12l-4-4m4 4l4-4M4 20h16" />
+                            </svg>
+                        </button>
+
+                        <button
+                            className="text-white hover:text-gray-200 transition-colors bg-black/40 p-2.5 rounded-lg border border-white/20"
+                            onClick={() => setSelectedImage(null)}
+                            title="Close"
+                            aria-label="Close"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
 
                     <div
                         className="relative w-full max-w-6xl max-h-[90vh] rounded-2xl overflow-hidden"

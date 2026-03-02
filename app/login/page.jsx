@@ -9,7 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 // Firebase Imports
 import { signInWithEmailAndPassword, setPersistence, browserLocalPersistence, sendEmailVerification } from "firebase/auth";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -117,39 +117,15 @@ function LoginContent() {
                 return;
             }
 
-            // 2. Notify admin on first verified login while request is still pending
-            const pendingSnap = await getDoc(doc(db, "pendingRequests", user.uid));
-            if (pendingSnap.exists()) {
-                const pendingData = pendingSnap.data();
-                const alreadyNotified = !!pendingData.verificationNotifiedAt;
-
-                if (!alreadyNotified) {
-                    try {
-                        const res = await fetch('/api/notify-admin', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                provider: 'waha',
-                                email: user.email || email,
-                                fullName: pendingData.fullName,
-                                contact: pendingData.whatsapp,
-                                faculty: pendingData.faculty,
-                                department: pendingData.department
-                            })
-                        });
-
-                        if (res.ok) {
-                            await updateDoc(doc(db, "pendingRequests", user.uid), {
-                                verificationNotifiedAt: new Date()
-                            });
-                        } else {
-                            const result = await res.json().catch(() => ({}));
-                            console.error("WhatsApp notification failed:", result);
-                        }
-                    } catch (notifyErr) {
-                        console.error("WhatsApp notification error:", notifyErr);
-                    }
-                }
+            // 2. Fallback notify trigger (server dedupes with verificationNotifiedAt)
+            try {
+                await fetch('/api/notify-admin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: user.email || email })
+                });
+            } catch (notifyErr) {
+                console.error("Verification notification fallback error:", notifyErr);
             }
 
             // 3. Role-Based Routing Logic
