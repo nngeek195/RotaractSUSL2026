@@ -1,9 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { images } from '../../assets/images';
 
 export function ProjectCarousel({ projects = [] }) {
+    const scrollerRef = useRef(null);
+    const [isHovered, setIsHovered] = useState(false);
+
     const defaultProjects = [
         {
             image: images.imgRectangle20,
@@ -39,36 +42,95 @@ export function ProjectCarousel({ projects = [] }) {
 
     // Use passed projects if available, otherwise use defaults
     const baseProjects = projects.length > 0 ? projects : defaultProjects;
-    
-    // Duplicate the list to ensure seamless looping
-    const displayProjects = [...baseProjects, ...baseProjects];
+
+    const getScrollStep = useCallback(() => {
+        if (!scrollerRef.current) return 332; // Fallback width + gap
+        const firstCard = scrollerRef.current.querySelector('[data-project-card="true"]');
+        if (!firstCard) return 332;
+        const firstCardWidth = firstCard.getBoundingClientRect().width;
+        const styles = window.getComputedStyle(scrollerRef.current);
+        const gap = parseFloat(styles.columnGap || styles.gap || '32') || 32;
+        return firstCardWidth + gap;
+    }, []);
+
+    const scrollProjects = useCallback((direction = 'next') => {
+        if (!scrollerRef.current) return;
+
+        const step = getScrollStep();
+        const { scrollLeft, scrollWidth, clientWidth } = scrollerRef.current;
+        const maxScrollLeft = Math.max(0, scrollWidth - clientWidth);
+
+        if (direction === 'next') {
+            if (scrollLeft + step >= maxScrollLeft - 2) {
+                scrollerRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+            } else {
+                scrollerRef.current.scrollBy({ left: step, behavior: 'smooth' });
+            }
+        } else {
+            if (scrollLeft - step <= 0) {
+                scrollerRef.current.scrollTo({ left: maxScrollLeft, behavior: 'smooth' });
+            } else {
+                scrollerRef.current.scrollBy({ left: -step, behavior: 'smooth' });
+            }
+        }
+    }, [getScrollStep]);
+
+    useEffect(() => {
+        if (baseProjects.length <= 1 || isHovered) return;
+        const timer = setInterval(() => {
+            scrollProjects('next');
+        }, 3500);
+
+        return () => clearInterval(timer);
+    }, [baseProjects.length, isHovered, scrollProjects]);
 
     return (
         <div className="relative w-full overflow-hidden py-8">
-            {/* CSS Animation Styles */}
+            {/* Local utility styles */}
             <style>{`
-                @keyframes scroll {
-                    0% { transform: translateX(0); }
-                    100% { transform: translateX(-50%); }
+                .no-scrollbar::-webkit-scrollbar {
+                    display: none;
                 }
-                .animate-scroll {
-                    animation: scroll 40s linear infinite;
-                }
-                .animate-scroll:hover {
-                    animation-play-state: paused;
+                .no-scrollbar {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
                 }
             `}</style>
 
-            {/* Animated Container */}
-            <div className="flex gap-8 w-max animate-scroll hover:cursor-grab active:cursor-grabbing">
-                {displayProjects.map((project, index) => {
+            {/* Manual Controls */}
+            <button
+                type="button"
+                onClick={() => scrollProjects('prev')}
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white text-gray-800 rounded-full w-10 h-10 shadow-md border border-gray-200 flex items-center justify-center"
+                aria-label="Previous projects"
+            >
+                &#8249;
+            </button>
+            <button
+                type="button"
+                onClick={() => scrollProjects('next')}
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white text-gray-800 rounded-full w-10 h-10 shadow-md border border-gray-200 flex items-center justify-center"
+                aria-label="Next projects"
+            >
+                &#8250;
+            </button>
+
+            {/* Auto + Manual Scroll Container */}
+            <div
+                ref={scrollerRef}
+                className="no-scrollbar flex gap-8 overflow-x-auto scroll-smooth px-12"
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+            >
+                {baseProjects.map((project, index) => {
                     // Logic: If hasOverlay is undefined (like from Firebase), default to TRUE for readability
                     const shouldShowOverlay = project.hasOverlay !== undefined ? project.hasOverlay : true;
 
                     return (
                         <div
-                            key={`${project.id || index}-${index}`} // Unique key for duplicates
-                            className="relative flex-none w-[300px] h-[448px] rounded-[41px] shadow-[0px_0px_9px_3px_rgba(0,0,0,0.25)] overflow-hidden transition-transform hover:scale-105 group"
+                            key={project.id || index}
+                            data-project-card="true"
+                            className="relative flex-none w-[85%] sm:w-[48%] lg:w-[calc((100%-4rem)/3)] h-[448px] rounded-[41px] shadow-[0px_0px_9px_3px_rgba(0,0,0,0.25)] overflow-hidden transition-transform hover:scale-105 group"
                         >
                             {/* Project Image */}
                             <div className="absolute inset-0">
