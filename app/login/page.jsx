@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
+import Link from 'next/link';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { Loader2, AlertCircle, CheckCircle, Info } from 'lucide-react'; // Ensure lucide-react is installed
+import { Loader2, AlertCircle, CheckCircle, Info } from 'lucide-react';
 import MotionWrapper from '../components/MotionWrapper';
 import { useAuth } from '../contexts/AuthContext';
 
-// Firebase Imports
 import { signInWithEmailAndPassword, setPersistence, browserLocalPersistence, sendEmailVerification } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
@@ -18,10 +18,8 @@ function LoginContent() {
     const searchParams = useSearchParams();
     const { user, loading: authLoading, isAdmin, isCommittee, isApproved } = useAuth();
 
-    // UI State
     const [activeTab, setActiveTab] = useState('member');
 
-    // Logic State
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -31,7 +29,6 @@ function LoginContent() {
     const [showResendLink, setShowResendLink] = useState(false);
     const [resendLoading, setResendLoading] = useState(false);
 
-    // Redirect only when verified and approved/committee/admin
     useEffect(() => {
         if (authLoading) return;
         if (!user) return;
@@ -44,17 +41,17 @@ function LoginContent() {
         if (canAccessProfile) {
             router.push('/profile');
         }
-        // If not approved or not verified, stay on login page
     }, [user, authLoading, isAdmin, isCommittee, isApproved, router]);
 
-    // Check for verification success from URL
     useEffect(() => {
         if (searchParams.get('verified') === 'true') {
             setSuccess('Your email has been verified. Your application is now pending admin approval. We will notify you by email once your account is approved.');
         }
+        if (searchParams.get('reset') === 'success') {
+            setSuccess('Your password has been reset successfully. Please log in with your new password.');
+        }
     }, [searchParams]);
 
-    // Show pending/verification status when user visits login
     useEffect(() => {
         if (authLoading) return;
         if (!user) return;
@@ -63,7 +60,6 @@ function LoginContent() {
         if (isVerified && !hasAccess) {
             setNotice("Your email is verified! Your application is now pending admin approval. You'll receive an email once approved.");
         }
-        // Removed the automatic "Please verify" notice to avoid clutter, logic handled in submit
     }, [user, authLoading, isAdmin, isCommittee, isApproved]);
 
     const handleResendVerification = async () => {
@@ -95,61 +91,49 @@ function LoginContent() {
         setShowResendLink(false);
 
         try {
-            // 0. Set Persistence
             await setPersistence(auth, browserLocalPersistence);
 
-            // 1. Firebase Auth Login
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
+            const loggedInUser = userCredential.user;
 
-            // Check Admin Collection FIRST to bypass verification if admin
-            const adminSnap = await getDoc(doc(db, "admins", user.uid));
+            const adminSnap = await getDoc(doc(db, "admins", loggedInUser.uid));
             if (adminSnap.exists()) {
                 router.push("/admin");
                 return;
             }
 
-            // 1.5. Check if email is verified (Only for non-admins)
-            if (!user.emailVerified) {
+            if (!loggedInUser.emailVerified) {
                 setError("Email not verified. Please check your inbox.");
                 setShowResendLink(true);
-                // Do NOT sign out here, so we can resend the email
                 return;
             }
 
-            // 2. Fallback notify trigger (server dedupes with verificationNotifiedAt)
             try {
                 await fetch('/api/notify-admin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: user.email || email })
+                    body: JSON.stringify({ email: loggedInUser.email || email })
                 });
             } catch (notifyErr) {
                 console.error("Verification notification fallback error:", notifyErr);
             }
 
-            // 3. Role-Based Routing Logic
-            // Check Executive Committee Collection
-            const execSnap = await getDoc(doc(db, "executiveCommittee", user.uid));
+            const execSnap = await getDoc(doc(db, "executiveCommittee", loggedInUser.uid));
             if (execSnap.exists()) {
                 router.push("/profile");
                 return;
             }
 
-            // Check User Collection
-            const userSnap = await getDoc(doc(db, "users", user.uid));
+            const userSnap = await getDoc(doc(db, "users", loggedInUser.uid));
             if (userSnap.exists()) {
                 router.push("/profile");
                 return;
             }
 
-            // If not found anywhere
             setError("We couldn't find an active membership for this account. If you recently applied, please wait for admin approval. Otherwise, contact support.");
             await auth.signOut();
-
         } catch (err) {
             console.error(err);
-            // Customize error messages
             if (err.code === 'auth/invalid-credential') {
                 setError("Invalid email or password.");
             } else {
@@ -162,17 +146,10 @@ function LoginContent() {
 
     return (
         <div className="bg-white relative w-full min-h-screen flex flex-col">
-            {/* Navigation */}
             <Navbar currentPage="login" />
 
-            {/* Login Form Section */}
             <main className="flex-1 flex items-center justify-center px-4 pt-12 pb-20">
-                <MotionWrapper
-                    className="w-full max-w-[732px]"
-                    variant="scaleUp"
-                >
-
-                    {/* Tabs */}
+                <MotionWrapper className="w-full max-w-[732px]" variant="scaleUp">
                     <div className="flex mb-8">
                         <button
                             onClick={() => setActiveTab('member')}
@@ -194,10 +171,8 @@ function LoginContent() {
                         </button>
                     </div>
 
-                    {/* Divider Line */}
                     <div className="w-full h-px bg-gray-300 mb-8"></div>
 
-                    {/* Success Message */}
                     {success && (
                         <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-2xl mb-8 flex items-center gap-2 font-poppins text-sm">
                             <CheckCircle size={18} />
@@ -205,7 +180,6 @@ function LoginContent() {
                         </div>
                     )}
 
-                    {/* Notice (Pending Approval) */}
                     {notice && (
                         <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-2xl mb-8 flex items-center gap-2 font-poppins text-sm">
                             <Info size={18} />
@@ -213,7 +187,6 @@ function LoginContent() {
                         </div>
                     )}
 
-                    {/* Error Display */}
                     {error && (
                         <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-2xl mb-8 flex flex-col gap-2 font-poppins text-sm">
                             <div className="flex items-center gap-2">
@@ -233,10 +206,7 @@ function LoginContent() {
                         </div>
                     )}
 
-                    {/* Form */}
                     <form onSubmit={handleSubmit} className="space-y-8">
-
-                        {/* Email Input */}
                         <div className="relative">
                             <div className="border border-pink-600 rounded-2xl px-6 py-5 h-[68px] flex items-center focus-within:ring-2 focus-within:ring-pink-600/20 transition-all">
                                 <input
@@ -253,7 +223,6 @@ function LoginContent() {
                             </label>
                         </div>
 
-                        {/* Password Input */}
                         <div className="relative">
                             <div className="border border-pink-600 rounded-2xl px-6 py-5 h-[68px] flex items-center focus-within:ring-2 focus-within:ring-pink-600/20 transition-all">
                                 <input
@@ -270,7 +239,12 @@ function LoginContent() {
                             </label>
                         </div>
 
-                        {/* Submit Button */}
+                        <div className="flex justify-end -mt-4">
+                            <Link href="/forgot-password" className="font-poppins text-sm text-pink-600 font-semibold hover:underline">
+                                Forgot Password?
+                            </Link>
+                        </div>
+
                         <div className="flex flex-col items-center gap-4 pt-6">
                             <button
                                 type="submit"
@@ -288,17 +262,16 @@ function LoginContent() {
                             </button>
 
                             <p className="font-poppins text-sm text-gray-500 mt-4">
-                                Don't have an account?{' '}
-                                <a href="/join" className="text-pink-600 font-semibold hover:underline">
+                                Don&apos;t have an account?{' '}
+                                <Link href="/join" className="text-pink-600 font-semibold hover:underline">
                                     Join the Club
-                                </a>
+                                </Link>
                             </p>
                         </div>
                     </form>
                 </MotionWrapper>
             </main>
 
-            {/* Footer */}
             <Footer />
         </div>
     );
