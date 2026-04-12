@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, setDoc, doc } from "firebase/firestore";
 import {
-    Upload, Save, Loader2, User, Trophy, Quote,
+    Upload, Save, Loader2, User, Trophy,
     Smartphone, RotateCw, CheckCircle2, AlertCircle, X
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,7 +17,6 @@ const initialState = {
     images: [],
     name: "",
     faculty: "",
-    quote: "",
 };
 
 export default function MonthlyStarsAdmin() {
@@ -268,19 +267,6 @@ export default function MonthlyStarsAdmin() {
                                 </div>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Inspirational Quote</label>
-                                <div className="relative">
-                                    <Quote className="absolute left-3 top-3 text-gray-400" size={16} />
-                                    <textarea
-                                        placeholder="Enter a short quote..."
-                                        value={currentData.quote}
-                                        onChange={(e) => setCurrentData(prev => ({ ...prev, quote: e.target.value }))}
-                                        className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none h-32 resize-none transition-all"
-                                    />
-                                </div>
-                            </div>
-
                             <button
                                 onClick={handleSave}
                                 disabled={saving}
@@ -338,17 +324,9 @@ export default function MonthlyStarsAdmin() {
                                         <h4 className="font-bold text-xl text-white mb-1 line-clamp-1">
                                             {currentData.name || "Name Here"}
                                         </h4>
-                                        <p className="text-white/70 text-xs mb-4 line-clamp-1">
+                                        <p className="text-white/70 text-xs line-clamp-1">
                                             {currentData.faculty || "Faculty Here"}
                                         </p>
-
-                                        {/* Quote */}
-                                        <div className="relative">
-                                            <Quote size={12} className="text-white/40 absolute -top-2 -left-2 transform -scale-x-100" />
-                                            <p className="text-white text-sm font-medium italic leading-relaxed px-2 line-clamp-3">
-                                                "{currentData.quote || "Your inspiring quote will appear here..."}"
-                                            </p>
-                                        </div>
                                     </div>
                                 </div>
 

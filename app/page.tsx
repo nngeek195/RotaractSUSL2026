@@ -122,7 +122,6 @@ export default function Home() {
     images?: string[];
     name: string;
     faculty: string;
-    quote: string;
     type: "director" | "rotaractor";
   };
   const [directorOfMonth, setDirectorOfMonth] = useState<MonthlyStar | null>(
@@ -686,11 +685,8 @@ export default function Home() {
               <p className="font-playfair font-medium text-[28px] text-white mb-1">
                 {directorOfMonth?.name || "\u00A0"}
               </p>
-              <p className="font-poppins text-[19px] text-[#d9d9d9] mb-6">
+              <p className="font-poppins text-[19px] text-[#d9d9d9]">
                 {directorOfMonth?.faculty || "\u00A0"}
-              </p>
-              <p className="font-poppins font-medium italic text-[17px] text-white leading-relaxed">
-                {directorOfMonth?.quote || "\u00A0"}
               </p>
             </MotionWrapper>
 
@@ -732,11 +728,8 @@ export default function Home() {
               <p className="font-playfair font-medium text-[28px] text-white mb-1">
                 {rotaractorOfMonth?.name || "\u00A0"}
               </p>
-              <p className="font-poppins text-[19px] text-[#d9d9d9] mb-6">
+              <p className="font-poppins text-[19px] text-[#d9d9d9]">
                 {rotaractorOfMonth?.faculty || "\u00A0"}
-              </p>
-              <p className="font-poppins font-medium italic text-[17px] text-white leading-relaxed">
-                {rotaractorOfMonth?.quote || "\u00A0"}
               </p>
             </MotionWrapper>
           </div>
