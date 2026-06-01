@@ -7,15 +7,19 @@ import { images } from '../../assets/images.js'; // Assuming you have a default 
 import Footer from "../components/Footer.jsx";
 import NavBar from "../components/Navbar.jsx";
 import Link from 'next/link';
-import { BookOpen, Calendar, ArrowRight, Loader2, Download } from 'lucide-react';
+import { BookOpen, Calendar, ArrowRight } from 'lucide-react';
 import MotionWrapper from '../components/MotionWrapper';
+
+const getSpecialTag = (magazine) => {
+    if (magazine.specialTag) return magazine.specialTag.trim();
+    return magazine.title?.trim().toLowerCase().includes("fusion magazine") ? "Fusion Magazine" : "";
+};
 
 export default function MagazinePage() {
     const [magazines, setMagazines] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        setLoading(true);
         // Assuming 'magazines' collection exists. If not, this will just return empty for now.
         const q = query(collection(db, "magazines"), orderBy("date", "desc"));
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -92,6 +96,11 @@ export default function MagazinePage() {
                                 <MotionWrapper key={mag.id} className="bg-white rounded-[26px] shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full">
                                     {/* Cover Image */}
                                     <div className="relative h-[300px] bg-gray-200 overflow-hidden group">
+                                        {getSpecialTag(mag) && (
+                                            <div className="absolute top-4 left-4 z-10 bg-pink-600 text-white px-3 py-1.5 rounded-full text-xs font-poppins font-bold shadow-lg">
+                                                {getSpecialTag(mag)}
+                                            </div>
+                                        )}
                                         <img
                                             src={mag.coverUrl || images.imgRectangle44}
                                             alt={mag.title}
