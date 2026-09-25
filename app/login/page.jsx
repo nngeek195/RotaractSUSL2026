@@ -9,7 +9,7 @@ import MotionWrapper from '../components/MotionWrapper';
 import { useAuth } from '../contexts/AuthContext';
 
 import { signInWithEmailAndPassword, setPersistence, browserLocalPersistence, sendEmailVerification } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -45,22 +45,12 @@ function LoginContent() {
 
     useEffect(() => {
         if (searchParams.get('verified') === 'true') {
-            setSuccess('Your email has been verified. Your application is now pending admin approval. We will notify you by email once your account is approved.');
+            setSuccess('Your email has been verified! You can now log in to access your member account.');
         }
         if (searchParams.get('reset') === 'success') {
             setSuccess('Your password has been reset successfully. Please log in with your new password.');
         }
     }, [searchParams]);
-
-    useEffect(() => {
-        if (authLoading) return;
-        if (!user) return;
-        const isVerified = !!user.emailVerified;
-        const hasAccess = isAdmin || isCommittee || isApproved;
-        if (isVerified && !hasAccess) {
-            setNotice("Your email is verified! Your application is now pending admin approval. You'll receive an email once approved.");
-        }
-    }, [user, authLoading, isAdmin, isCommittee, isApproved]);
 
     const handleResendVerification = async () => {
         if (!auth.currentUser) return;
@@ -108,16 +98,6 @@ function LoginContent() {
                 return;
             }
 
-            try {
-                await fetch('/api/notify-admin', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: loggedInUser.email || email })
-                });
-            } catch (notifyErr) {
-                console.error("Verification notification fallback error:", notifyErr);
-            }
-
             const execSnap = await getDoc(doc(db, "executiveCommittee", loggedInUser.uid));
             if (execSnap.exists()) {
                 router.push("/profile");
@@ -130,7 +110,26 @@ function LoginContent() {
                 return;
             }
 
-            setError("We couldn't find an active membership for this account. If you recently applied, please wait for admin approval. Otherwise, contact support.");
+            // Legacy fallback: check if user was registered in pendingRequests
+            const pendingSnap = await getDoc(doc(db, "pendingRequests", loggedInUser.uid));
+            if (pendingSnap.exists()) {
+                const pendingData = pendingSnap.data();
+                const newUserData = {
+                    ...pendingData,
+                    uid: loggedInUser.uid,
+                    position: "Member",
+                    status: "active",
+                    joinedAt: new Date()
+                };
+                await setDoc(doc(db, "users", loggedInUser.uid), newUserData);
+                try {
+                    await deleteDoc(doc(db, "pendingRequests", loggedInUser.uid));
+                } catch {}
+                router.push("/profile");
+                return;
+            }
+
+            setError("We couldn't find an active membership for this account. Please register on the Join page.");
             await auth.signOut();
         } catch (err) {
             console.error(err);
@@ -158,16 +157,7 @@ function LoginContent() {
                                 : 'bg-transparent text-black border-b-2 border-gray-200'
                                 }`}
                         >
-                            Member
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('committee')}
-                            className={`flex-1 py-3 font-poppins font-medium text-lg transition-colors ${activeTab === 'committee'
-                                ? 'bg-pink-600 text-white rounded-tl-lg rounded-tr-lg'
-                                : 'bg-transparent text-black border-b-2 border-gray-200'
-                                }`}
-                        >
-                            Committee
+                            Member Login
                         </button>
                     </div>
 

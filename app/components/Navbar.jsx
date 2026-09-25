@@ -1,18 +1,40 @@
 'use client';
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { images } from '../../assets/images';
-// Make sure you have lucide-react installed (npm install lucide-react)
 import { Menu, X, LogIn, User, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+
+import { db } from "@/lib/firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
 
 export default function Navbar({ currentPage = 'home' }) {
     // State to toggle the mobile sidebar
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [activeCallsCount, setActiveCallsCount] = useState(0);
     const { user, loading, isApproved, isCommittee, isAdmin } = useAuth();
     const isVerified = !!(user && user.emailVerified);
     // Allow account access if verified OR if the user is an admin (admins bypass verification)
     const canShowAccount = (isVerified && (isApproved || isCommittee)) || isAdmin;
+
+    // Check for open, published OC project calls
+    useEffect(() => {
+        const fetchActiveCalls = async () => {
+            try {
+                const q = query(collection(db, "ocCalls"), where("status", "==", "open"));
+                const snap = await getDocs(q);
+                const count = snap.docs.filter(d => {
+                    const data = d.data();
+                    return data.published !== false && data.published;
+                }).length;
+                setActiveCallsCount(count);
+            } catch (err) {
+                console.error("Error fetching open calls for navbar:", err);
+            }
+        };
+        fetchActiveCalls();
+    }, []);
 
     // Helper to close menu when clicking a link
     const closeMenu = () => setIsMobileMenuOpen(false);
@@ -32,6 +54,14 @@ export default function Navbar({ currentPage = 'home' }) {
                         <NavLink href="/" label="Home" active={currentPage === 'home'} />
                         <NavLink href="/about" label="About" active={currentPage === 'about'} />
                         <NavLink href="/projects" label="Projects" active={currentPage === 'projects'} />
+                        {activeCallsCount > 0 && (
+                            <NavLink 
+                                href="/apply-projects" 
+                                label="Apply for Projects" 
+                                active={currentPage === 'apply-projects'} 
+                                badge="New"
+                            />
+                        )}
                         <NavLink href="/magazine" label="E-Magazine" active={currentPage === 'magazine'} />
                         <NavLink href="/gallery" label="Gallery" active={currentPage === 'gallery'} />
                         <NavLink href="/leadership" label="Leadership" active={currentPage === 'leadership'} />
@@ -108,6 +138,15 @@ export default function Navbar({ currentPage = 'home' }) {
                     <MobileNavLink href="/" label="Home" active={currentPage === 'home'} onClick={closeMenu} />
                     <MobileNavLink href="/about" label="About" active={currentPage === 'about'} onClick={closeMenu} />
                     <MobileNavLink href="/projects" label="Projects" active={currentPage === 'projects'} onClick={closeMenu} />
+                    {activeCallsCount > 0 && (
+                        <MobileNavLink 
+                            href="/apply-projects" 
+                            label="Apply for Projects" 
+                            active={currentPage === 'apply-projects'} 
+                            onClick={closeMenu}
+                            badge="New"
+                        />
+                    )}
                     <MobileNavLink href="/magazine" label="E-Magazine" active={currentPage === 'magazine'} onClick={closeMenu} />
                     <MobileNavLink href="/gallery" label="Gallery" active={currentPage === 'gallery'} onClick={closeMenu} />
                     <MobileNavLink href="/leadership" label="Leadership" active={currentPage === 'leadership'} onClick={closeMenu} />
@@ -152,24 +191,36 @@ export default function Navbar({ currentPage = 'home' }) {
 // --- HELPER COMPONENTS FOR CLEANER CODE ---
 
 // Desktop Link Component
-const NavLink = ({ href, label, active }) => (
+const NavLink = ({ href, label, active, badge }) => (
     <Link
         href={href}
-        className={`font-poppins font-medium text-sm transition-colors duration-200 ${active ? 'text-pink-600' : 'text-black hover:text-pink-600'
-            }`}
+        className={`inline-flex items-center gap-1.5 font-poppins font-medium text-sm transition-colors duration-200 ${
+            active ? 'text-pink-600' : 'text-black hover:text-pink-600'
+        }`}
     >
-        {label}
+        <span>{label}</span>
+        {badge && (
+            <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-pink-100 text-pink-600 rounded-full animate-pulse">
+                {badge}
+            </span>
+        )}
     </Link>
 );
 
 // Mobile Link Component
-const MobileNavLink = ({ href, label, active, onClick }) => (
+const MobileNavLink = ({ href, label, active, onClick, badge }) => (
     <Link
         href={href}
         onClick={onClick}
-        className={`font-poppins text-lg font-medium py-2 border-b border-gray-50 transition-colors ${active ? 'text-pink-600 pl-2 border-l-4 border-l-pink-600' : 'text-gray-700 hover:text-pink-600 hover:pl-2'
-            }`}
+        className={`flex items-center justify-between font-poppins text-lg font-medium py-2 border-b border-gray-50 transition-colors ${
+            active ? 'text-pink-600 pl-2 border-l-4 border-l-pink-600' : 'text-gray-700 hover:text-pink-600 hover:pl-2'
+        }`}
     >
-        {label}
+        <span>{label}</span>
+        {badge && (
+            <span className="px-2 py-0.5 text-xs font-bold uppercase bg-pink-100 text-pink-600 rounded-full">
+                {badge}
+            </span>
+        )}
     </Link>
 );

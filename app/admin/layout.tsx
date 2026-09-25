@@ -1,13 +1,12 @@
 "use client";
 
-import React, { ReactNode, useState } from "react";
+import React, { ReactNode, useState, useEffect } from "react";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
   LayoutDashboard,
   Users,
-  Clock,
   Calendar,
   LogOut,
   Menu,
@@ -17,7 +16,8 @@ import {
   Settings,
   ChevronRight,
   Shield,
-  BookOpen
+  BookOpen,
+  Megaphone 
 } from "lucide-react";
 import { auth } from "@/lib/firebase";
 
@@ -31,6 +31,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  // 1. Move the route protection redirect into a useEffect
+  useEffect(() => {
+    if (!loading && (!user || (!isAdmin && !isCommittee))) {
+      router.push("/login");
+    }
+  }, [loading, user, isAdmin, isCommittee, router]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -42,11 +49,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     );
   }
 
-  // Route protection
+  // 2. Just return null here while the useEffect handles the redirect
   if (!user || (!isAdmin && !isCommittee)) {
-    if (typeof window !== "undefined") {
-      router.push("/login");
-    }
     return null;
   }
 
@@ -54,8 +58,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     await auth.signOut();
     router.push("/login");
   };
-
-  const isActive = (path: string) => pathname === path;
 
   const NavItem = ({ href, icon: Icon, label, exact = false }: { href: string; icon: any; label: string; exact?: boolean }) => {
     const active = exact ? pathname === href : pathname.startsWith(href);
@@ -81,16 +83,18 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     );
   };
 
-  const SidebarContent = () => (
+  const renderSidebarContent = () => (
     <>
       <div className="px-6 py-8 flex items-center gap-3 mb-2">
-        <div className="w-10 h-10 bg-pink-600 rounded-xl flex items-center justify-center shadow-lg shadow-pink-600/20 text-white">
-            <Shield size={20} />
-        </div>
-        <div>
-            <h1 className="font-bold text-gray-900 text-lg leading-tight">Admin<span className="text-pink-600">Portal</span></h1>
-            <p className="text-xs text-gray-400 font-medium">Rotaract Club SUSL</p>
-        </div>
+        <Link href={isAdmin ? "/admin" : "/admin/oc-calls"} className="flex items-center gap-3 group">
+            <div className="w-10 h-10 bg-pink-600 rounded-xl flex items-center justify-center shadow-lg shadow-pink-600/20 text-white">
+                <Shield size={20} />
+            </div>
+            <div>
+                <h1 className="font-bold text-gray-900 text-lg leading-tight">Admin<span className="text-pink-600">Portal</span></h1>
+                <p className="text-xs text-gray-400 font-medium">{isAdmin ? "Rotaract Club SUSL" : "OC Management"}</p>
+            </div>
+        </Link>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pb-4">
@@ -105,16 +109,18 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </ul>
         </div>
 
-        {/* Management */}
-        {isAdmin && (
+        {/* Management (Updated permissions to let Committee manage OC Calls) */}
+        {(isAdmin || isCommittee) && (
             <div className="mb-6">
             <p className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Management</p>
             <ul className="space-y-1">
-                <NavItem href="/admin/users" icon={Users} label="Members & Users" />
-                <NavItem href="/admin/requests" icon={Clock} label="Pending Requests" />
-                <NavItem href="/admin/events" icon={Calendar} label="Events & Projects" />
-                <NavItem href="/admin/magazines" icon={BookOpen} label="Magazines" />
-                <NavItem href="/admin/project-details" icon={FileText} label="Project Reports" />
+                {isAdmin && <NavItem href="/admin/users" icon={Users} label="Members & Users" />}
+                {isAdmin && <NavItem href="/admin/events" icon={Calendar} label="Events & Projects" />}
+                
+                <NavItem href="/admin/oc-calls" icon={Megaphone} label="OC Calls" />
+                
+                {isAdmin && <NavItem href="/admin/magazines" icon={BookOpen} label="Magazines" />}
+                {isAdmin && <NavItem href="/admin/project-details" icon={FileText} label="Project Reports" />}
             </ul>
             </div>
         )}
@@ -177,13 +183,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
-        <SidebarContent />
+        {renderSidebarContent()}
       </nav>
 
       {/* Main Content Area */}
       <main className="flex-1 min-w-0 md:pt-0 pt-16">
-         {/* Top Header (Desktop) - optional, can be kept simple or added here */}
-         
          <div className="p-4 md:p-8 lg:p-10 max-w-[1600px] mx-auto transition-all duration-300">
             {children}
          </div>

@@ -68,7 +68,7 @@ service cloud.firestore {
     match /pendingRequests/{uid} {
       allow create: if isAuthenticated() && request.auth.uid == uid;
       allow read: if isAdmin() || isOwner(uid);
-      allow update, delete: if isAdmin();
+      allow update, delete: if isOwner(uid) || isAdmin();
     }
 
     // 4. REJECTED REQUESTS
@@ -80,8 +80,8 @@ service cloud.firestore {
 
     // 5. USERS
     match /users/{userId} {
-      allow read: if isApprovedUser() || isAdmin();
-      allow create: if isAdmin();
+      allow read: if isOwner(userId) || isApprovedUser() || isAdmin();
+      allow create: if isOwner(userId) || isAdmin();
       allow update: if isOwner(userId) || isAdmin();
       allow delete: if isAdmin();
     }
@@ -165,6 +165,21 @@ service cloud.firestore {
     match /magazines/{magazineId} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    // ============================
+    //   OC CALLS & APPLICATIONS
+    // ============================
+
+    match /ocCalls/{callId} {
+      allow read: if true;
+      allow create, update, delete: if isPrivileged() || isAdmin();
+    }
+
+    match /ocApplications/{appId} {
+      allow read: if isPrivileged() || isAdmin() || (isAuthenticated() && (resource.data.userId == request.auth.uid || resource.data.applicantEmail == request.auth.token.email));
+      allow create: if true;
+      allow update, delete: if isPrivileged() || isAdmin();
     }
 
     // ============================

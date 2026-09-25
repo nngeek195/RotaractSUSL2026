@@ -149,7 +149,7 @@ function AuthActionContent() {
                 <h1 className="text-2xl sm:text-3xl font-bold mb-3 text-gray-900">Check your Email!</h1>
                 <p className="text-gray-600 leading-relaxed">
                     We sent a verification link to your email. Please click it to verify your email.
-                    <br />After verification, our admin team will review your membership application.
+                    <br />Once verified, you can log in to access your member account immediately.
                 </p>
                 <p className="text-sm mt-4 text-red-600 font-bold">
                     If you do not see the email, please check your spam or junk folder.
@@ -181,7 +181,7 @@ function AuthActionContent() {
                         <CheckCircle className="w-8 h-8" />
                     </div>
                     <h2 className="text-2xl font-bold text-gray-900 mb-2">Email Verified!</h2>
-                    <p className="text-gray-600 mb-4">Your email has been successfully verified.</p>
+                    <p className="text-gray-600 mb-4">Your email has been successfully verified. You can now log in to access your member account.</p>
                     <p className="text-sm text-gray-500">Redirecting to login...</p>
                 </>
             )}

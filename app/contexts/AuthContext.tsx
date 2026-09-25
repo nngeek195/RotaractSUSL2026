@@ -9,7 +9,7 @@ import {
   ReactNode,
 } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 
 interface AuthContextType {
@@ -53,7 +53,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
           // Check if user is approved (in users collection)
           const approvedDoc = await getDoc(doc(db, "users", currentUser.uid));
-          setIsApproved(approvedDoc.exists());
+          let approved = approvedDoc.exists();
+
+          // Auto-migrate legacy pending request if verified
+          if (!approved && currentUser.emailVerified) {
+            const pendingDoc = await getDoc(doc(db, "pendingRequests", currentUser.uid));
+            if (pendingDoc.exists()) {
+              const pendingData = pendingDoc.data();
+              await setDoc(doc(db, "users", currentUser.uid), {
+                ...pendingData,
+                uid: currentUser.uid,
+                position: "Member",
+                status: "active",
+                joinedAt: new Date()
+              });
+              try {
+                await deleteDoc(doc(db, "pendingRequests", currentUser.uid));
+              } catch {}
+              approved = true;
+            }
+          }
+
+          setIsApproved(approved);
         } catch (error) {
           console.error("Error verifying user roles:", error);
           setIsAdmin(false);

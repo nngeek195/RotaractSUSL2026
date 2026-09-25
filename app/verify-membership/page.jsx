@@ -22,18 +22,9 @@ function VerifyContent() {
         "Finance", "Membership Development", "Public Relations", "Sports and Recreational Activities"
     ];
 
-    useEffect(() => {
-        if (!token) {
-            setStatus('error');
-            return;
-        }
-        verifyUser();
-    }, [token]);
-
     const verifyUser = async () => {
         try {
             // 1. Find the pending request with this token
-            // Note: This works because we set the Security Rules to allow public read on pendingRequests
             const q = query(collection(db, "pendingRequests"), where("verificationToken", "==", token));
             const querySnapshot = await getDocs(q);
 
@@ -52,7 +43,6 @@ function VerifyContent() {
             const targetCollection = executiveRoles.includes(role) ? "executiveCommittee" : "users";
 
             // 3. Prepare Final User Data
-            // We remove the temporary token and role fields
             const { verificationToken, futureRole, status: oldStatus, ...userData } = requestData;
 
             const finalData = {
@@ -76,6 +66,14 @@ function VerifyContent() {
             setStatus('error');
         }
     };
+
+    useEffect(() => {
+        if (!token) {
+            setStatus('error');
+            return;
+        }
+        verifyUser();
+    }, [token]);
 
     return (
         <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border border-gray-100">

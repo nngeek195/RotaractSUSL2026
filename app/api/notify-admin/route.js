@@ -53,7 +53,7 @@ function buildMessage({ type, data, payload }) {
   }
 
   return [
-    "New Membership Request",
+    "New Member Joined",
     `Name: ${payload.fullName || "N/A"}`,
     `Email: ${payload.email || "N/A"}`,
     `Faculty: ${payload.faculty || "N/A"}`,
@@ -68,34 +68,33 @@ export async function POST(request) {
     let { type, data, provider, fullName, email, contact, faculty, department } = body;
 
     const isMembershipRequest = !type || type === "membership";
-    let pendingDocRef = null;
-    let pendingData = null;
 
     // Membership notification requires an email to resolve pending request details.
     if (isMembershipRequest && !email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    // Resolve membership details from pendingRequests and dedupe repeated notifications.
+    // Resolve membership details from users (or pendingRequests fallback)
     if (isMembershipRequest && email) {
       try {
         const db = getAdminDb();
-        const pendingRef = db.collection("pendingRequests");
-        const snapshot = await pendingRef.where("email", "==", email).limit(1).get();
+        const usersSnap = await db.collection("users").where("email", "==", email).limit(1).get();
 
-        if (!snapshot.empty) {
-          pendingDocRef = snapshot.docs[0].ref;
-          pendingData = snapshot.docs[0].data();
-
-          // Already notified once after verification - no-op success
-          if (pendingData.verificationNotifiedAt) {
-            return NextResponse.json({ message: "Already notified after verification" }, { status: 200 });
+        if (!usersSnap.empty) {
+          const userData = usersSnap.docs[0].data();
+          if (!fullName) fullName = userData.fullName || `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
+          if (!contact) contact = userData.whatsapp || userData.mobileNumber;
+          if (!faculty) faculty = userData.faculty;
+          if (!department) department = userData.department;
+        } else {
+          const pendingSnap = await db.collection("pendingRequests").where("email", "==", email).limit(1).get();
+          if (!pendingSnap.empty) {
+            const pendingData = pendingSnap.docs[0].data();
+            if (!fullName) fullName = pendingData.fullName || `${pendingData.firstName || ''} ${pendingData.lastName || ''}`.trim();
+            if (!contact) contact = pendingData.whatsapp || pendingData.mobileNumber;
+            if (!faculty) faculty = pendingData.faculty;
+            if (!department) department = pendingData.department;
           }
-
-          if (!fullName) fullName = pendingData.fullName;
-          if (!contact) contact = pendingData.whatsapp;
-          if (!faculty) faculty = pendingData.faculty;
-          if (!department) department = pendingData.department;
         }
       } catch (dbError) {
         console.error("Failed to fetch user details from Firestore:", dbError);
@@ -262,18 +261,6 @@ export async function POST(request) {
         return NextResponse.json({ error: errors[0] || "Failed to notify", details: errors.join(", "), results: serializedOutcomes }, { status: 500 });
       }
       return NextResponse.json({ message: "Notification sent (partial failure)", errors, results: serializedOutcomes }, { status: 200 });
-    }
-
-    // Mark as notified once (membership flow only).
-    if (isMembershipRequest && pendingDocRef) {
-      try {
-        await pendingDocRef.set(
-          { verificationNotifiedAt: new Date() },
-          { merge: true }
-        );
-      } catch (markError) {
-        console.warn("Failed to save verificationNotifiedAt:", markError?.message || markError);
-      }
     }
 
     return NextResponse.json({ message: "Notification sent successfully", results: serializedOutcomes });

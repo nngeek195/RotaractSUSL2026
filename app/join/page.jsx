@@ -80,9 +80,12 @@ const facultyData = {
 export default function JoinUs() {
     const router = useRouter();
 
+    // Updated state with new fields
     const [formData, setFormData] = useState({
-        fullName: "", nameWithInitials: "", studentId: "", faculty: "", department: "",
-        contact: "", email: "", reason: "", password: "",
+        firstName: "", lastName: "", fullNameDoc: "", preferredName: "", 
+        nic: "", gender: "", dob: "", mobileNumber: "", email: "", 
+        residentialAddress: "", city: "", province: "", postalCode: "",
+        studentId: "", faculty: "", department: "", reason: "", password: "",
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -110,22 +113,36 @@ export default function JoinUs() {
 
             // 2. Send Firebase built-in verification email
             await sendEmailVerification(user, {
-                url: `${window.location.origin}/login`, // Redirect to login after verification
+                url: `${window.location.origin}/login`, 
                 handleCodeInApp: false
             });
 
-            // 3. Save to Firestore (Status: email_verification_pending)
-            await setDoc(doc(db, "pendingRequests", user.uid), {
+            // 3. Save to Firestore (Status: active, Position: Member)
+            const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+            await setDoc(doc(db, "users", user.uid), {
                 uid: user.uid,
-                fullName: formData.fullName,
-                nameWithInitials: formData.nameWithInitials,
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                fullName: fullName,
+                fullNameDoc: formData.fullNameDoc,
+                preferredName: formData.preferredName,
+                nic: formData.nic,
+                gender: formData.gender,
+                dob: formData.dob,
+                mobileNumber: formData.mobileNumber,
+                whatsapp: formData.mobileNumber,
+                email: formData.email,
+                residentialAddress: formData.residentialAddress,
+                city: formData.city,
+                province: formData.province,
+                postalCode: formData.postalCode,
                 studentId: formData.studentId,
                 faculty: formData.faculty,
                 department: formData.department,
-                whatsapp: formData.contact,
-                email: formData.email,
                 reason: formData.reason,
-                status: "pending", // Will check auth.currentUser.emailVerified
+                position: "Member",
+                status: "active", 
+                joinedAt: new Date(),
                 submittedAt: new Date()
             });
 
@@ -158,11 +175,11 @@ export default function JoinUs() {
                         <p className="text-gray-600 font-poppins mb-6 leading-relaxed">
                             We sent a verification link to <span className="font-bold text-gray-900">{formData.email}</span>.
                             <br />
-                            Please click it to verify your email, then our admin team will review your application.
+                            Please click the link in your email to verify your address. Once verified, you can log in directly to access your member portal.
                         </p>
                         <div className="bg-red-50 border border-red-100 rounded-xl p-4 mb-8">
                             <p className="text-red-600 font-bold font-poppins text-sm">
-                                Please check your Spam or Junk folder if you don't see the email.
+                                Please check your Spam or Junk folder if you don&apos;t see the email.
                             </p>
                         </div>
                         <button
@@ -180,7 +197,6 @@ export default function JoinUs() {
         );
     }
 
-    // --- Render Form ---
     return (
         <div className="bg-white min-h-screen flex flex-col relative">
             <Navbar currentPage="join" />
@@ -230,31 +246,142 @@ export default function JoinUs() {
                         )}
 
                         <form className="space-y-6" onSubmit={handleSubmit}>
-                            {/* Full Name */}
-                            <div>
-                                <label htmlFor="fullName" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">Full Name</label>
-                                <input
-                                    id="fullName" name="fullName" type="text" required
-                                    value={formData.fullName} onChange={handleChange}
-                                    className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
-                                />
-                            </div>
-
-                            {/* Name with Initials */}
-                            <div>
-                                <label htmlFor="nameWithInitials" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">Name with Initials</label>
-                                <input
-                                    id="nameWithInitials" name="nameWithInitials" type="text" required
-                                    placeholder="e.g. W.A.D. Silva"
-                                    value={formData.nameWithInitials} onChange={handleChange}
-                                    className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
-                                />
-                            </div>
-
-                            {/* Row: Student ID / Faculty */}
+                            
+                            {/* --- Name Section --- */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label htmlFor="studentId" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">Student ID</label>
+                                    <label htmlFor="firstName" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">First Name *</label>
+                                    <input
+                                        id="firstName" name="firstName" type="text" required
+                                        value={formData.firstName} onChange={handleChange}
+                                        className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="lastName" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">Last Name *</label>
+                                    <input
+                                        id="lastName" name="lastName" type="text" required
+                                        value={formData.lastName} onChange={handleChange}
+                                        className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label htmlFor="fullNameDoc" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">Full Name (as per official documents) *</label>
+                                <input
+                                    id="fullNameDoc" name="fullNameDoc" type="text" required
+                                    value={formData.fullNameDoc} onChange={handleChange}
+                                    className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="preferredName" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">Preferred Name (Name to be displayed) *</label>
+                                <input
+                                    id="preferredName" name="preferredName" type="text" required
+                                    value={formData.preferredName} onChange={handleChange}
+                                    className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
+                                />
+                            </div>
+
+                            {/* --- Personal Details Section --- */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <label htmlFor="nic" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">NIC Number *</label>
+                                    <input
+                                        id="nic" name="nic" type="text" required
+                                        value={formData.nic} onChange={handleChange}
+                                        className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="gender" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">Gender *</label>
+                                    <select
+                                        id="gender" name="gender" required
+                                        value={formData.gender} onChange={handleChange}
+                                        className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-white px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
+                                    >
+                                        <option value="" disabled hidden>Select Gender</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label htmlFor="dob" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">Date of Birth *</label>
+                                    <input
+                                        id="dob" name="dob" type="date" required
+                                        value={formData.dob} onChange={handleChange}
+                                        className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* --- Contact Details Section --- */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label htmlFor="mobileNumber" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">Mobile Number *</label>
+                                    <input
+                                        id="mobileNumber" name="mobileNumber" type="text" required
+                                        value={formData.mobileNumber} onChange={handleChange}
+                                        className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="email" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">Email Address *</label>
+                                    <p className="text-xs text-slate-500 mb-2 font-poppins">Strictly use your university provided email.</p>
+                                    <input
+                                        id="email" name="email" type="email" required
+                                        value={formData.email} onChange={handleChange}
+                                        className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* --- Address Section --- */}
+                            <div>
+                                <label htmlFor="residentialAddress" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">Residential Address *</label>
+                                <input
+                                    id="residentialAddress" name="residentialAddress" type="text" required
+                                    value={formData.residentialAddress} onChange={handleChange}
+                                    className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <label htmlFor="city" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">City *</label>
+                                    <input
+                                        id="city" name="city" type="text" required
+                                        value={formData.city} onChange={handleChange}
+                                        className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="province" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">Province *</label>
+                                    <input
+                                        id="province" name="province" type="text" required
+                                        value={formData.province} onChange={handleChange}
+                                        className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="postalCode" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">Postal Code *</label>
+                                    <input
+                                        id="postalCode" name="postalCode" type="text" required
+                                        value={formData.postalCode} onChange={handleChange}
+                                        className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
+                                    />
+                                </div>
+                            </div>
+
+                            <hr className="border-pink-200 my-6" />
+
+                            {/* --- University & Registration Section --- */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label htmlFor="studentId" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">Student ID *</label>
                                     <input
                                         id="studentId" name="studentId" type="text" required
                                         value={formData.studentId} onChange={handleChange}
@@ -262,7 +389,7 @@ export default function JoinUs() {
                                     />
                                 </div>
                                 <div>
-                                    <label htmlFor="faculty" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">Faculty</label>
+                                    <label htmlFor="faculty" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">Faculty *</label>
                                     <select
                                         id="faculty" name="faculty" required
                                         value={formData.faculty} onChange={handleChange}
@@ -276,9 +403,8 @@ export default function JoinUs() {
                                 </div>
                             </div>
 
-                            {/* Department */}
                             <div>
-                                <label htmlFor="department" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">Department</label>
+                                <label htmlFor="department" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">Department *</label>
                                 <select
                                     id="department" name="department" required
                                     value={formData.department} onChange={handleChange}
@@ -294,30 +420,8 @@ export default function JoinUs() {
                                 </select>
                             </div>
 
-                            {/* Contact No */}
                             <div>
-                                <label htmlFor="contact" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">Contact No (WhatsApp)</label>
-                                <input
-                                    id="contact" name="contact" type="text" required
-                                    value={formData.contact} onChange={handleChange}
-                                    className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
-                                />
-                            </div>
-
-                            {/* Email */}
-                            <div>
-                                <label htmlFor="email" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">University Email Address</label>
-                                <p className="text-xs text-slate-500 mb-2 font-poppins">You strictly need to use your university provided email address.</p>
-                                <input
-                                    id="email" name="email" type="email" required placeholder="Enter your university email address"
-                                    value={formData.email} onChange={handleChange}
-                                    className="w-full h-[68px] border-2 border-pink-600 rounded-[16px] bg-transparent px-4 font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-pink-600"
-                                />
-                            </div>
-
-                            {/* Password Field */}
-                            <div>
-                                <label htmlFor="password" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">Set a Password (Min 6 chars)</label>
+                                <label htmlFor="password" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">Set a Password (Min 6 chars) *</label>
                                 <input
                                     id="password" name="password" type="password" required minLength={6}
                                     value={formData.password} onChange={handleChange}
@@ -325,9 +429,8 @@ export default function JoinUs() {
                                 />
                             </div>
 
-                            {/* Why join */}
                             <div>
-                                <label htmlFor="reason" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">Why do you want to join Rotaract?</label>
+                                <label htmlFor="reason" className="block font-poppins font-medium text-[14px] md:text-[18px] text-pink-600 mb-1">Why do you want to join Rotaract? *</label>
                                 <textarea
                                     id="reason" name="reason" rows={5} required
                                     placeholder="Tell us about your passion for service..."
