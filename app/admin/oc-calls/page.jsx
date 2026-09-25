@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { db } from "@/lib/firebase";
-import { collection, getDocs, updateDoc, doc, deleteDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { collection, getDocs, updateDoc, doc, deleteDoc, arrayUnion, arrayRemove, addDoc, query, where } from "firebase/firestore";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { 
     Loader2, Users, CheckCircle, Trash2, Eye, Share2, 
@@ -190,17 +190,43 @@ export default function ManageOCCalls() {
 
     // --- ACTIONS ---
 
-    const handleSelectApplicant = async (appId) => {
+    const handleSelectApplicant = async (appId, explicitRole = null) => {
         try {
-            await updateDoc(doc(db, "ocApplications", appId), { status: "selected" });
-            toast.success("Applicant added to the OC Group!");
-            setApplications(prev => prev.map(a => a.id === appId ? { ...a, status: "selected" } : a));
+            const targetApp = applications.find(a => a.id === appId);
+            let roleToAssign = explicitRole;
+            if (!roleToAssign) {
+                if (targetApp?.teamRole === "Team Lead") roleToAssign = "Team Lead";
+                else if (targetApp?.teamRole === "Both (Team Lead & Member)") roleToAssign = "Team Lead";
+                else roleToAssign = "Team Member";
+            }
+
+            const updatePayload = { 
+                status: "selected", 
+                selectedRole: roleToAssign 
+            };
+            await updateDoc(doc(db, "ocApplications", appId), updatePayload);
+            toast.success(`Applicant selected as ${roleToAssign}!`);
+            setApplications(prev => prev.map(a => a.id === appId ? { ...a, ...updatePayload } : a));
             if (viewingApplicant && viewingApplicant.id === appId) {
-                setViewingApplicant(prev => ({ ...prev, status: "selected" }));
+                setViewingApplicant(prev => ({ ...prev, ...updatePayload }));
             }
         } catch (error) {
             console.error("Error selecting applicant:", error);
             toast.error("Error selecting applicant.");
+        }
+    };
+
+    const handleChangeSelectedRole = async (appId, newRole) => {
+        try {
+            await updateDoc(doc(db, "ocApplications", appId), { selectedRole: newRole });
+            toast.success(`Role updated to ${newRole}`);
+            setApplications(prev => prev.map(a => a.id === appId ? { ...a, selectedRole: newRole } : a));
+            if (viewingApplicant && viewingApplicant.id === appId) {
+                setViewingApplicant(prev => ({ ...prev, selectedRole: newRole }));
+            }
+        } catch (error) {
+            console.error("Error changing role:", error);
+            toast.error("Error changing role.");
         }
     };
 
@@ -376,20 +402,150 @@ export default function ManageOCCalls() {
                 publishedBy: user?.uid || "unknown",
                 publishedByName: publisherName,
                 publishedByEmail: user?.email || "",
-                status: "open"
+                status: selectedCall.callingEnded ? "closed" : "open"
             };
+
+            // Sync with events collection
+            let linkedEventId = selectedCall.linkedEventId;
+            if (linkedEventId) {
+                await updateDoc(doc(db, "events", linkedEventId), {
+                    title: selectedCall.applicationName,
+                    name: selectedCall.applicationName,
+                    description: publishDescription.trim(),
+                    imageUrl: publishImageUrl.trim() || "",
+                    status: "upcoming",
+                    isOcCalling: selectedCall.callingEnded ? false : true,
+                    ocCallingEnded: selectedCall.callingEnded || false
+                });
+            } else {
+                const qEvt = query(collection(db, "events"), where("ocCallId", "==", selectedCall.id));
+                const snapEvt = await getDocs(qEvt);
+                if (!snapEvt.empty) {
+                    linkedEventId = snapEvt.docs[0].id;
+                    await updateDoc(doc(db, "events", linkedEventId), {
+                        title: selectedCall.applicationName,
+                        name: selectedCall.applicationName,
+                        description: publishDescription.trim(),
+                        imageUrl: publishImageUrl.trim() || "",
+                        status: "upcoming",
+                        isOcCalling: selectedCall.callingEnded ? false : true,
+                        ocCallingEnded: selectedCall.callingEnded || false
+                    });
+                } else {
+                    const newEventDoc = await addDoc(collection(db, "events"), {
+                        title: selectedCall.applicationName,
+                        name: selectedCall.applicationName,
+                        description: publishDescription.trim(),
+                        imageUrl: publishImageUrl.trim() || "",
+                        status: "upcoming",
+                        isOcCalling: selectedCall.callingEnded ? false : true,
+                        ocCallingEnded: selectedCall.callingEnded || false,
+                        ocCallId: selectedCall.id,
+                        createdBy: selectedCall.createdBy || user?.uid || "unknown",
+                        createdByEmail: selectedCall.createdByEmail || user?.email || "",
+                        createdByName: selectedCall.createdByName || publisherName,
+                        collaborators: selectedCall.sharedWith || [],
+                        date: new Date().toISOString().split('T')[0],
+                        participants: [],
+                        createdAt: new Date()
+                    });
+                    linkedEventId = newEventDoc.id;
+                }
+                updatePayload.linkedEventId = linkedEventId;
+            }
 
             await updateDoc(doc(db, "ocCalls", selectedCall.id), updatePayload);
 
             setSelectedCall(prev => ({ ...prev, ...updatePayload }));
             setOcCalls(prev => prev.map(c => c.id === selectedCall.id ? { ...c, ...updatePayload } : c));
             setPublishModalOpen(false);
-            toast.success("Project call published as a public post!");
+            toast.success("Project call published as an upcoming project post!");
         } catch (err) {
             console.error("Error publishing project call:", err);
             toast.error("Failed to publish project call.");
         } finally {
             setSavingPublish(false);
+        }
+    };
+
+    const handleEndOcCalling = async () => {
+        if (!selectedCall) return;
+        if (!(await confirmToast({
+            message: `End OC Calling for "${selectedCall.applicationName}"?`,
+            description: "This will conclude OC recruitment and activate this project as a real upcoming event ready for attendance and execution.",
+            confirmLabel: "End OC Calling"
+        }))) return;
+
+        try {
+            const updatePayload = {
+                callingEnded: true,
+                status: "closed",
+                callingEndedAt: new Date()
+            };
+            await updateDoc(doc(db, "ocCalls", selectedCall.id), updatePayload);
+
+            let eventId = selectedCall.linkedEventId;
+            if (!eventId) {
+                const q = query(collection(db, "events"), where("ocCallId", "==", selectedCall.id));
+                const snap = await getDocs(q);
+                if (!snap.empty) {
+                    eventId = snap.docs[0].id;
+                }
+            }
+            if (eventId) {
+                await updateDoc(doc(db, "events", eventId), {
+                    ocCallingEnded: true,
+                    isOcCalling: false,
+                    ocCallingStatus: "closed"
+                });
+            }
+
+            setSelectedCall(prev => ({ ...prev, ...updatePayload }));
+            setOcCalls(prev => prev.map(c => c.id === selectedCall.id ? { ...c, ...updatePayload } : c));
+            toast.success("OC Calling ended! Project is now an active upcoming event.");
+        } catch (err) {
+            console.error("Error ending OC calling:", err);
+            toast.error("Failed to end OC calling.");
+        }
+    };
+
+    const handleReopenOcCalling = async () => {
+        if (!selectedCall) return;
+        if (!(await confirmToast({
+            message: `Reopen OC Calling for "${selectedCall.applicationName}"?`,
+            description: "This will allow members to submit applications again.",
+            confirmLabel: "Reopen Calling"
+        }))) return;
+
+        try {
+            const updatePayload = {
+                callingEnded: false,
+                status: "open"
+            };
+            await updateDoc(doc(db, "ocCalls", selectedCall.id), updatePayload);
+
+            let eventId = selectedCall.linkedEventId;
+            if (!eventId) {
+                const q = query(collection(db, "events"), where("ocCallId", "==", selectedCall.id));
+                const snap = await getDocs(q);
+                if (!snap.empty) {
+                    eventId = snap.docs[0].id;
+                }
+            }
+            if (eventId) {
+                await updateDoc(doc(db, "events", eventId), {
+                    ocCallingEnded: false,
+                    isOcCalling: true,
+                    ocCallingStatus: "open"
+                });
+            }
+
+            setSelectedCall(prev => ({ ...prev, ...updatePayload }));
+            setOcCalls(prev => prev.map(c => c.id === selectedCall.id ? { ...c, ...updatePayload } : c));
+            toast.success("OC Calling reopened for applications.");
+        } catch (err) {
+            console.error("Error reopening OC calling:", err);
+            toast.error("Failed to reopen OC calling.");
         }
     };
 
@@ -683,6 +839,31 @@ export default function ManageOCCalls() {
                                 </div>
                                 
                                 <div className="flex flex-wrap items-center gap-2 self-start">
+                                    {canPublishOrManage && (
+                                        selectedCall.callingEnded ? (
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="bg-purple-100 text-purple-800 border border-purple-200 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+                                                    <CheckCircle size={13} className="text-purple-600" /> OC Calling Ended
+                                                </span>
+                                                <button
+                                                    onClick={handleReopenOcCalling}
+                                                    className="text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 text-xs font-bold px-2.5 py-1.5 rounded-lg transition"
+                                                    title="Reopen OC calling for applications"
+                                                >
+                                                    Reopen
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={handleEndOcCalling}
+                                                className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-xs transition"
+                                                title="Conclude OC call recruitment and activate event for attendance"
+                                            >
+                                                <CheckCircle size={13} /> End OC Calling
+                                            </button>
+                                        )
+                                    )}
+
                                     {canPublishOrManage && (
                                         selectedCall.published !== false && selectedCall.published ? (
                                             <div className="flex items-center gap-1.5">
@@ -1023,14 +1204,35 @@ export default function ManageOCCalls() {
                                                                         <span>See More</span>
                                                                     </button>
 
-                                                                    <button
-                                                                        onClick={() => handleSelectApplicant(app.id)}
-                                                                        className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-xs font-bold transition flex items-center gap-1"
-                                                                        title="Select for OC"
-                                                                    >
-                                                                        <CheckCircle size={14} />
-                                                                        <span>Select</span>
-                                                                    </button>
+                                                                    {app.teamRole === "Both (Team Lead & Member)" ? (
+                                                                        <div className="flex items-center gap-1">
+                                                                            <button
+                                                                                onClick={() => handleSelectApplicant(app.id, "Team Lead")}
+                                                                                className="p-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg text-xs font-bold transition flex items-center gap-1"
+                                                                                title="Select as Team Lead"
+                                                                            >
+                                                                                <CheckCircle size={13} />
+                                                                                <span>Lead</span>
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => handleSelectApplicant(app.id, "Team Member")}
+                                                                                className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-xs font-bold transition flex items-center gap-1"
+                                                                                title="Select as Team Member"
+                                                                            >
+                                                                                <CheckCircle size={13} />
+                                                                                <span>Member</span>
+                                                                            </button>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <button
+                                                                            onClick={() => handleSelectApplicant(app.id, app.teamRole === "Team Lead" ? "Team Lead" : "Team Member")}
+                                                                            className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-xs font-bold transition flex items-center gap-1"
+                                                                            title={`Select as ${app.teamRole === "Team Lead" ? "Team Lead" : "Team Member"}`}
+                                                                        >
+                                                                            <CheckCircle size={14} />
+                                                                            <span>Select {app.teamRole === "Team Lead" ? "Lead" : ""}</span>
+                                                                        </button>
+                                                                    )}
 
                                                                     <button
                                                                         onClick={() => handleDeleteApplication(app.id)}
@@ -1083,12 +1285,29 @@ export default function ManageOCCalls() {
                                                         >
                                                             <Eye size={13} /> See More
                                                         </button>
-                                                        <button
-                                                            onClick={() => handleSelectApplicant(app.id)}
-                                                            className="flex-1 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 text-xs font-bold rounded-lg flex items-center justify-center gap-1 transition"
-                                                        >
-                                                            <CheckCircle size={13} /> Select
-                                                        </button>
+                                                        {app.teamRole === "Both (Team Lead & Member)" ? (
+                                                            <>
+                                                                <button
+                                                                    onClick={() => handleSelectApplicant(app.id, "Team Lead")}
+                                                                    className="flex-1 py-1.5 bg-purple-600 text-white hover:bg-purple-700 text-xs font-bold rounded-lg flex items-center justify-center gap-1 transition"
+                                                                >
+                                                                    <CheckCircle size={13} /> Lead
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleSelectApplicant(app.id, "Team Member")}
+                                                                    className="flex-1 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 text-xs font-bold rounded-lg flex items-center justify-center gap-1 transition"
+                                                                >
+                                                                    <CheckCircle size={13} /> Member
+                                                                </button>
+                                                            </>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => handleSelectApplicant(app.id, app.teamRole === "Team Lead" ? "Team Lead" : "Team Member")}
+                                                                className="flex-1 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 text-xs font-bold rounded-lg flex items-center justify-center gap-1 transition"
+                                                            >
+                                                                <CheckCircle size={13} /> Select {app.teamRole === "Team Lead" ? "Lead" : ""}
+                                                            </button>
+                                                        )}
                                                         <button
                                                             onClick={() => handleDeleteApplication(app.id)}
                                                             className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition"
@@ -1166,8 +1385,26 @@ export default function ManageOCCalls() {
                                             ) : (
                                                 enrichedSelectedGroup.map(member => (
                                                     <tr key={member.id} className="hover:bg-gray-50 transition-colors">
-                                                        <td className="p-3 font-semibold text-pink-600 text-xs">
-                                                            {member.position} {member.teamRole !== 'N/A' && `(${member.teamRole})`}
+                                                        <td className="p-3 text-xs">
+                                                            <div className="font-semibold text-gray-900">{member.position}</div>
+                                                            <div className="mt-1 flex items-center gap-1.5">
+                                                                {(member.selectedRole || member.teamRole) === 'Team Lead' ? (
+                                                                    <span className="bg-purple-100 text-purple-800 border border-purple-200 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                                                                        Team Lead
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="bg-pink-100 text-pink-800 border border-pink-200 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                                                                        Team Member
+                                                                    </span>
+                                                                )}
+                                                                <button
+                                                                    onClick={() => handleChangeSelectedRole(member.id, (member.selectedRole || member.teamRole) === 'Team Lead' ? 'Team Member' : 'Team Lead')}
+                                                                    className="text-[10px] text-gray-400 hover:text-gray-700 underline"
+                                                                    title="Toggle role between Lead and Member"
+                                                                >
+                                                                    Switch to {(member.selectedRole || member.teamRole) === 'Team Lead' ? 'Member' : 'Lead'}
+                                                                </button>
+                                                            </div>
                                                         </td>
                                                         <td className="p-3 font-bold text-gray-900 text-xs">{member.applicantName}</td>
                                                         <td className="p-3 text-gray-600 text-xs">{member.faculty}</td>
@@ -1478,19 +1715,36 @@ export default function ManageOCCalls() {
                                         </a>
 
                                         {viewingApplicant.status !== 'selected' ? (
-                                            <button
-                                                onClick={() => handleSelectApplicant(viewingApplicant.id)}
-                                                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-xs"
-                                            >
-                                                <CheckCircle size={14} /> Select for OC
-                                            </button>
+                                            <div className="flex items-center gap-1.5">
+                                                <button
+                                                    onClick={() => handleSelectApplicant(viewingApplicant.id, "Team Lead")}
+                                                    className="px-3.5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-xs"
+                                                >
+                                                    <CheckCircle size={14} /> Select as Lead
+                                                </button>
+                                                <button
+                                                    onClick={() => handleSelectApplicant(viewingApplicant.id, "Team Member")}
+                                                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-xs"
+                                                >
+                                                    <CheckCircle size={14} /> Select as Member
+                                                </button>
+                                            </div>
                                         ) : (
-                                            <button
-                                                onClick={() => handleUnselectApplicant(viewingApplicant.id)}
-                                                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-xs"
-                                            >
-                                                <Undo2 size={14} /> Move to Pending
-                                            </button>
+                                            <div className="flex items-center gap-2">
+                                                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                                                    viewingApplicant.selectedRole === 'Team Lead' 
+                                                        ? 'bg-purple-100 text-purple-800 border border-purple-200' 
+                                                        : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                                }`}>
+                                                    Selected as {viewingApplicant.selectedRole || "Member"}
+                                                </span>
+                                                <button
+                                                    onClick={() => handleUnselectApplicant(viewingApplicant.id)}
+                                                    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-xs"
+                                                >
+                                                    <Undo2 size={14} /> Move to Pending
+                                                </button>
+                                            </div>
                                         )}
                                     </div>
                                 </div>

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { db, auth } from "@/lib/firebase";
-import { collection, addDoc, getDocs } from "firebase/firestore";
+import { collection, addDoc, getDocs, updateDoc, doc } from "firebase/firestore";
 import { Loader2, PlusCircle, ArrowLeft, Trash2, Plus, Share2, Users, X, UploadCloud } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from 'next/navigation';
@@ -163,13 +163,14 @@ export default function CreateOCCall() {
 
         setLoading(true);
         try {
-            await addDoc(collection(db, "ocCalls"), {
+            const callDocRef = await addDoc(collection(db, "ocCalls"), {
                 applicationName,
                 description: description.trim(),
                 imageUrl: imageUrl.trim(),
                 positions: validPositions,
                 customQuestions,
                 status: "open",
+                callingEnded: false,
                 published: publishNow,
                 publishedAt: publishNow ? new Date() : null,
                 publishedBy: auth.currentUser?.uid || "unknown",
@@ -181,7 +182,32 @@ export default function CreateOCCall() {
                 createdAt: new Date()
             });
 
-            toast.success(publishNow ? "OC Call published as a post successfully!" : "OC Call saved as draft!");
+            // If published right away, create linked upcoming event
+            if (publishNow) {
+                const eventDocRef = await addDoc(collection(db, "events"), {
+                    title: applicationName,
+                    name: applicationName,
+                    description: description.trim(),
+                    imageUrl: imageUrl.trim() || "",
+                    status: "upcoming",
+                    isOcCalling: true,
+                    ocCallingEnded: false,
+                    ocCallId: callDocRef.id,
+                    createdBy: auth.currentUser?.uid || "unknown",
+                    createdByEmail: auth.currentUser?.email || "",
+                    createdByName: currentUserName || "Executive Member",
+                    collaborators: sharedWith || [],
+                    date: new Date().toISOString().split('T')[0],
+                    participants: [],
+                    createdAt: new Date()
+                });
+
+                await updateDoc(doc(db, "ocCalls", callDocRef.id), {
+                    linkedEventId: eventDocRef.id
+                });
+            }
+
+            toast.success(publishNow ? "OC Call published as an upcoming project!" : "OC Call saved as draft!");
             router.push('/admin/oc-calls'); 
         } catch (error) {
             console.error("Error creating OC call:", error);

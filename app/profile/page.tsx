@@ -16,13 +16,18 @@ import {
     Calendar, QrCode as QrIcon, PlayCircle, MapPin, 
     ArrowLeft, StopCircle, Heart, Camera,
     Megaphone, Sparkles, ArrowRight, UserCheck, CheckCircle,
-    ChevronRight, Check, X, AlertCircle
+    ChevronRight, Check, X, AlertCircle, Star, Award, ShieldCheck, Trophy, Layers
 } from 'lucide-react';
 import { images } from '../../assets/images';
 import NavBar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { toast } from "sonner";
 import { confirmToast } from "@/lib/confirmToast";
+import { 
+    awardAttendeeStar, awardStarterStars, 
+    awardOcOrganizerStars, awardOcMemberStars,
+    STAR_RULES
+} from '@/lib/stars';
 
 const CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/dvqoiqzxe/image/upload";
 const CLOUDINARY_UPLOAD_PRESET = "projects";
@@ -39,6 +44,8 @@ interface UserProfile {
     position: string;
     collection: string;
     imageUrl: string;
+    totalStars?: number;
+    monthlyStars?: Record<string, number>;
 }
 
 interface EventItem {
@@ -50,6 +57,9 @@ interface EventItem {
     status?: string;
     imageUrl?: string;
     participants?: string[];
+    isOcCalling?: boolean;
+    ocCallingEnded?: boolean;
+    ocCallId?: string;
     [key: string]: unknown;
 }
 
@@ -98,9 +108,27 @@ interface OcApplication {
     contactNumber: string;
     position: string;
     teamRole?: string;
+    selectedRole?: string;
     customAnswers?: Record<string, string>;
     status?: string;
     appliedAt?: unknown;
+}
+
+interface StarTransaction {
+    id: string;
+    transactionId: string;
+    stars: number;
+    category: "attendance" | "oc_member" | "event_starter" | "oc_organizer";
+    title: string;
+    description: string;
+    eventId?: string;
+    eventName?: string;
+    ocCallId?: string;
+    role?: string;
+    month: string;
+    monthLabel: string;
+    year: number;
+    createdAt?: { toDate?: () => Date } | Date;
 }
 
 interface ExecInfo {
@@ -136,6 +164,10 @@ function ProfileContent() {
     const [openCalls, setOpenCalls] = useState<OcCall[]>([]);
     const [userApplications, setUserApplications] = useState<OcApplication[]>([]);
     const [execMap, setExecMap] = useState<Record<string, ExecInfo>>({});
+
+    // Star Transactions & Gamification State
+    const [starTransactions, setStarTransactions] = useState<StarTransaction[]>([]);
+    const [selectedMonthFilter, setSelectedMonthFilter] = useState<string>("all");
     
     // Application Form Modal States
     const [applyModalOpen, setApplyModalOpen] = useState<boolean>(false);
@@ -214,11 +246,12 @@ function ProfileContent() {
                     });
                     setContributions(userContributions);
 
-                    // 4. Fetch Open OC Calls, Exec Profiles, and User's submitted applications
+                    // 4. Fetch Open OC Calls, Exec Profiles, User's submitted applications, and Stars
                     await Promise.all([
                         fetchOpenCalls(),
                         fetchExecMap(),
-                        fetchUserApplications(data.email, user.uid)
+                        fetchUserApplications(data.email, user.uid),
+                        fetchUserStars(data.email)
                     ]);
                 }
             } catch (error) {
@@ -409,6 +442,24 @@ function ProfileContent() {
         }
     };
 
+    // Fetch User Stars
+    const fetchUserStars = async (email: string) => {
+        try {
+            const cleanEmail = email.toLowerCase().trim();
+            const qStars = query(collection(db, "starTransactions"), where("userEmail", "==", cleanEmail));
+            const snapStars = await getDocs(qStars);
+            const listStars: StarTransaction[] = snapStars.docs.map(d => ({ id: d.id, ...d.data() } as StarTransaction));
+            listStars.sort((a, b) => {
+                const tA = (a.createdAt as { toDate?: () => Date })?.toDate?.()?.getTime() || 0;
+                const tB = (b.createdAt as { toDate?: () => Date })?.toDate?.()?.getTime() || 0;
+                return tB - tA;
+            });
+            setStarTransactions(listStars);
+        } catch (e) {
+            console.error("Error fetching user stars:", e);
+        }
+    };
+
     // START EVENT LOGIC
     const handleStartProject = async (project: EventItem) => {
         if (!(await confirmToast({ 
@@ -424,6 +475,46 @@ function ProfileContent() {
                 startedBy: profile?.email,
                 participants: arrayUnion(profile?.email)
             });
+
+            const eventTitle = project.name || project.title || "Rotaract Event";
+
+            // 1. Give 2 stars to the member who started the event
+            if (profile?.email) {
+                await awardStarterStars(project.id, eventTitle, profile.email, profile.fullName, profile.uid);
+            }
+
+            // 2. Give 3 stars to OC Creator and all Collaborators
+            if (project.ocCallId) {
+                try {
+                    const callSnap = await getDoc(doc(db, "ocCalls", project.ocCallId as string));
+                    if (callSnap.exists()) {
+                        const callData = callSnap.data();
+                        const creatorEmail = callData.createdByEmail || callData.creatorEmail;
+                        if (creatorEmail) {
+                            await awardOcOrganizerStars(
+                                project.id, eventTitle, project.ocCallId as string,
+                                creatorEmail, "Creator", callData.createdByName
+                            );
+                        }
+                        if (Array.isArray(callData.sharedWith)) {
+                            for (const collab of callData.sharedWith) {
+                                if (collab && typeof collab === 'string') {
+                                    await awardOcOrganizerStars(
+                                        project.id, eventTitle, project.ocCallId as string,
+                                        collab, "Collaborator"
+                                    );
+                                }
+                            }
+                        }
+                    }
+                } catch (starErr) {
+                    console.error("Error awarding organizer stars:", starErr);
+                }
+            }
+
+            if (profile?.email) {
+                await fetchUserStars(profile.email);
+            }
 
             await fetchExCoProjects();
 
@@ -448,20 +539,50 @@ function ProfileContent() {
     const handleEndProject = async (project: EventItem) => {
         if (!(await confirmToast({ 
             message: `Are you sure you want to END "${project.name || project.title}"?`, 
-            description: "This will move it to Completed history.", 
+            description: "This will move it to Completed history and award 2 stars to each selected OC member.", 
             confirmLabel: "End" 
         }))) return;
 
         try {
             const eventRef = doc(db, "events", project.id);
             await updateDoc(eventRef, { status: "completed" });
+
+            // Give 2 stars to all selected OC members for this event
+            if (project.ocCallId) {
+                try {
+                    const eventTitle = project.name || project.title || "Rotaract Event";
+                    const qApps = query(
+                        collection(db, "ocApplications"),
+                        where("callId", "==", project.ocCallId),
+                        where("status", "==", "selected")
+                    );
+                    const snapApps = await getDocs(qApps);
+                    for (const docApp of snapApps.docs) {
+                        const appData = docApp.data();
+                        const appRole = appData.selectedRole || appData.teamRole || "Team Member";
+                        if (appData.applicantEmail) {
+                            await awardOcMemberStars(
+                                project.id, eventTitle, project.ocCallId as string,
+                                appData.applicantEmail, appRole, appData.applicantName
+                            );
+                        }
+                    }
+                } catch (ocStarErr) {
+                    console.error("Error awarding OC member stars on event end:", ocStarErr);
+                }
+            }
+
+            if (profile?.email) {
+                await fetchUserStars(profile.email);
+            }
+
             await fetchExCoProjects();
 
             setContributions((prev) => prev.map((item) =>
                 item.id === project.id ? { ...item, status: "completed" } : item
             ));
 
-            toast.success("Event marked as Completed.");
+            toast.success("Event marked as Completed and 2 Stars awarded to OC members!");
         } catch (err) {
             console.error(err);
             toast.error("Error ending project.");
@@ -482,7 +603,16 @@ function ProfileContent() {
             await updateDoc(eventRef, {
                 participants: arrayUnion(attendanceEmail)
             });
-            toast.success(`Added ${attendanceEmail} to ${selectedProject.name || selectedProject.title}`);
+
+            // Award 1 star to attendee
+            const eventTitle = selectedProject.name || selectedProject.title || "Rotaract Event";
+            await awardAttendeeStar(selectedProject.id, eventTitle, attendanceEmail);
+
+            if (profile?.email && attendanceEmail.toLowerCase().trim() === profile.email.toLowerCase().trim()) {
+                await fetchUserStars(profile.email);
+            }
+
+            toast.success(`Added ${attendanceEmail} & awarded 1 Star!`);
             setAttendanceEmail("");
         } catch (err) {
             console.error(err);
@@ -557,7 +687,14 @@ function ProfileContent() {
             try {
                 const eventRef = doc(db, "events", selectedProject.id);
                 await updateDoc(eventRef, { participants: arrayUnion(decodedText) });
-                toast.success(`Member ${decodedText} added!`);
+
+                // Award 1 star for verified attendance
+                await awardAttendeeStar(selectedProject.id, selectedProject.name || selectedProject.title || "Event", decodedText);
+                if (profile?.email) {
+                    fetchUserStars(profile.email);
+                }
+
+                toast.success(`Member ${decodedText} added! (+1 Star awarded)`);
 
                 emailForm.style.display = "block";
                 if (closeBtn) closeBtn.style.display = "block";
@@ -574,6 +711,40 @@ function ProfileContent() {
         setAttendanceModal(false);
         setModalView('list');
         setSelectedProject(null);
+    };
+
+    const distinctMonths = Array.from(new Set(starTransactions.map(t => t.month).filter(Boolean)));
+    distinctMonths.sort((a, b) => b.localeCompare(a));
+
+    const filteredStarTransactions = selectedMonthFilter === "all" 
+        ? starTransactions 
+        : starTransactions.filter(t => t.month === selectedMonthFilter);
+
+    const now = new Date();
+    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const currentMonthStars = starTransactions
+        .filter(t => t.month === currentMonthKey)
+        .reduce((sum, t) => sum + (t.stars || 0), 0);
+    const totalStarsEarned = starTransactions.reduce((sum, t) => sum + (t.stars || 0), 0);
+
+    const attendanceStars = starTransactions.filter(t => t.category === "attendance").reduce((sum, t) => sum + (t.stars || 0), 0);
+    const ocMemberStars = starTransactions.filter(t => t.category === "oc_member").reduce((sum, t) => sum + (t.stars || 0), 0);
+    const starterStars = starTransactions.filter(t => t.category === "event_starter").reduce((sum, t) => sum + (t.stars || 0), 0);
+    const organizerStars = starTransactions.filter(t => t.category === "oc_organizer").reduce((sum, t) => sum + (t.stars || 0), 0);
+
+    const selectedOcApps = userApplications.filter(a => a.status === 'selected');
+    const leadershipTransactions = starTransactions.filter(t => t.category === "oc_organizer" || t.category === "event_starter");
+
+    const formatTransDate = (createdAt?: { toDate?: () => Date } | Date) => {
+        if (!createdAt) return "";
+        try {
+            const dateObj = typeof (createdAt as { toDate?: () => Date }).toDate === 'function'
+                ? (createdAt as { toDate: () => Date }).toDate()
+                : (createdAt instanceof Date ? createdAt : new Date(createdAt as unknown as string));
+            return dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+        } catch {
+            return "";
+        }
     };
 
     if (loading) return (
@@ -881,15 +1052,19 @@ function ProfileContent() {
                                                                 {userApp && (
                                                                     <span className={`text-[11px] font-bold uppercase tracking-wide px-3 py-1 rounded-full flex items-center gap-1.5 ${
                                                                         userApp.status === 'selected' 
-                                                                            ? 'bg-green-100 text-green-700 border border-green-200' 
+                                                                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' 
                                                                             : userApp.status === 'rejected'
                                                                             ? 'bg-gray-100 text-gray-600 border border-gray-200'
-                                                                            : 'bg-amber-100 text-amber-700 border border-amber-200'
+                                                                            : 'bg-amber-100 text-amber-800 border border-amber-300'
                                                                     }`}>
                                                                         <span className={`w-1.5 h-1.5 rounded-full ${
-                                                                            userApp.status === 'selected' ? 'bg-green-500' : userApp.status === 'rejected' ? 'bg-gray-400' : 'bg-amber-500 animate-pulse'
+                                                                            userApp.status === 'selected' ? 'bg-emerald-500' : userApp.status === 'rejected' ? 'bg-gray-400' : 'bg-amber-500 animate-pulse'
                                                                         }`}></span>
-                                                                        {userApp.status === 'selected' ? 'Selected' : userApp.status === 'rejected' ? 'Closed' : 'Applied • Pending Review'}
+                                                                        {userApp.status === 'selected' 
+                                                                            ? `Selected as ${userApp.selectedRole || userApp.teamRole || 'Team Member'}` 
+                                                                            : userApp.status === 'rejected' 
+                                                                            ? 'Not Selected' 
+                                                                            : 'You have applied on this already'}
                                                                     </span>
                                                                 )}
                                                             </div>
@@ -917,19 +1092,53 @@ function ProfileContent() {
                                                         </div>
 
                                                         {/* Action Footer */}
-                                                        <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+                                                        <div className="pt-3 border-t border-gray-100 flex flex-col gap-2.5 w-full">
                                                             {userApp ? (
-                                                                <div className="flex items-center justify-between w-full">
-                                                                    <span className="text-xs text-gray-500 font-poppins">
-                                                                        Applied position: <strong className="text-pink-600">{userApp.position}</strong>
-                                                                    </span>
-                                                                    <button
-                                                                        onClick={() => handleOpenViewAppModal(userApp)}
-                                                                        className="text-xs font-semibold text-pink-600 hover:text-pink-700 underline font-poppins"
-                                                                    >
-                                                                        View Submitted Form
-                                                                    </button>
-                                                                </div>
+                                                                <>
+                                                                    {userApp.status === 'selected' ? (
+                                                                        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <Trophy className="text-emerald-600 shrink-0" size={18} />
+                                                                                <span className="text-xs font-semibold text-emerald-900 font-poppins">
+                                                                                    🎉 You have been selected for this project as <strong className="text-emerald-700 underline">{userApp.selectedRole || userApp.teamRole || 'Team Member'}</strong>!
+                                                                                </span>
+                                                                            </div>
+                                                                            <button
+                                                                                onClick={() => handleOpenViewAppModal(userApp)}
+                                                                                className="text-xs font-bold text-emerald-700 hover:text-emerald-800 underline font-poppins shrink-0 self-end sm:self-auto"
+                                                                            >
+                                                                                View Submitted Form
+                                                                            </button>
+                                                                        </div>
+                                                                    ) : userApp.status === 'rejected' ? (
+                                                                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 flex items-center justify-between">
+                                                                            <span className="text-xs text-gray-600 font-poppins">
+                                                                                Application closed for this cycle. Thank you for applying.
+                                                                            </span>
+                                                                            <button
+                                                                                onClick={() => handleOpenViewAppModal(userApp)}
+                                                                                className="text-xs font-semibold text-gray-500 hover:text-gray-700 underline font-poppins"
+                                                                            >
+                                                                                View Details
+                                                                            </button>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="bg-amber-50/80 border border-amber-200/80 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span className="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0"></span>
+                                                                                <span className="text-xs font-medium text-amber-900 font-poppins">
+                                                                                    You have applied on this already for <strong className="text-pink-600 font-semibold">{userApp.position}</strong>{userApp.teamRole ? ` (${userApp.teamRole})` : ''}. Review pending.
+                                                                                </span>
+                                                                            </div>
+                                                                            <button
+                                                                                onClick={() => handleOpenViewAppModal(userApp)}
+                                                                                className="text-xs font-semibold text-pink-600 hover:text-pink-700 underline font-poppins shrink-0 self-end sm:self-auto"
+                                                                            >
+                                                                                View Submitted Form
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
+                                                                </>
                                                             ) : (
                                                                 <div className="flex items-center justify-between w-full">
                                                                     <span className="text-xs text-gray-400 hidden sm:inline">
@@ -953,9 +1162,303 @@ function ProfileContent() {
                                 )}
                             </div>
 
-                            {/* --- 4. MY CONTRIBUTIONS --- */}
+                            {/* --- 4. MY STARS & RECOGNITION --- */}
+                            <div className="mb-12 bg-white rounded-3xl border border-gray-100 p-6 sm:p-8 shadow-[0_0_26px_2px_rgba(0,0,0,0.05)]">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-3 bg-amber-500/10 text-amber-500 rounded-2xl shrink-0">
+                                            <Star size={24} className="fill-amber-400 text-amber-500" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-playfair font-bold text-xl text-gray-900 flex items-center gap-2">
+                                                My Stars & Recognition
+                                                <span className="bg-amber-100 text-amber-800 text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-amber-200">
+                                                    Gamified Points
+                                                </span>
+                                            </h3>
+                                            <p className="text-xs text-gray-500 mt-0.5 font-poppins">
+                                                Track your monthly and all-time contributions across events, OC leadership, and team organizing
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Monthly Filter */}
+                                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                                        <label htmlFor="monthFilterSelect" className="text-xs font-semibold text-gray-500 shrink-0 font-poppins">Filter Month:</label>
+                                        <select
+                                            id="monthFilterSelect"
+                                            value={selectedMonthFilter}
+                                            onChange={(e) => setSelectedMonthFilter(e.target.value)}
+                                            className="text-xs font-medium bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500 font-poppins cursor-pointer"
+                                        >
+                                            <option value="all">All Time History</option>
+                                            {distinctMonths.map(m => (
+                                                <option key={m} value={m}>{m}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Summary Metric Cards */}
+                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 mb-6 font-poppins">
+                                    <div className="bg-gradient-to-br from-amber-500 to-amber-600 text-white rounded-2xl p-4 shadow-sm col-span-2 sm:col-span-1">
+                                        <div className="flex items-center justify-between text-amber-100 text-xs font-medium mb-1">
+                                            <span>Total Stars</span>
+                                            <Trophy size={16} />
+                                        </div>
+                                        <div className="text-2xl sm:text-3xl font-bold font-playfair flex items-center gap-1.5">
+                                            <span>{totalStarsEarned}</span>
+                                            <Star size={20} className="fill-white text-white" />
+                                        </div>
+                                        <p className="text-[10px] text-amber-100/90 mt-1">Lifetime earned</p>
+                                    </div>
+
+                                    <div className="bg-gradient-to-br from-pink-600 to-rose-600 text-white rounded-2xl p-4 shadow-sm col-span-2 sm:col-span-1">
+                                        <div className="flex items-center justify-between text-pink-100 text-xs font-medium mb-1">
+                                            <span>This Month</span>
+                                            <Calendar size={16} />
+                                        </div>
+                                        <div className="text-2xl sm:text-3xl font-bold font-playfair flex items-center gap-1.5">
+                                            <span>{currentMonthStars}</span>
+                                            <Star size={20} className="fill-white text-white" />
+                                        </div>
+                                        <p className="text-[10px] text-pink-100/90 mt-1">{currentMonthKey}</p>
+                                    </div>
+
+                                    <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4">
+                                        <div className="flex items-center justify-between text-slate-500 text-xs font-medium mb-1">
+                                            <span>Attendance</span>
+                                            <CheckCircle size={16} className="text-emerald-600" />
+                                        </div>
+                                        <div className="text-xl sm:text-2xl font-bold text-slate-800">
+                                            {attendanceStars} <span className="text-xs font-normal text-slate-500">pts</span>
+                                        </div>
+                                        <p className="text-[10px] text-slate-400 mt-1">1★ per event</p>
+                                    </div>
+
+                                    <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4">
+                                        <div className="flex items-center justify-between text-slate-500 text-xs font-medium mb-1">
+                                            <span>OC Roles</span>
+                                            <ShieldCheck size={16} className="text-purple-600" />
+                                        </div>
+                                        <div className="text-xl sm:text-2xl font-bold text-slate-800">
+                                            {ocMemberStars} <span className="text-xs font-normal text-slate-500">pts</span>
+                                        </div>
+                                        <p className="text-[10px] text-slate-400 mt-1">2★ per ended event</p>
+                                    </div>
+
+                                    <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4">
+                                        <div className="flex items-center justify-between text-slate-500 text-xs font-medium mb-1">
+                                            <span>Leadership</span>
+                                            <Award size={16} className="text-pink-600" />
+                                        </div>
+                                        <div className="text-xl sm:text-2xl font-bold text-slate-800">
+                                            {organizerStars + starterStars} <span className="text-xs font-normal text-slate-500">pts</span>
+                                        </div>
+                                        <p className="text-[10px] text-slate-400 mt-1">Creator / Collab / Starter</p>
+                                    </div>
+                                </div>
+
+                                {/* Transactions Log */}
+                                <div className="space-y-3 font-poppins">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                                            {selectedMonthFilter === "all" ? "Star Award History" : `History for ${selectedMonthFilter}`} ({filteredStarTransactions.length})
+                                        </h4>
+                                    </div>
+
+                                    {filteredStarTransactions.length === 0 ? (
+                                        <div className="text-center py-8 bg-gray-50 rounded-2xl border border-gray-100 text-gray-400 text-xs">
+                                            No star transactions found for this period. Participate in events or join an Organizing Committee to begin earning stars!
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+                                            {filteredStarTransactions.map((tx) => (
+                                                <div 
+                                                    key={tx.id}
+                                                    className="bg-gray-50/80 hover:bg-gray-100/80 transition border border-gray-100 rounded-xl p-3.5 flex items-center justify-between gap-3"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`p-2.5 rounded-xl shrink-0 ${
+                                                            tx.category === 'oc_organizer'
+                                                                ? 'bg-purple-100 text-purple-700'
+                                                                : tx.category === 'event_starter'
+                                                                ? 'bg-pink-100 text-pink-700'
+                                                                : tx.category === 'oc_member'
+                                                                ? 'bg-emerald-100 text-emerald-700'
+                                                                : 'bg-amber-100 text-amber-700'
+                                                        }`}>
+                                                            {tx.category === 'oc_organizer' ? (
+                                                                <Sparkles size={18} />
+                                                            ) : tx.category === 'event_starter' ? (
+                                                                <PlayCircle size={18} />
+                                                            ) : tx.category === 'oc_member' ? (
+                                                                <Trophy size={18} />
+                                                            ) : (
+                                                                <Calendar size={18} />
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                <h5 className="font-poppins font-bold text-xs sm:text-sm text-gray-800">
+                                                                    {tx.eventName || tx.title}
+                                                                </h5>
+                                                                {tx.role && (
+                                                                    <span className="text-[10px] font-semibold bg-white border border-gray-200 text-gray-600 px-2 py-0.5 rounded-md">
+                                                                        {tx.role}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-[11px] text-gray-500 mt-0.5 line-clamp-1">
+                                                                {tx.description || tx.title}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex flex-col items-end shrink-0">
+                                                        <span className="font-playfair font-bold text-sm text-amber-600 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-full flex items-center gap-1">
+                                                            <Star size={13} className="fill-amber-500 text-amber-500" />
+                                                            +{tx.stars} {tx.stars === 1 ? 'Star' : 'Stars'}
+                                                        </span>
+                                                        <span className="text-[10px] text-gray-400 mt-1">
+                                                            {formatTransDate(tx.createdAt) || tx.monthLabel || tx.month}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Distribution Rules Reference Note */}
+                                <div className="mt-6 pt-5 border-t border-gray-100 font-poppins">
+                                    <div className="bg-amber-50/60 border border-amber-200/60 rounded-2xl p-4">
+                                        <h5 className="text-xs font-bold text-amber-900 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                            <Star size={14} className="fill-amber-500 text-amber-600" /> Official Star Allocation System
+                                        </h5>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-amber-900/90">
+                                            {STAR_RULES.map((rule, idx) => (
+                                                <div key={idx} className="flex items-start gap-2">
+                                                    <span className="font-bold text-amber-800 bg-amber-100 border border-amber-200 px-1.5 py-0.5 rounded text-[11px] shrink-0">
+                                                        +{rule.stars} ★
+                                                    </span>
+                                                    <span>
+                                                        <strong className="text-amber-950 font-semibold">{rule.title}:</strong> {rule.description}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* --- 5. MY SERVICE & COMMITMENT HISTORY --- */}
+                            <div className="mb-12 bg-white rounded-3xl border border-gray-100 p-6 sm:p-8 shadow-[0_0_26px_2px_rgba(0,0,0,0.05)]">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="p-3 bg-pink-50 text-pink-600 rounded-2xl shrink-0">
+                                        <Layers size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-playfair font-bold text-xl text-gray-900 flex items-center gap-2">
+                                            My Service & Commitment History
+                                            <span className="bg-pink-100 text-pink-700 text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-pink-200">
+                                                Permanent Portfolio
+                                            </span>
+                                        </h3>
+                                        <p className="text-xs text-gray-500 mt-0.5 font-poppins">
+                                            Lifelong record of your Organizing Committee appointments, executive leadership, and club engagements
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-6 font-poppins">
+                                    {/* 1. Appointed OC Positions */}
+                                    <div>
+                                        <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3 flex items-center gap-1.5">
+                                            <Trophy size={14} className="text-emerald-600" />
+                                            Selected Organizing Committee (OC) Roles ({selectedOcApps.length})
+                                        </h4>
+                                        {selectedOcApps.length === 0 ? (
+                                            <p className="text-gray-400 text-xs italic bg-gray-50 p-4 rounded-xl">
+                                                No OC appointments on record yet. Apply for upcoming project calls above to join an Organizing Committee!
+                                            </p>
+                                        ) : (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                {selectedOcApps.map(app => (
+                                                    <div key={app.id || app.callId} className="border border-emerald-200 bg-emerald-50/50 rounded-2xl p-4 flex flex-col justify-between">
+                                                        <div>
+                                                            <div className="flex items-center justify-between gap-2 mb-1.5">
+                                                                <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md">
+                                                                    {app.selectedRole || app.teamRole || "Team Member"}
+                                                                </span>
+                                                                <span className="text-[10px] text-emerald-700 font-semibold">
+                                                                    Selected
+                                                                </span>
+                                                            </div>
+                                                            <h5 className="font-playfair font-bold text-gray-900 text-sm mb-1">
+                                                                {app.applicationName}
+                                                            </h5>
+                                                            <p className="text-xs text-gray-600">
+                                                                Position: <strong className="text-emerald-800">{app.position}</strong>
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* 2. Executive Leadership & Project Coordination (Permanent Record - Preserved even if role changed) */}
+                                    <div>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
+                                                <ShieldCheck size={14} className="text-indigo-600" />
+                                                Executive Leadership & Project Coordination Records ({leadershipTransactions.length})
+                                            </h4>
+                                            <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full hidden sm:inline">
+                                                Permanently Preserved
+                                            </span>
+                                        </div>
+                                        {leadershipTransactions.length === 0 ? (
+                                            <p className="text-gray-400 text-xs italic bg-gray-50 p-4 rounded-xl">
+                                                No executive leadership records or project launches recorded for this account.
+                                            </p>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                {leadershipTransactions.map(tx => (
+                                                    <div key={tx.id} className="border border-indigo-100 bg-indigo-50/40 rounded-xl p-3.5 flex items-center justify-between gap-3">
+                                                        <div>
+                                                            <div className="flex items-center gap-2">
+                                                                <h5 className="font-playfair font-bold text-xs sm:text-sm text-gray-900">
+                                                                    {tx.eventName || tx.title}
+                                                                </h5>
+                                                                <span className="text-[10px] font-bold bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-md">
+                                                                    {tx.category === 'oc_organizer' ? (tx.role || 'OC Organizer') : 'Event Starter'}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-[11px] text-gray-500 mt-0.5">
+                                                                {tx.description}
+                                                            </p>
+                                                        </div>
+                                                        <div className="text-right shrink-0">
+                                                            <span className="text-xs font-bold text-indigo-700 font-playfair block">
+                                                                +{tx.stars} Stars
+                                                            </span>
+                                                            <span className="text-[10px] text-gray-400">
+                                                                {tx.monthLabel || tx.month}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* --- 6. MY EVENT PARTICIPATIONS (CONTRIBUTIONS) --- */}
                             <div className="mb-6">
-                                <h2 className="font-poppins font-medium text-lg text-pink-600 text-center mb-4">My Contributions</h2>
+                                <h2 className="font-poppins font-medium text-lg text-pink-600 text-center mb-4">My Event Participations</h2>
                                 <div className="border-t-2 border-gray-300 mb-8"></div>
                             </div>
 
@@ -1359,33 +1862,106 @@ function ProfileContent() {
                                             {/* Upcoming Section */}
                                             <div>
                                                 <h4 className="font-poppins text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                                    <Calendar size={14} /> Upcoming Events
+                                                    <Calendar size={14} /> Ready to Start (Upcoming Events)
                                                 </h4>
 
-                                                {upcomingEvents.length === 0 ? (
-                                                    <p className="text-gray-400 text-sm italic text-center py-4">No upcoming events scheduled.</p>
-                                                ) : (
-                                                    <div className="space-y-3">
-                                                        {upcomingEvents.map(event => (
-                                                            <div key={event.id} className="border border-gray-100 bg-white rounded-xl p-4 flex items-center justify-between shadow-sm hover:border-pink-600/30 transition-all">
-                                                                <div>
-                                                                    <p className="font-playfair font-bold text-gray-800 text-base">
-                                                                        {event.name || event.title || "Unnamed Event"}
-                                                                    </p>
-                                                                    <p className="text-xs text-gray-500 font-poppins mt-1">
-                                                                        {event.date ? event.date : "Date not set"}
-                                                                    </p>
+                                                {(() => {
+                                                    const realUpcomingEvents = upcomingEvents.filter(e => !e.isOcCalling || e.ocCallingEnded);
+                                                    const pendingOcEvents = upcomingEvents.filter(e => e.isOcCalling && !e.ocCallingEnded);
+
+                                                    return (
+                                                        <div className="space-y-6">
+                                                            {/* 1. Real Upcoming Events - Ready to Start */}
+                                                            {realUpcomingEvents.length === 0 ? (
+                                                                <p className="text-gray-400 text-xs italic text-center py-3 bg-gray-50 rounded-xl">
+                                                                    No ready upcoming events scheduled right now.
+                                                                </p>
+                                                            ) : (
+                                                                <div className="space-y-3">
+                                                                    {realUpcomingEvents.map(event => (
+                                                                        <div key={event.id} className="border border-gray-100 bg-white rounded-xl p-4 flex items-center justify-between shadow-sm hover:border-pink-600/30 transition-all">
+                                                                            <div>
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <p className="font-playfair font-bold text-gray-800 text-base">
+                                                                                        {event.name || event.title || "Unnamed Event"}
+                                                                                    </p>
+                                                                                    {event.isOcCalling && event.ocCallingEnded && (
+                                                                                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                                                                                            OC Appointed
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                                <p className="text-xs text-gray-500 font-poppins mt-1">
+                                                                                    {event.date ? event.date : "Date not set"}
+                                                                                </p>
+                                                                            </div>
+                                                                            <button
+                                                                                onClick={() => handleStartProject(event)}
+                                                                                className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-full text-xs font-bold font-poppins hover:bg-pink-600 transition shadow-md"
+                                                                            >
+                                                                                <PlayCircle size={14} /> START
+                                                                            </button>
+                                                                        </div>
+                                                                    ))}
                                                                 </div>
-                                                                <button
-                                                                    onClick={() => handleStartProject(event)}
-                                                                    className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-full text-xs font-bold font-poppins hover:bg-pink-600 transition shadow-md"
-                                                                >
-                                                                    <PlayCircle size={14} /> START
-                                                                </button>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
+                                                            )}
+
+                                                            {/* 2. Pending OC Calling Events - Need OC calling ended first */}
+                                                            {pendingOcEvents.length > 0 && (
+                                                                <div className="pt-2 border-t border-gray-100">
+                                                                    <div className="flex items-center justify-between mb-2">
+                                                                        <h5 className="font-poppins text-xs font-bold text-amber-700 uppercase tracking-wider flex items-center gap-1.5">
+                                                                            <Megaphone size={13} /> Recruiting OC Committee ({pendingOcEvents.length})
+                                                                        </h5>
+                                                                        <a 
+                                                                            href="/admin/oc-calls"
+                                                                            className="text-[11px] font-semibold text-pink-600 hover:text-pink-700 underline"
+                                                                        >
+                                                                            Manage in OC Calls
+                                                                        </a>
+                                                                    </div>
+                                                                    <p className="text-[11px] text-gray-500 mb-3">
+                                                                        These events are currently calling for an Organizing Committee. To start and verify attendance, end the OC Calling first.
+                                                                    </p>
+                                                                    <div className="space-y-3">
+                                                                        {pendingOcEvents.map(event => (
+                                                                            <div key={event.id} className="border border-amber-200/80 bg-amber-50/50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                                                                                <div>
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <p className="font-playfair font-bold text-gray-800 text-base">
+                                                                                            {event.name || event.title || "Unnamed Event"}
+                                                                                        </p>
+                                                                                        <span className="text-[10px] font-bold text-amber-700 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-full animate-pulse">
+                                                                                            Recruiting OC
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <p className="text-xs text-gray-500 font-poppins mt-0.5">
+                                                                                        {event.date ? event.date : "Date not set"}
+                                                                                    </p>
+                                                                                </div>
+                                                                                <div className="flex items-center gap-2 self-end sm:self-auto">
+                                                                                    <a
+                                                                                        href="/admin/oc-calls"
+                                                                                        className="text-[11px] font-bold text-pink-600 bg-white border border-pink-200 hover:bg-pink-50 px-3 py-1.5 rounded-full transition shadow-xs"
+                                                                                    >
+                                                                                        End OC Calling
+                                                                                    </a>
+                                                                                    <button
+                                                                                        disabled
+                                                                                        className="flex items-center gap-1.5 bg-gray-200 text-gray-400 cursor-not-allowed px-3.5 py-1.5 rounded-full text-xs font-bold font-poppins"
+                                                                                        title="Committee must end OC calling before this event can be started."
+                                                                                    >
+                                                                                        <PlayCircle size={14} /> START
+                                                                                    </button>
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })()}
                                             </div>
                                         </div>
                                     )}

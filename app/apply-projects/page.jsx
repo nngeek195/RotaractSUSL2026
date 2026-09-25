@@ -10,16 +10,34 @@ import NavBar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { 
     Megaphone, Sparkles, ArrowRight, ArrowLeft, Briefcase, 
-    Clock, ChevronRight, UserCheck
+    Clock, ChevronRight, UserCheck, CheckCircle 
 } from 'lucide-react';
 
 export default function ApplyProjectsPage() {
     const router = useRouter();
     const { user } = useAuth();
     const [calls, setCalls] = useState([]);
+    const [userApplications, setUserApplications] = useState([]);
 
     const [execMap, setExecMap] = useState({});
     const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            if (user?.email) {
+                try {
+                    const qApp = query(collection(db, "ocApplications"), where("applicantEmail", "==", user.email));
+                    const snapApp = await getDocs(qApp);
+                    setUserApplications(snapApp.docs.map(d => ({ id: d.id, ...d.data() })));
+                } catch (err) {
+                    console.error("Error fetching user applications:", err);
+                }
+            } else {
+                setUserApplications([]);
+            }
+        };
+        fetchUserData();
+    }, [user]);
 
     useEffect(() => {
         const fetchOpenCalls = async () => {
@@ -281,19 +299,73 @@ export default function ApplyProjectsPage() {
                                                 </div>
 
                                                 {/* Action Bar */}
-                                                <div className="pt-4 border-t border-gray-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-                                                    <p className="text-xs text-gray-500 flex items-center gap-1.5">
-                                                        <Clock size={14} className="text-gray-400" />
-                                                        Applications are reviewed continuously by the OC team
-                                                    </p>
-                                                    <button
-                                                        onClick={() => handleApplyClick(call.id)}
-                                                        className="inline-flex items-center justify-center gap-2 bg-pink-600 hover:bg-pink-700 text-white font-poppins font-bold text-sm px-6 py-3 rounded-full transition shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
-                                                    >
-                                                        <span>Apply for this Project</span>
-                                                        <ArrowRight size={16} />
-                                                    </button>
-                                                </div>
+                                                {(() => {
+                                                    const userApp = userApplications.find(a => a.callId === call.id);
+                                                    if (userApp) {
+                                                        if (userApp.status === 'selected') {
+                                                            return (
+                                                                <div className="pt-4 border-t border-gray-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-emerald-50 border border-emerald-200 p-4 rounded-2xl">
+                                                                    <div className="flex items-center gap-2.5 text-emerald-800">
+                                                                        <CheckCircle size={20} className="text-emerald-600 shrink-0" />
+                                                                        <div>
+                                                                            <p className="text-xs sm:text-sm font-bold">
+                                                                                🎉 You have been selected for this project as <span className="underline decoration-emerald-500 font-extrabold">{userApp.selectedRole || userApp.teamRole || "Team Member"}</span>!
+                                                                            </p>
+                                                                            <p className="text-[11px] text-emerald-700 font-normal">
+                                                                                Position: {userApp.position} • Organizing Committee
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <Link
+                                                                        href="/profile"
+                                                                        className="inline-flex items-center justify-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-poppins font-bold text-xs px-5 py-2.5 rounded-full transition shadow-xs shrink-0"
+                                                                    >
+                                                                        <span>View in Profile</span>
+                                                                        <ArrowRight size={14} />
+                                                                    </Link>
+                                                                </div>
+                                                            );
+                                                        }
+                                                        return (
+                                                            <div className="pt-4 border-t border-gray-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-amber-50 border border-amber-200 p-4 rounded-2xl">
+                                                                <div className="flex items-center gap-2.5 text-amber-800">
+                                                                    <Clock size={20} className="text-amber-600 shrink-0" />
+                                                                    <div>
+                                                                        <p className="text-xs sm:text-sm font-bold">
+                                                                            You have applied on this already
+                                                                        </p>
+                                                                        <p className="text-[11px] text-amber-700 font-normal">
+                                                                            Applied Position: {userApp.position} • Status: Pending Review
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                                <Link
+                                                                    href="/profile"
+                                                                    className="inline-flex items-center justify-center gap-1.5 bg-white border border-amber-300 hover:bg-amber-100 text-amber-800 font-poppins font-bold text-xs px-4 py-2 rounded-full transition shadow-2xs shrink-0"
+                                                                >
+                                                                    <span>View Application</span>
+                                                                    <ArrowRight size={14} />
+                                                                </Link>
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    return (
+                                                        <div className="pt-4 border-t border-gray-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                                                            <p className="text-xs text-gray-500 flex items-center gap-1.5">
+                                                                <Clock size={14} className="text-gray-400" />
+                                                                Applications are reviewed continuously by the OC team
+                                                            </p>
+                                                            <button
+                                                                onClick={() => handleApplyClick(call.id)}
+                                                                className="inline-flex items-center justify-center gap-2 bg-pink-600 hover:bg-pink-700 text-white font-poppins font-bold text-sm px-6 py-3 rounded-full transition shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
+                                                            >
+                                                                <span>Apply for this Project</span>
+                                                                <ArrowRight size={16} />
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })()}
                                             </div>
                                         </div>
                                     );

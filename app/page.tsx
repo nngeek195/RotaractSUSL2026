@@ -537,42 +537,52 @@ export default function Home() {
                   </div>
                 )}
 
-                {upcomingProjects.map((project) => (
-                  <Link
-                    href={`/projects/${createSlug(project)}`}
-                    key={project.id}
-                    className="block"
-                  >
-                    <MotionWrapper
-                      delay={0.1}
-                      variant="fadeInUp"
-                      whileHover={{ scale: 1.03 }}
-                      className="bg-black rounded-[41px] h-[300px] relative overflow-hidden flex items-end group cursor-pointer transition-transform"
+                {upcomingProjects.map((project) => {
+                  const isRecruiting = project.isOcCalling && !project.ocCallingEnded;
+                  const targetHref = isRecruiting ? `/apply-projects` : `/projects/${createSlug(project)}`;
+                  return (
+                    <Link
+                      href={targetHref}
+                      key={project.id}
+                      className="block"
                     >
-                      {/* Image Background */}
-                      <img
-                        src={project.imageUrl || images.imgRectangle44}
-                        alt={project.title || project.name}
-                        className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-300"
-                      />
+                      <MotionWrapper
+                        delay={0.1}
+                        variant="fadeInUp"
+                        whileHover={{ scale: 1.03 }}
+                        className="bg-black rounded-[41px] h-[300px] relative overflow-hidden flex items-end group cursor-pointer transition-transform"
+                      >
+                        {/* Image Background */}
+                        <img
+                          src={project.imageUrl || images.imgRectangle44}
+                          alt={project.title || project.name}
+                          className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-300"
+                        />
 
-                      {/* Content Overlay */}
-                      <div className="relative z-10 p-6 w-full bg-gradient-to-t from-black/90 to-transparent">
-                        <p className="font-playfair text-white text-xl mb-1 font-bold">
-                          {project.title || project.name}
-                        </p>
-                        <div className="flex justify-between items-center">
-                          <p className="font-poppins text-[12px] text-text-pink-600">
-                            {project.date}
+                        {/* Content Overlay */}
+                        <div className="relative z-10 p-6 w-full bg-gradient-to-t from-black/90 to-transparent">
+                          <p className="font-playfair text-white text-xl mb-1 font-bold line-clamp-1">
+                            {project.title || project.name}
                           </p>
-                          <span className="text-xs text-white border border-white px-2 py-1 rounded-full">
-                            Upcoming
-                          </span>
+                          <div className="flex justify-between items-center gap-2">
+                            <p className="font-poppins text-[12px] text-text-pink-600">
+                              {project.date || "Date TBA"}
+                            </p>
+                            {isRecruiting ? (
+                              <span className="text-xs font-bold text-pink-300 bg-pink-950/80 border border-pink-400 px-2.5 py-0.5 rounded-full">
+                                Recruiting OC
+                              </span>
+                            ) : (
+                              <span className="text-xs text-white border border-white px-2 py-1 rounded-full">
+                                Upcoming
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </MotionWrapper>
-                  </Link>
-                ))}
+                      </MotionWrapper>
+                    </Link>
+                  );
+                })}
 
                 {/* Fillers if less than 3 projects, just to keep layout nice (Optional) */}
                 {!loading &&
