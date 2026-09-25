@@ -12,12 +12,14 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() &&
-             exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+             (exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+              (request.auth.token.email != null && exists(/databases/$(database)/documents/admins/$(request.auth.token.email))));
     }
 
     function isExec() {
       return isAuthenticated() &&
-             exists(/databases/$(database)/documents/executiveCommittee/$(request.auth.uid));
+             (exists(/databases/$(database)/documents/executiveCommittee/$(request.auth.uid)) ||
+              (request.auth.token.email != null && exists(/databases/$(database)/documents/executiveCommittee/$(request.auth.token.email))));
     }
 
     function isCommittee() {
@@ -31,11 +33,14 @@ service cloud.firestore {
     function isApprovedUser() {
       return isAuthenticated() &&
              (exists(/databases/$(database)/documents/users/$(request.auth.uid)) ||
-              exists(/databases/$(database)/documents/executiveCommittee/$(request.auth.uid)));
+              (request.auth.token.email != null && exists(/databases/$(database)/documents/users/$(request.auth.token.email))) ||
+              isExec() || isAdmin());
     }
 
     function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
+      return isAuthenticated() &&
+             (request.auth.uid == userId ||
+              (request.auth.token.email != null && request.auth.token.email == userId));
     }
 
     // ============================
@@ -44,59 +49,57 @@ service cloud.firestore {
 
     // 1. ADMINS
     match /admins/{userId} {
-      allow read: if isAuthenticated() && request.auth.uid == userId;
-      allow write: if false;
+      allow read: if isAuthenticated() && (request.auth.uid == userId || (request.auth.token.email != null && request.auth.token.email == userId) || isAdmin());
+      allow write: if isAdmin();
     }
 
     // 2. EVENTS
     match /events/{eventId} {
       allow read: if true;
-      allow create, delete: if isAdmin();
-      allow update: if isAdmin() ||
-        (isExec() && (
-          (resource.data.status == "upcoming" &&
-           request.resource.data.status == "happening now") ||
-          (resource.data.status == "happening now" &&
-           request.resource.data.status == "completed") ||
-          (resource.data.status == "happening now" &&
-           request.resource.data.participants.size() >
-           resource.data.participants.size())
-        ));
+      // Privileged (Admins & Execs) can create and delete events
+      allow create, delete: if isPrivileged();
+      // Privileged can update all fields; Authenticated members (OC organizers & attendees) can update live status, attendance, and details
+      allow update: if isPrivileged() || isAuthenticated();
     }
 
     // 3. PENDING REQUESTS
     match /pendingRequests/{uid} {
-      allow create: if isAuthenticated() && request.auth.uid == uid;
-      allow read: if isAdmin() || isOwner(uid);
-      allow update, delete: if isOwner(uid) || isAdmin();
+      allow create: if isAuthenticated() && (request.auth.uid == uid || (request.auth.token.email != null && request.auth.token.email == uid));
+      allow read: if isPrivileged() || isOwner(uid);
+      allow update, delete: if isPrivileged() || isOwner(uid);
     }
 
     // 4. REJECTED REQUESTS
     match /rejectedRequests/{uid} {
-      allow create: if isAdmin();
-      allow read: if isAdmin() || isOwner(uid);
-      allow update, delete: if isAdmin();
+      allow create: if isPrivileged();
+      allow read: if isPrivileged() || isOwner(uid);
+      allow update, delete: if isPrivileged();
     }
 
     // 5. USERS
     match /users/{userId} {
-      allow read: if isOwner(userId) || isApprovedUser() || isAdmin();
-      allow create: if isOwner(userId) || isAdmin();
-      allow update: if isOwner(userId) || isAdmin();
-      allow delete: if isAdmin();
+      allow read: if true;
+      // Allow users to create profile, or Privileged (for approvals, demotions, and migrations)
+      allow create: if isOwner(userId) || isPrivileged();
+      // Allow user themselves, Privileged, or Authenticated members (for awarding stars on attendance/projects)
+      allow update: if isOwner(userId) || isPrivileged() || isAuthenticated();
+      // Allow Privileged (for member management and deleting/moving records)
+      allow delete: if isPrivileged();
     }
 
     // 6. EXECUTIVE COMMITTEE
     match /executiveCommittee/{userId} {
       allow read: if true;
-      allow create, delete: if isAdmin();
-      allow update: if isOwner(userId) || isAdmin();
+      // Allow Privileged (Admins and Execs) to promote/assign executive committee members
+      allow create, delete: if isPrivileged();
+      // Allow member themselves, Privileged, or Authenticated members (for awarding stars on attendance/projects)
+      allow update: if isOwner(userId) || isPrivileged() || isAuthenticated();
     }
 
     // 7. LEADERBOARD
     match /leaderboard/{docId} {
       allow read: if true;
-      allow write: if isPrivileged();
+      allow write: if isPrivileged() || isAuthenticated();
     }
 
     // 8. MONTHLY STARS
@@ -105,81 +108,87 @@ service cloud.firestore {
       allow write: if isPrivileged();
     }
 
-    // 9. GALLERY
+    // 9. STAR TRANSACTIONS
+    match /starTransactions/{transactionId} {
+      allow read: if true;
+      // Privileged or authenticated users (awarding attendance, starter stars, OC recognition)
+      allow create, update: if isPrivileged() || isAuthenticated();
+      allow delete: if isPrivileged();
+    }
+
+    // 10. GALLERY
     match /gallery/{imageId} {
       allow read: if true;
-      allow create: if isApprovedUser() || isAdmin();
-      allow update, delete: if isAdmin();
+      allow create: if isApprovedUser() || isPrivileged();
+      allow update, delete: if isPrivileged();
     }
 
     // ============================
     //   RELIEF / DONATION SYSTEM
     // ============================
 
-    // 10. MATERIAL REQUESTS
+    // 11. MATERIAL REQUESTS
     match /materialRequests/{requestId} {
       allow read, create, update: if true;
       allow delete: if isAuthenticated() || isPrivileged();
     }
 
-    // 11. DONATION OFFERS
+    // 12. DONATION OFFERS
     match /donationOffers/{offerId} {
       allow create: if true;
       allow read, update, delete: if isAuthenticated() || isPrivileged();
     }
 
-    // 12. RELIEF ITEMS
+    // 13. RELIEF ITEMS
     match /reliefItems/{itemId} {
       allow read: if true;
       allow create, update, delete: if isPrivileged();
     }
 
-    // 13. RELIEF CONFIG
+    // 14. RELIEF CONFIG
     match /reliefConfig/{configId} {
       allow read: if true;
       allow create, update, delete: if isPrivileged();
     }
 
     // ============================
-    //   ADMIN SETTINGS
+    //   OC CALLS & APPLICATIONS
+    // ============================
+
+    // 15. OC CALLS
+    match /ocCalls/{callId} {
+      allow read: if true;
+      allow create, update, delete: if isPrivileged();
+    }
+
+    // 16. OC APPLICATIONS
+    match /ocApplications/{appId} {
+      allow create: if true;
+      allow read: if isAuthenticated() || isPrivileged();
+      allow update, delete: if isPrivileged();
+    }
+
+    // ============================
+    //   ADMIN SETTINGS & MAGAZINES
     // ============================
 
     match /adminSettings/public {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isPrivileged();
     }
 
     match /adminSettings/secure {
-      allow read, write: if isAdmin();
+      allow read, write: if isPrivileged();
     }
 
     match /adminSettings/{settingId} {
       allow read: if isPrivileged();
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if isPrivileged();
     }
-
-    // ============================
-    //   MAGAZINES (FIXED POSITION)
-    // ============================
 
     match /magazines/{magazineId} {
       allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    // ============================
-    //   OC CALLS & APPLICATIONS
-    // ============================
-
-    match /ocCalls/{callId} {
-      allow read: if true;
-      allow create, update, delete: if isPrivileged() || isAdmin();
-    }
-
-    match /ocApplications/{appId} {
-      allow read: if isPrivileged() || isAdmin() || (isAuthenticated() && (resource.data.userId == request.auth.uid || resource.data.applicantEmail == request.auth.token.email));
-      allow create: if true;
-      allow update, delete: if isPrivileged() || isAdmin();
+      allow write: if isPrivileged();
     }
 
     // ============================

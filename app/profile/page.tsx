@@ -16,7 +16,8 @@ import {
     Calendar, QrCode as QrIcon, PlayCircle, MapPin, 
     ArrowLeft, StopCircle, Heart, Camera,
     Megaphone, Sparkles, ArrowRight, UserCheck, CheckCircle,
-    ChevronRight, Check, X, AlertCircle, Star, Award, ShieldCheck, Trophy, Layers
+    ChevronRight, Check, X, AlertCircle, Star, Award, ShieldCheck, Trophy, Layers, Edit,
+    Upload, Image as ImageIcon, Radio
 } from 'lucide-react';
 import { images } from '../../assets/images';
 import NavBar from '../components/Navbar';
@@ -54,8 +55,10 @@ interface EventItem {
     title?: string;
     date?: string;
     location?: string;
+    description?: string;
     status?: string;
     imageUrl?: string;
+    galleryImages?: Array<{ url: string; featured?: boolean } | string>;
     participants?: string[];
     isOcCalling?: boolean;
     ocCallingEnded?: boolean;
@@ -181,6 +184,47 @@ function ProfileContent() {
     // View Submitted Application Modal State
     const [viewAppModalOpen, setViewAppModalOpen] = useState<boolean>(false);
     const [selectedAppToView, setSelectedAppToView] = useState<OcApplication | null>(null);
+
+    // Event Details Edit Modal States
+    const [editEventModalOpen, setEditEventModalOpen] = useState<boolean>(false);
+    const [editingEventData, setEditingEventData] = useState<{
+        id: string;
+        title: string;
+        location: string;
+        date: string;
+        description: string;
+        imageUrl: string;
+    }>({
+        id: "",
+        title: "",
+        location: "",
+        date: "",
+        description: "",
+        imageUrl: ""
+    });
+    const [editCoverFile, setEditCoverFile] = useState<File | null>(null);
+    const [savingEventData, setSavingEventData] = useState<boolean>(false);
+
+    // Start Project Modal States (Prompt for details before going live)
+    const [startProjectModalOpen, setStartProjectModalOpen] = useState<boolean>(false);
+    const [projectToStart, setProjectToStart] = useState<EventItem | null>(null);
+    const [startProjectData, setStartProjectData] = useState<{
+        title: string;
+        location: string;
+        date: string;
+        description: string;
+        imageUrl: string;
+    }>({
+        title: "",
+        location: "",
+        date: "",
+        description: "",
+        imageUrl: ""
+    });
+    const [startCoverFile, setStartCoverFile] = useState<File | null>(null);
+    const [isStartingProject, setIsStartingProject] = useState<boolean>(false);
+    const [endingProjectId, setEndingProjectId] = useState<string | null>(null);
+    const [addingParticipant, setAddingParticipant] = useState<boolean>(false);
 
     // Helper: Sort OC Calls by creation date descending
     const getCallTimestamp = (c: OcCall): number => {
@@ -460,39 +504,163 @@ function ProfileContent() {
         }
     };
 
-    // START EVENT LOGIC
-    const handleStartProject = async (project: EventItem) => {
-        if (!(await confirmToast({ 
-            message: `Are you ready to START "${project.name || project.title}"?`, 
-            description: "This will make the event LIVE and mark your attendance automatically.", 
-            confirmLabel: "Start" 
-        }))) return;
+    // EDIT EVENT DATA LOGIC
+    const handleOpenEditEvent = (event: EventItem) => {
+        setEditCoverFile(null);
+        setEditingEventData({
+            id: event.id,
+            title: event.name || event.title || "",
+            location: event.location || "",
+            date: event.date || "",
+            description: (typeof event.description === "string" ? event.description : "") || "",
+            imageUrl: event.imageUrl || (typeof (event as any).image === "string" ? (event as any).image : "") || ""
+        });
+        setEditEventModalOpen(true);
+    };
 
+    const handleSaveEventData = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingEventData.id) return;
+        setSavingEventData(true);
         try {
-            const eventRef = doc(db, "events", project.id);
-            await updateDoc(eventRef, {
-                status: "happening now",
-                startedBy: profile?.email,
-                participants: arrayUnion(profile?.email)
-            });
+            let finalImageUrl = editingEventData.imageUrl.trim();
+            if (editCoverFile) {
+                const sanitizeFolderName = (name: string) =>
+                    name.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-");
+                const folderName = sanitizeFolderName(editingEventData.title || "project");
 
-            const eventTitle = project.name || project.title || "Rotaract Event";
+                const formData = new FormData();
+                formData.append("file", editCoverFile);
+                formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+                formData.append("folder", `Projects/${folderName}`);
 
-            // 1. Give 2 stars to the member who started the event
-            if (profile?.email) {
-                await awardStarterStars(project.id, eventTitle, profile.email, profile.fullName, profile.uid);
+                const res = await fetch(CLOUDINARY_UPLOAD_URL, {
+                    method: "POST",
+                    body: formData,
+                });
+                const data = await res.json();
+                if (data.secure_url) {
+                    finalImageUrl = data.secure_url;
+                }
             }
 
-            // 2. Give 3 stars to OC Creator and all Collaborators
-            if (project.ocCallId) {
+            const eventRef = doc(db, "events", editingEventData.id);
+            const updatePayload = {
+                title: editingEventData.title.trim(),
+                name: editingEventData.title.trim(),
+                location: editingEventData.location.trim(),
+                date: editingEventData.date,
+                description: editingEventData.description.trim(),
+                imageUrl: finalImageUrl,
+                updatedAt: new Date()
+            };
+            await updateDoc(eventRef, updatePayload);
+
+            // Update in local states
+            setHappeningEvents(prev => prev.map(evt => evt.id === editingEventData.id ? { ...evt, ...updatePayload } : evt));
+            setUpcomingEvents(prev => prev.map(evt => evt.id === editingEventData.id ? { ...evt, ...updatePayload } : evt));
+            setContributions(prev => prev.map(evt => evt.id === editingEventData.id ? { ...evt, ...updatePayload } : evt));
+            if (selectedProject && selectedProject.id === editingEventData.id) {
+                setSelectedProject(prev => prev ? { ...prev, ...updatePayload } : null);
+            }
+
+            toast.success("Event details updated successfully!");
+            setEditEventModalOpen(false);
+            await fetchExCoProjects();
+        } catch (err) {
+            console.error("Error updating event details:", err);
+            toast.error("Failed to update event details.");
+        } finally {
+            setSavingEventData(false);
+        }
+    };
+
+    // START EVENT LOGIC - Prompt OC member for final details before going live
+    const handleOpenStartModal = (project: EventItem) => {
+        setProjectToStart(project);
+        setStartCoverFile(null);
+        setStartProjectData({
+            title: project.name || project.title || "",
+            location: project.location || "",
+            date: project.date || new Date().toISOString().split("T")[0],
+            description: (typeof project.description === "string" ? project.description : "") || "",
+            imageUrl: project.imageUrl || (typeof (project as any).image === "string" ? (project as any).image : "") || ""
+        });
+        setStartProjectModalOpen(true);
+    };
+
+    const handleConfirmStartProject = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!projectToStart) return;
+
+        if (!startProjectData.title.trim()) {
+            toast.error("Please provide a project title.");
+            return;
+        }
+
+        setIsStartingProject(true);
+        try {
+            let finalImageUrl = startProjectData.imageUrl.trim();
+
+            // Upload cover image to Cloudinary if a file was selected
+            if (startCoverFile) {
+                const sanitizeFolderName = (name: string) =>
+                    name.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-");
+                const folderName = sanitizeFolderName(startProjectData.title || "project");
+
+                const formData = new FormData();
+                formData.append("file", startCoverFile);
+                formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+                formData.append("folder", `Projects/${folderName}`);
+
+                const res = await fetch(CLOUDINARY_UPLOAD_URL, {
+                    method: "POST",
+                    body: formData,
+                });
+                const data = await res.json();
+                if (data.secure_url) {
+                    finalImageUrl = data.secure_url;
+                }
+            }
+
+            const eventRef = doc(db, "events", projectToStart.id);
+            const eventTitle = startProjectData.title.trim();
+            const starterEmail = profile?.email || auth.currentUser?.email || "";
+
+            const existingParticipants = Array.isArray(projectToStart.participants) ? projectToStart.participants : [];
+            const updatedParticipants = starterEmail && !existingParticipants.includes(starterEmail)
+                ? [...existingParticipants, starterEmail]
+                : existingParticipants;
+
+            const existingGallery = Array.isArray(projectToStart.galleryImages) ? projectToStart.galleryImages : [];
+
+            // Complete canonical structure matching admin/events/edit project
+            const updatePayload = {
+                title: eventTitle,
+                name: eventTitle,
+                location: startProjectData.location.trim() || "TBD",
+                date: startProjectData.date || new Date().toISOString().split("T")[0],
+                description: startProjectData.description.trim(),
+                imageUrl: finalImageUrl,
+                galleryImages: existingGallery,
+                status: "happening now",
+                startedBy: starterEmail,
+                participants: updatedParticipants,
+                updatedAt: new Date()
+            };
+
+            await updateDoc(eventRef, updatePayload);
+
+            // Give 3 stars to OC Creator and all Collaborators (starter gets no starter stars per requirement)
+            if (projectToStart.ocCallId) {
                 try {
-                    const callSnap = await getDoc(doc(db, "ocCalls", project.ocCallId as string));
+                    const callSnap = await getDoc(doc(db, "ocCalls", projectToStart.ocCallId as string));
                     if (callSnap.exists()) {
                         const callData = callSnap.data();
                         const creatorEmail = callData.createdByEmail || callData.creatorEmail;
                         if (creatorEmail) {
                             await awardOcOrganizerStars(
-                                project.id, eventTitle, project.ocCallId as string,
+                                projectToStart.id, eventTitle, projectToStart.ocCallId as string,
                                 creatorEmail, "Creator", callData.createdByName
                             );
                         }
@@ -500,7 +668,7 @@ function ProfileContent() {
                             for (const collab of callData.sharedWith) {
                                 if (collab && typeof collab === 'string') {
                                     await awardOcOrganizerStars(
-                                        project.id, eventTitle, project.ocCallId as string,
+                                        projectToStart.id, eventTitle, projectToStart.ocCallId as string,
                                         collab, "Collaborator"
                                     );
                                 }
@@ -518,39 +686,80 @@ function ProfileContent() {
 
             await fetchExCoProjects();
 
+            const updatedEventItem: EventItem = {
+                ...projectToStart,
+                ...updatePayload,
+                status: "happening now",
+                participants: updatedParticipants
+            };
+
             setContributions((prev) => [
-                {
-                    ...project,
-                    status: "happening now",
-                    participants: [...(project.participants || []), profile?.email || ""] 
-                },
-                ...prev
+                updatedEventItem,
+                ...prev.filter(item => item.id !== projectToStart.id)
             ]);
 
-            setSelectedProject({ ...project, status: "happening now" });
+            setHappeningEvents(prev => [
+                updatedEventItem,
+                ...prev.filter(item => item.id !== projectToStart.id)
+            ]);
+
+            setUpcomingEvents(prev => prev.filter(item => item.id !== projectToStart.id));
+
+            setSelectedProject(updatedEventItem);
             setModalView('scanner');
+            setStartProjectModalOpen(false);
+
+            toast.success(`"${eventTitle}" is now LIVE!`, {
+                description: "Event has started. You can update event data or scan attendance."
+            });
         } catch (err) {
-            console.error(err);
-            toast.error("Error starting project.");
+            console.error("Error starting project:", err);
+            toast.error("Failed to start project.");
+        } finally {
+            setIsStartingProject(false);
         }
     };
 
-    // END EVENT LOGIC
+    // END EVENT LOGIC - Standardize data structure 100% with admin/events/edit project
     const handleEndProject = async (project: EventItem) => {
         if (!(await confirmToast({ 
             message: `Are you sure you want to END "${project.name || project.title}"?`, 
             description: "This will move it to Completed history and award 2 stars to each selected OC member.", 
-            confirmLabel: "End" 
+            confirmLabel: "End Project" 
         }))) return;
 
+        setEndingProjectId(project.id);
         try {
             const eventRef = doc(db, "events", project.id);
-            await updateDoc(eventRef, { status: "completed" });
+            const eventTitle = project.name || project.title || "Rotaract Event";
+
+            const finalGallery = Array.isArray(project.galleryImages) 
+                ? project.galleryImages 
+                : [];
+            const finalParticipants = Array.isArray(project.participants) 
+                ? Array.from(new Set(project.participants.filter(Boolean))) 
+                : [];
+
+            // 100% compliant data structure matching admin/events/edit project
+            const completedPayload = {
+                title: eventTitle,
+                name: eventTitle,
+                location: project.location || "TBD",
+                date: project.date || new Date().toISOString().split("T")[0],
+                description: (typeof project.description === "string" ? project.description : "") || "",
+                imageUrl: project.imageUrl || (typeof (project as any).image === "string" ? (project as any).image : "") || "",
+                galleryImages: finalGallery,
+                participants: finalParticipants,
+                status: "completed",
+                completedAt: new Date(),
+                updatedAt: new Date()
+            };
+
+            await updateDoc(eventRef, completedPayload);
 
             // Give 2 stars to all selected OC members for this event
             if (project.ocCallId) {
                 try {
-                    const eventTitle = project.name || project.title || "Rotaract Event";
                     const qApps = query(
                         collection(db, "ocApplications"),
                         where("callId", "==", project.ocCallId),
@@ -579,13 +788,17 @@ function ProfileContent() {
             await fetchExCoProjects();
 
             setContributions((prev) => prev.map((item) =>
-                item.id === project.id ? { ...item, status: "completed" } : item
+                item.id === project.id ? { ...item, ...completedPayload, status: "completed" } : item
             ));
+
+            setHappeningEvents((prev) => prev.filter(item => item.id !== project.id));
 
             toast.success("Event marked as Completed and 2 Stars awarded to OC members!");
         } catch (err) {
-            console.error(err);
-            toast.error("Error ending project.");
+            console.error("Error ending project:", err);
+            toast.error("Failed to end project.");
+        } finally {
+            setEndingProjectId(null);
         }
     };
 
@@ -598,6 +811,7 @@ function ProfileContent() {
         e.preventDefault();
         if (!attendanceEmail || !selectedProject) return;
 
+        setAddingParticipant(true);
         try {
             const eventRef = doc(db, "events", selectedProject.id);
             await updateDoc(eventRef, {
@@ -617,6 +831,8 @@ function ProfileContent() {
         } catch (err) {
             console.error(err);
             toast.error("Error adding participant.");
+        } finally {
+            setAddingParticipant(false);
         }
     };
 
@@ -1838,6 +2054,14 @@ function ProfileContent() {
                                                                 {/* Action Buttons */}
                                                                 <div className="flex items-center gap-2">
                                                                     <button
+                                                                        onClick={() => handleOpenEditEvent(event)}
+                                                                        className="bg-white text-blue-600 border border-blue-200 p-2 rounded-full hover:bg-blue-600 hover:text-white transition shadow-sm"
+                                                                        title="Update Event Data"
+                                                                    >
+                                                                        <Edit size={18} />
+                                                                    </button>
+
+                                                                    <button
                                                                         onClick={() => handleManageProject(event)}
                                                                         className="bg-white text-green-600 border border-green-200 p-2 rounded-full hover:bg-green-600 hover:text-white transition shadow-sm"
                                                                         title="Scan Attendance"
@@ -1847,10 +2071,15 @@ function ProfileContent() {
 
                                                                     <button
                                                                         onClick={() => handleEndProject(event)}
-                                                                        className="bg-white text-red-500 border border-red-200 p-2 rounded-full hover:bg-red-500 hover:text-white transition shadow-sm"
+                                                                        disabled={endingProjectId === event.id}
+                                                                        className="bg-white text-red-500 border border-red-200 p-2 rounded-full hover:bg-red-500 hover:text-white transition shadow-sm disabled:opacity-50"
                                                                         title="End Event"
                                                                     >
-                                                                        <StopCircle size={18} />
+                                                                        {endingProjectId === event.id ? (
+                                                                            <Loader2 size={18} className="animate-spin text-red-500" />
+                                                                        ) : (
+                                                                            <StopCircle size={18} />
+                                                                        )}
                                                                     </button>
                                                                 </div>
                                                             </div>
@@ -1895,12 +2124,21 @@ function ProfileContent() {
                                                                                     {event.date ? event.date : "Date not set"}
                                                                                 </p>
                                                                             </div>
-                                                                            <button
-                                                                                onClick={() => handleStartProject(event)}
-                                                                                className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-full text-xs font-bold font-poppins hover:bg-pink-600 transition shadow-md"
-                                                                            >
-                                                                                <PlayCircle size={14} /> START
-                                                                            </button>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <button
+                                                                                    onClick={() => handleOpenEditEvent(event)}
+                                                                                    className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full border border-gray-200 transition"
+                                                                                    title="Edit Event Details"
+                                                                                >
+                                                                                    <Edit size={14} />
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={() => handleOpenStartModal(event)}
+                                                                                    className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-full text-xs font-bold font-poppins hover:bg-pink-600 transition shadow-md"
+                                                                                >
+                                                                                    <PlayCircle size={14} /> START
+                                                                                </button>
+                                                                            </div>
                                                                         </div>
                                                                     ))}
                                                                 </div>
@@ -1977,9 +2215,19 @@ function ProfileContent() {
 
                                             <div className="text-center mb-6">
                                                 <h4 className="font-playfair text-2xl font-bold text-gray-800">{selectedProject.name || selectedProject.title}</h4>
-                                                <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 text-[10px] font-bold px-3 py-1 rounded-full mt-2 uppercase tracking-wide">
-                                                    <CheckCircle size={12} /> Marking Attendance
-                                                </span>
+                                                <div className="flex items-center justify-center gap-2 mt-2">
+                                                    <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+                                                        <CheckCircle size={12} /> Marking Attendance
+                                                    </span>
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => handleOpenEditEvent(selectedProject)}
+                                                        className="inline-flex items-center gap-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[10px] font-bold px-3 py-1 rounded-full transition shadow-xs"
+                                                        title="Update all event data"
+                                                    >
+                                                        <Edit size={11} /> Update Event Data
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             <form id="email-form" onSubmit={handleAddParticipant} className="space-y-4">
@@ -1993,8 +2241,16 @@ function ProfileContent() {
                                                             placeholder="Enter member email..."
                                                             className="flex-1 p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-600 outline-none font-poppins text-sm"
                                                         />
-                                                        <button type="submit" className="bg-pink-600 text-white px-4 rounded-xl font-bold hover:bg-[#b51b52] transition shadow-md">
-                                                            Add
+                                                        <button 
+                                                            type="submit" 
+                                                            disabled={addingParticipant}
+                                                            className="bg-pink-600 text-white px-5 rounded-xl font-bold hover:bg-[#b51b52] transition shadow-md flex items-center justify-center gap-1.5 disabled:opacity-50 min-w-[75px]"
+                                                        >
+                                                            {addingParticipant ? (
+                                                                <Loader2 size={16} className="animate-spin text-white" />
+                                                            ) : (
+                                                                "Add"
+                                                            )}
                                                         </button>
                                                     </div>
                                                 </div>
@@ -2015,6 +2271,303 @@ function ProfileContent() {
                                         </div>
                                     )}
                                 </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ============================================================== */}
+                    {/* --- UPDATE EVENT DATA MODAL --- */}
+                    {/* ============================================================== */}
+                    {/* EDIT EVENT MODAL */}
+                    {editEventModalOpen && (
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-[60] p-4 animate-in fade-in duration-200">
+                            <div className="bg-white rounded-[28px] shadow-2xl max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh]">
+                                <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-6 flex items-center justify-between text-white">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-2 bg-white/10 rounded-xl">
+                                            <Edit size={18} className="text-pink-400" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-playfair font-bold text-white leading-tight">Update Event Data</h3>
+                                            <p className="text-xs text-gray-300 font-poppins">Edit details for live or scheduled event</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => setEditEventModalOpen(false)}
+                                        className="text-gray-400 hover:text-white transition p-1 rounded-lg"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                </div>
+
+                                <form onSubmit={handleSaveEventData} className="p-6 overflow-y-auto space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 font-poppins">
+                                            Project Title *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={editingEventData.title}
+                                            onChange={(e) => setEditingEventData({ ...editingEventData, title: e.target.value })}
+                                            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-600 outline-none font-poppins text-sm"
+                                            placeholder="e.g. Annual Blood Donation Camp"
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 font-poppins flex items-center gap-1.5">
+                                                <Calendar size={13} className="text-pink-600" /> Date *
+                                            </label>
+                                            <input
+                                                type="date"
+                                                required
+                                                value={editingEventData.date}
+                                                onChange={(e) => setEditingEventData({ ...editingEventData, date: e.target.value })}
+                                                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-600 outline-none font-poppins text-sm"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 font-poppins flex items-center gap-1.5">
+                                                <MapPin size={13} className="text-pink-600" /> Location *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={editingEventData.location}
+                                                onChange={(e) => setEditingEventData({ ...editingEventData, location: e.target.value })}
+                                                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-600 outline-none font-poppins text-sm"
+                                                placeholder="e.g. University Gymnasium"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 font-poppins flex items-center gap-1.5">
+                                            <ImageIcon size={13} className="text-pink-600" /> Cover Image
+                                        </label>
+                                        <div className="space-y-2">
+                                            <div className="border border-dashed border-gray-300 rounded-xl p-3 bg-gray-50 hover:bg-gray-100 transition flex items-center justify-between text-xs text-gray-600">
+                                                <label className="cursor-pointer flex items-center gap-2 font-bold text-pink-600 hover:text-pink-700">
+                                                    <Upload size={14} /> Choose File
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="hidden"
+                                                        onChange={(e) => setEditCoverFile(e.target.files?.[0] || null)}
+                                                    />
+                                                </label>
+                                                <span className="truncate max-w-[200px] text-gray-400">
+                                                    {editCoverFile ? editCoverFile.name : "Or paste URL below"}
+                                                </span>
+                                            </div>
+                                            <input
+                                                type="url"
+                                                value={editingEventData.imageUrl}
+                                                onChange={(e) => setEditingEventData({ ...editingEventData, imageUrl: e.target.value })}
+                                                className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-600 outline-none font-poppins text-xs"
+                                                placeholder="https://res.cloudinary.com/... (optional if file chosen)"
+                                            />
+                                        </div>
+                                        {(editCoverFile || editingEventData.imageUrl) && (
+                                            <div className="mt-2 relative h-32 w-full rounded-xl overflow-hidden border border-gray-200 bg-gray-100">
+                                                <img 
+                                                    src={editCoverFile ? URL.createObjectURL(editCoverFile) : editingEventData.imageUrl} 
+                                                    alt="Event Preview" 
+                                                    className="w-full h-full object-cover" 
+                                                    onError={(e) => (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x200?text=Invalid+Image'}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 font-poppins">
+                                            Description *
+                                        </label>
+                                        <textarea
+                                            rows={4}
+                                            required
+                                            value={editingEventData.description}
+                                            onChange={(e) => setEditingEventData({ ...editingEventData, description: e.target.value })}
+                                            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-600 outline-none font-poppins text-sm resize-none"
+                                            placeholder="Provide updated project details, objectives, or schedules..."
+                                        />
+                                    </div>
+
+                                    <div className="pt-2 flex items-center justify-end gap-3 border-t border-gray-100">
+                                        <button
+                                            type="button"
+                                            onClick={() => setEditEventModalOpen(false)}
+                                            className="px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-100 text-xs font-bold font-poppins transition"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={savingEventData}
+                                            className="px-5 py-2.5 rounded-xl bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold font-poppins transition shadow-md flex items-center gap-1.5 disabled:opacity-50"
+                                        >
+                                            {savingEventData ? (
+                                                <>
+                                                    <Loader2 size={14} className="animate-spin" /> Saving...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Check size={14} /> Save Changes
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* START PROJECT & GO LIVE MODAL */}
+                    {startProjectModalOpen && projectToStart && (
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-[60] p-4 animate-in fade-in duration-200">
+                            <div className="bg-white rounded-[28px] shadow-2xl max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh]">
+                                <div className="bg-gradient-to-r from-gray-900 via-rose-900 to-pink-900 p-6 flex items-center justify-between text-white">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2.5 bg-pink-500/20 text-pink-400 border border-pink-500/30 rounded-2xl flex items-center justify-center">
+                                            <PlayCircle size={22} className="animate-pulse" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-playfair font-bold text-white leading-tight">Start Project & Go Live</h3>
+                                            <p className="text-xs text-pink-200 font-poppins">Verify & complete details before broadcasting live</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => setStartProjectModalOpen(false)}
+                                        className="text-gray-400 hover:text-white transition p-1 rounded-lg"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                </div>
+
+                                <form onSubmit={handleConfirmStartProject} className="p-6 overflow-y-auto space-y-4 font-poppins">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                            Project Title *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={startProjectData.title}
+                                            onChange={(e) => setStartProjectData({ ...startProjectData, title: e.target.value })}
+                                            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-600 outline-none text-sm font-medium"
+                                            placeholder="e.g. Annual Blood Donation Camp"
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                                                <Calendar size={13} className="text-pink-600" /> Date *
+                                            </label>
+                                            <input
+                                                type="date"
+                                                required
+                                                value={startProjectData.date}
+                                                onChange={(e) => setStartProjectData({ ...startProjectData, date: e.target.value })}
+                                                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-600 outline-none text-sm font-medium"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                                                <MapPin size={13} className="text-pink-600" /> Location *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={startProjectData.location}
+                                                onChange={(e) => setStartProjectData({ ...startProjectData, location: e.target.value })}
+                                                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-600 outline-none text-sm font-medium"
+                                                placeholder="e.g. University Gymnasium / Zoom"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                                            <ImageIcon size={13} className="text-pink-600" /> Cover Image
+                                        </label>
+                                        <div className="space-y-2">
+                                            <div className="border border-dashed border-gray-300 rounded-xl p-3 bg-gray-50 hover:bg-gray-100 transition flex items-center justify-between text-xs text-gray-600">
+                                                <label className="cursor-pointer flex items-center gap-2 font-bold text-pink-600 hover:text-pink-700">
+                                                    <Upload size={14} /> Choose File
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="hidden"
+                                                        onChange={(e) => setStartCoverFile(e.target.files?.[0] || null)}
+                                                    />
+                                                </label>
+                                                <span className="truncate max-w-[200px] text-gray-400">
+                                                    {startCoverFile ? startCoverFile.name : "Or paste URL below"}
+                                                </span>
+                                            </div>
+                                            <input
+                                                type="url"
+                                                value={startProjectData.imageUrl}
+                                                onChange={(e) => setStartProjectData({ ...startProjectData, imageUrl: e.target.value })}
+                                                className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-600 outline-none text-xs"
+                                                placeholder="https://res.cloudinary.com/... (optional if file chosen)"
+                                            />
+                                        </div>
+                                        {(startCoverFile || startProjectData.imageUrl) && (
+                                            <div className="mt-2 relative h-32 w-full rounded-xl overflow-hidden border border-gray-200 bg-gray-100">
+                                                <img 
+                                                    src={startCoverFile ? URL.createObjectURL(startCoverFile) : startProjectData.imageUrl} 
+                                                    alt="Cover Preview" 
+                                                    className="w-full h-full object-cover" 
+                                                    onError={(e) => (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x200?text=Invalid+Image'}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                            Description *
+                                        </label>
+                                        <textarea
+                                            rows={3}
+                                            required
+                                            value={startProjectData.description}
+                                            onChange={(e) => setStartProjectData({ ...startProjectData, description: e.target.value })}
+                                            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-600 outline-none text-sm resize-none"
+                                            placeholder="Provide project objectives, schedule, and details..."
+                                        />
+                                    </div>
+
+                                    <div className="pt-3 flex items-center justify-end gap-3 border-t border-gray-100">
+                                        <button
+                                            type="button"
+                                            onClick={() => setStartProjectModalOpen(false)}
+                                            className="px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-100 text-xs font-bold transition"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={isStartingProject}
+                                            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white text-xs font-bold transition shadow-md shadow-pink-600/20 flex items-center gap-2 disabled:opacity-50"
+                                        >
+                                            {isStartingProject ? (
+                                                <>
+                                                    <Loader2 size={14} className="animate-spin" /> Going Live...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <PlayCircle size={15} /> Start Project & Go Live
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
                     )}

@@ -127,7 +127,9 @@ export default function ApplyProjectsPage() {
                                 Rotaract Club of SUSL • Organizing Committees
                             </div>
                             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-playfair font-extrabold tracking-tight text-white mb-6 leading-tight">
-                                Apply for <span className="bg-gradient-to-r from-pink-400 via-rose-300 to-amber-200 bg-clip-text text-transparent">Project Committees</span>
+                                Apply for Project
+                                <br />
+                                 <span className="bg-gradient-to-r from-pink-400 via-rose-300 to-amber-200 bg-clip-text text-transparent">Organizing Committees</span>
                             </h1>
                             <p className="text-slate-300 text-base sm:text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
                                 Step up, sharpen your leadership abilities, and co-create impactful initiatives with passionate fellow Rotaractors. Choose your desired position and submit your application online.
@@ -241,16 +243,6 @@ export default function ApplyProjectsPage() {
                                                                     {creator.name}
                                                                 </span>
                                                             </div>
-                                                            {collaborators.length > 0 && (
-                                                                <div className="flex flex-wrap items-center gap-1.5 pl-0 sm:pl-2 sm:border-l border-slate-300">
-                                                                    <span className="text-slate-500 font-medium">Collaborating Members:</span>
-                                                                    {collaborators.map((c, i) => (
-                                                                        <span key={i} className="bg-slate-200/80 text-slate-800 font-medium px-2 py-0.5 rounded-md text-xs">
-                                                                            {c.name}
-                                                                        </span>
-                                                                    ))}
-                                                                </div>
-                                                            )}
                                                         </div>
                                                     </div>
 
@@ -375,8 +367,8 @@ export default function ApplyProjectsPage() {
                     )}
                 </section>
             </main>
-
             <Footer />
         </div>
+        
     );
 }

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebaseAdmin";
 import { getAuth } from "firebase-admin/auth";
 
-// Optional: verify requester is admin via ID token in Authorization header
+// Verify requester is privileged (admin or committee) via ID token in Authorization header
 async function ensureRequesterIsAdmin(req: Request): Promise<boolean> {
   try {
     const authHeader = req.headers.get("authorization");
@@ -10,9 +10,27 @@ async function ensureRequesterIsAdmin(req: Request): Promise<boolean> {
     const idToken = authHeader.substring("Bearer ".length);
     const decoded = await getAuth().verifyIdToken(idToken);
     const uid = decoded.uid;
-    // Check if requester exists in admins collection
+    const email = (decoded.email || "").toLowerCase().trim();
+
+    // Check admins collection by uid or email
     const adminDoc = await adminDb.collection("admins").doc(uid).get();
-    return adminDoc.exists;
+    if (adminDoc.exists) return true;
+
+    if (email) {
+      const adminEmailDoc = await adminDb.collection("admins").doc(email).get();
+      if (adminEmailDoc.exists) return true;
+    }
+
+    // Check executiveCommittee collection by uid or email
+    const execDoc = await adminDb.collection("executiveCommittee").doc(uid).get();
+    if (execDoc.exists) return true;
+
+    if (email) {
+      const execEmailDoc = await adminDb.collection("executiveCommittee").doc(email).get();
+      if (execEmailDoc.exists) return true;
+    }
+
+    return false;
   } catch {
     return false;
   }

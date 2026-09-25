@@ -230,6 +230,20 @@ export default function ManageOCCalls() {
         }
     };
 
+    const handleChangeSelectedPosition = async (appId, newPosition) => {
+        try {
+            await updateDoc(doc(db, "ocApplications", appId), { position: newPosition });
+            toast.success(`Position updated to ${newPosition}`);
+            setApplications(prev => prev.map(a => a.id === appId ? { ...a, position: newPosition } : a));
+            if (viewingApplicant && viewingApplicant.id === appId) {
+                setViewingApplicant(prev => ({ ...prev, position: newPosition }));
+            }
+        } catch (error) {
+            console.error("Error changing position:", error);
+            toast.error("Error changing position.");
+        }
+    };
+
     const handleUnselectApplicant = async (appId) => {
         try {
             await updateDoc(doc(db, "ocApplications", appId), { status: "pending" });
@@ -1386,7 +1400,25 @@ export default function ManageOCCalls() {
                                                 enrichedSelectedGroup.map(member => (
                                                     <tr key={member.id} className="hover:bg-gray-50 transition-colors">
                                                         <td className="p-3 text-xs">
-                                                            <div className="font-semibold text-gray-900">{member.position}</div>
+                                                            <div className="flex items-center gap-1">
+                                                                <select
+                                                                    value={member.position || ""}
+                                                                    onChange={(e) => handleChangeSelectedPosition(member.id, e.target.value)}
+                                                                    className="text-xs font-semibold text-gray-900 bg-white border border-gray-200 rounded px-1.5 py-0.5 focus:ring-1 focus:ring-pink-500 outline-none max-w-[140px] truncate cursor-pointer hover:border-pink-300"
+                                                                    title="Update member's assigned position"
+                                                                >
+                                                                    {callPositions.length > 0 ? (
+                                                                        callPositions.map((pos) => (
+                                                                            <option key={pos} value={pos}>{pos}</option>
+                                                                        ))
+                                                                    ) : (
+                                                                        <option value={member.position}>{member.position}</option>
+                                                                    )}
+                                                                    {callPositions.length > 0 && !callPositions.includes(member.position) && member.position && (
+                                                                        <option value={member.position}>{member.position}</option>
+                                                                    )}
+                                                                </select>
+                                                            </div>
                                                             <div className="mt-1 flex items-center gap-1.5">
                                                                 {(member.selectedRole || member.teamRole) === 'Team Lead' ? (
                                                                     <span className="bg-purple-100 text-purple-800 border border-purple-200 px-2 py-0.5 rounded-full text-[10px] font-bold">
@@ -1730,19 +1762,34 @@ export default function ManageOCCalls() {
                                                 </button>
                                             </div>
                                         ) : (
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 px-2 py-1 rounded-xl">
+                                                    <span className="text-[11px] text-gray-500 font-medium">Position:</span>
+                                                    <select
+                                                        value={viewingApplicant.position || ""}
+                                                        onChange={(e) => handleChangeSelectedPosition(viewingApplicant.id, e.target.value)}
+                                                        className="text-xs font-semibold text-gray-800 bg-white border border-gray-200 rounded px-1.5 py-0.5 outline-none cursor-pointer"
+                                                    >
+                                                        {callPositions.map((pos) => (
+                                                            <option key={pos} value={pos}>{pos}</option>
+                                                        ))}
+                                                        {callPositions.length > 0 && !callPositions.includes(viewingApplicant.position) && viewingApplicant.position && (
+                                                            <option value={viewingApplicant.position}>{viewingApplicant.position}</option>
+                                                        )}
+                                                    </select>
+                                                </div>
                                                 <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
                                                     viewingApplicant.selectedRole === 'Team Lead' 
                                                         ? 'bg-purple-100 text-purple-800 border border-purple-200' 
                                                         : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                                                 }`}>
-                                                    Selected as {viewingApplicant.selectedRole || "Member"}
+                                                    Role: {viewingApplicant.selectedRole || "Member"}
                                                 </span>
                                                 <button
                                                     onClick={() => handleUnselectApplicant(viewingApplicant.id)}
-                                                    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-xs"
+                                                    className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-xs"
                                                 >
-                                                    <Undo2 size={14} /> Move to Pending
+                                                    <Undo2 size={13} /> Unselect
                                                 </button>
                                             </div>
                                         )}

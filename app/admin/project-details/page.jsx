@@ -274,7 +274,7 @@ export default function ProjectDetailsManagement() {
                             className="bg-gray-900 text-white px-6 py-2.5 rounded-xl hover:bg-gray-800 transition-all shadow-lg shadow-gray-900/20 font-bold flex items-center gap-2 disabled:opacity-70 text-sm"
                         >
                             {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-                            Save Changes
+                            {saving ? "Saving Changes..." : "Save Changes"}
                         </button>
                     </div>
                 )}
@@ -426,6 +426,7 @@ export default function ProjectDetailsManagement() {
                                                             className="w-full p-3 bg-gray-50 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-all font-medium text-gray-900"
                                                         >
                                                             <option value="upcoming">Upcoming</option>
+                                                            <option value="happening now">Happening Now (Live)</option>
                                                             <option value="completed">Completed</option>
                                                         </select>
                                                     </div>

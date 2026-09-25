@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
 import {
     Trash2, Edit2, Search, Users, ShieldCheck, User,
     Filter, Loader2, ArrowRight, X, Eye
@@ -41,6 +41,8 @@ export default function UserHandling() {
     const [imageUrl, setImageUrl] = useState("");
     const [viewingImage, setViewingImage] = useState(null); // Lightbox state
     const [mounted, setMounted] = useState(false);
+    const [updatingRole, setUpdatingRole] = useState(false);
+    const [deletingUserId, setDeletingUserId] = useState(null);
 
     useEffect(() => {
         setMounted(true);
@@ -100,51 +102,105 @@ export default function UserHandling() {
     const handleUpdateRole = async () => {
         if (!editingMember) return;
 
-        setLoading(true);
+        setUpdatingRole(true);
         const oldCollection = editingMember.collection;
         const isNewRoleExec = executiveRoles.includes(newPosition);
         const newCollection = isNewRoleExec ? "executiveCommittee" : "users";
 
         try {
-            if (oldCollection === newCollection) {
-                const dataToUpdate = { position: newPosition };
-                if (newCollection === 'executiveCommittee') {
-                    dataToUpdate.imageUrl = imageUrl;
+            // First attempt to update via secure backend API route with Admin SDK bypass
+            let apiSuccess = false;
+            try {
+                const idToken = await auth.currentUser?.getIdToken();
+                if (idToken) {
+                    const res = await fetch("/api/admin/update-role", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${idToken}`
+                        },
+                        body: JSON.stringify({
+                            memberId: editingMember.id,
+                            oldCollection,
+                            newPosition,
+                            imageUrl: imageUrl || ""
+                        })
+                    });
+                    if (res.ok) {
+                        apiSuccess = true;
+                    }
                 }
-                await updateDoc(doc(db, oldCollection, editingMember.id), dataToUpdate);
+            } catch (apiErr) {
+                console.warn("API role update failed, falling back to client-side Firestore:", apiErr);
             }
-            else {
-                const { id, collection, type, ...data } = editingMember;
-                const dataToSave = { ...data, position: newPosition };
 
-                if (newCollection === 'executiveCommittee') {
-                    dataToSave.imageUrl = imageUrl;
-                } else {
-                    delete dataToSave.imageUrl;
+            if (!apiSuccess) {
+                if (oldCollection === newCollection) {
+                    const dataToUpdate = { position: newPosition };
+                    if (newCollection === 'executiveCommittee') {
+                        dataToUpdate.imageUrl = imageUrl;
+                    }
+                    await updateDoc(doc(db, oldCollection, editingMember.id), dataToUpdate);
                 }
+                else {
+                    const { id, collection, type, ...data } = editingMember;
+                    const dataToSave = { ...data, position: newPosition };
 
-                await setDoc(doc(db, newCollection, id), dataToSave);
-                await deleteDoc(doc(db, oldCollection, id));
+                    if (newCollection === 'executiveCommittee') {
+                        dataToSave.imageUrl = imageUrl;
+                    } else {
+                        delete dataToSave.imageUrl;
+                    }
+
+                    await setDoc(doc(db, newCollection, id), dataToSave);
+                    await deleteDoc(doc(db, oldCollection, id));
+                }
             }
 
             await fetchMembers();
             setEditingMember(null);
-            // Optional: Success toast here
+            toast.success(`Role updated to ${newPosition} successfully!`);
         } catch (error) {
             console.error("Update failed:", error);
             toast.error("Failed to update role");
         } finally {
-            setLoading(false);
+            setUpdatingRole(false);
         }
     };
 
     const handleDelete = async (member) => {
         if (!(await confirmToast({ message: `Permanently remove ${member.fullName}?`, confirmLabel: "Delete" }))) return;
+        setDeletingUserId(member.id);
         try {
-            await deleteDoc(doc(db, member.collection, member.id));
+            let deletedViaApi = false;
+            try {
+                const idToken = await auth.currentUser?.getIdToken();
+                if (idToken) {
+                    const res = await fetch("/api/admin/delete-user", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${idToken}`
+                        },
+                        body: JSON.stringify({ uid: member.id })
+                    });
+                    if (res.ok) deletedViaApi = true;
+                }
+            } catch (apiErr) {
+                console.warn("Delete API failed, falling back to client-side:", apiErr);
+            }
+
+            if (!deletedViaApi) {
+                await deleteDoc(doc(db, member.collection, member.id));
+            }
+
             setAllMembers(prev => prev.filter(m => m.id !== member.id));
+            toast.success("Member removed successfully.");
         } catch (error) {
             console.error("Delete failed:", error);
+            toast.error("Failed to delete member.");
+        } finally {
+            setDeletingUserId(null);
         }
     };
 
@@ -316,10 +372,15 @@ export default function UserHandling() {
                                                         </button>
                                                         <button
                                                             onClick={() => handleDelete(member)}
-                                                            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                            disabled={deletingUserId === member.id}
+                                                            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                                                             title="Delete Member"
                                                         >
-                                                            <Trash2 size={16} />
+                                                            {deletingUserId === member.id ? (
+                                                                <Loader2 size={16} className="animate-spin text-red-500" />
+                                                            ) : (
+                                                                <Trash2 size={16} />
+                                                            )}
                                                         </button>
                                                     </div>
                                                 </td>
@@ -412,9 +473,15 @@ export default function UserHandling() {
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(member)}
-                                                className="flex-1 py-2 text-xs font-bold text-red-600 bg-red-50 rounded-lg flex items-center justify-center gap-1 active:scale-95 transition-transform"
+                                                disabled={deletingUserId === member.id}
+                                                className="flex-1 py-2 text-xs font-bold text-red-600 bg-red-50 rounded-lg flex items-center justify-center gap-1 active:scale-95 transition-transform disabled:opacity-50"
                                             >
-                                                <Trash2 size={14} /> Remove
+                                                {deletingUserId === member.id ? (
+                                                    <Loader2 size={14} className="animate-spin text-red-600" />
+                                                ) : (
+                                                    <Trash2 size={14} />
+                                                )}
+                                                {deletingUserId === member.id ? "Removing..." : "Remove"}
                                             </button>
                                         </div>
                                     </motion.div>
@@ -591,15 +658,26 @@ export default function UserHandling() {
                                     <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
                                         <button
                                             onClick={() => setEditingMember(null)}
-                                            className="px-5 py-2.5 text-gray-600 font-bold hover:bg-gray-200 rounded-xl transition-colors text-sm"
+                                            disabled={updatingRole}
+                                            className="px-5 py-2.5 text-gray-600 font-bold hover:bg-gray-200 rounded-xl transition-colors text-sm disabled:opacity-50"
                                         >
                                             Cancel
                                         </button>
                                         <button
                                             onClick={handleUpdateRole}
-                                            className="px-6 py-2.5 bg-gray-900 text-white font-bold rounded-xl hover:bg-gray-800 transition-all shadow-lg shadow-gray-900/10 text-sm flex items-center gap-2"
+                                            disabled={updatingRole}
+                                            className="px-6 py-2.5 bg-gray-900 text-white font-bold rounded-xl hover:bg-gray-800 transition-all shadow-lg shadow-gray-900/10 text-sm flex items-center gap-2 disabled:opacity-50"
                                         >
-                                            Save Changes <ArrowRight size={16} />
+                                            {updatingRole ? (
+                                                <>
+                                                    <Loader2 size={16} className="animate-spin text-white" />
+                                                    <span>Saving Changes...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    Save Changes <ArrowRight size={16} />
+                                                </>
+                                            )}
                                         </button>
                                     </div>
                                 </motion.div>

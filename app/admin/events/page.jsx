@@ -5,7 +5,8 @@ import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, Timestamp } fro
 import { db } from "@/lib/firebase";
 import {
     Calendar, MapPin, Edit, Trash, CheckCircle, Plus, Users, Loader2,
-    X, Image as ImageIcon, Search, Filter, ArrowRight, Eye, Star
+    X, Image as ImageIcon, Search, Filter, ArrowRight, Eye, Star,
+    PlayCircle, Radio
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
@@ -19,7 +20,7 @@ export default function EventHandling() {
     // Data States
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [stats, setStats] = useState({ total: 0, upcoming: 0, completed: 0 });
+    const [stats, setStats] = useState({ total: 0, upcoming: 0, happening: 0, completed: 0 });
 
     // UI States
     const [view, setView] = useState("upcoming");
@@ -35,6 +36,8 @@ export default function EventHandling() {
     // Upload States
     const [uploading, setUploading] = useState(false);
     const [uploadMessage, setUploadMessage] = useState("");
+    const [startingEventId, setStartingEventId] = useState(null);
+    const [deletingEventId, setDeletingEventId] = useState(null);
 
     // File States
     const [selectedCoverFile, setSelectedCoverFile] = useState(null);
@@ -55,7 +58,8 @@ export default function EventHandling() {
         date: "",
         description: "",
         imageUrl: "",
-        participants: ""
+        participants: "",
+        status: "upcoming"
     });
 
     useEffect(() => {
@@ -78,10 +82,12 @@ export default function EventHandling() {
 
             // Calculate stats
             const upcomingCount = eventsList.filter(e => e.status === "upcoming").length;
+            const happeningCount = eventsList.filter(e => e.status === "happening now").length;
             const completedCount = eventsList.filter(e => e.status === "completed").length;
             setStats({
                 total: eventsList.length,
                 upcoming: upcomingCount,
+                happening: happeningCount,
                 completed: completedCount
             });
 
@@ -123,7 +129,8 @@ export default function EventHandling() {
             date: "",
             description: "",
             imageUrl: "",
-            participants: ""
+            participants: "",
+            status: "upcoming"
         });
 
         setSelectedCoverFile(null);
@@ -162,12 +169,13 @@ export default function EventHandling() {
         setExistingProjectImages(projectDocs);
 
         setFormData({
-            title: event.title,
-            location: event.location,
-            date: event.date,
-            description: event.description,
-            imageUrl: event.imageUrl,
-            participants: event.participants ? event.participants.join(', ') : ""
+            title: event.title || event.name || "",
+            location: event.location || "",
+            date: event.date || "",
+            description: event.description || "",
+            imageUrl: event.imageUrl || event.image || "",
+            participants: event.participants ? event.participants.join(', ') : "",
+            status: event.status || "upcoming"
         });
         setIsModalOpen(true);
     };
@@ -185,12 +193,13 @@ export default function EventHandling() {
         setExistingProjectImages(projectDocs);
 
         setFormData({
-            title: event.title,
-            location: event.location,
-            date: event.date,
-            description: event.description,
-            imageUrl: event.imageUrl,
-            participants: event.participants ? event.participants.join(', ') : ""
+            title: event.title || event.name || "",
+            location: event.location || "",
+            date: event.date || "",
+            description: event.description || "",
+            imageUrl: event.imageUrl || event.image || "",
+            participants: event.participants ? event.participants.join(', ') : "",
+            status: "completed"
         });
         setIsModalOpen(true);
     };
@@ -259,6 +268,7 @@ export default function EventHandling() {
 
             const eventData = {
                 title: formData.title,
+                name: formData.title,
                 location: formData.location,
                 date: formData.date,
                 description: formData.description,
@@ -277,6 +287,9 @@ export default function EventHandling() {
                 await updateDoc(doc(db, "events", currentEventId), eventData);
                 toast.success("Project marked as completed!");
             } else if (isEditing) {
+                if (formData.status) {
+                    eventData.status = formData.status;
+                }
                 await updateDoc(doc(db, "events", currentEventId), eventData);
                 toast.success("Event updated successfully!");
             } else {
@@ -299,12 +312,45 @@ export default function EventHandling() {
 
     const handleDelete = async (id) => {
         if (!(await confirmToast({ message: "Delete this event permanently?", confirmLabel: "Delete" }))) return;
+        setDeletingEventId(id);
         try {
             await deleteDoc(doc(db, "events", id));
             setEvents(prev => prev.filter(e => e.id !== id));
             setStats(prev => ({ ...prev, total: prev.total - 1 }));
+            toast.success("Event deleted successfully.");
         } catch (error) {
             console.error("Error deleting:", error);
+            toast.error("Failed to delete event.");
+        } finally {
+            setDeletingEventId(null);
+        }
+    };
+
+    const handleStartEvent = async (event) => {
+        if (!(await confirmToast({
+            message: `Start "${event.title || event.name}" now?`,
+            description: "This will make the event LIVE and visible under Happening Now.",
+            confirmLabel: "Start Event"
+        }))) return;
+
+        setStartingEventId(event.id);
+        try {
+            await updateDoc(doc(db, "events", event.id), {
+                status: "happening now",
+                updatedAt: Timestamp.now()
+            });
+            toast.success(`"${event.title || event.name}" is now LIVE! You can update details anytime.`, {
+                action: {
+                    label: "Edit Data",
+                    onClick: () => openEditModal({ ...event, status: "happening now" })
+                }
+            });
+            await fetchEvents();
+        } catch (error) {
+            console.error("Error starting event:", error);
+            toast.error("Failed to start event.");
+        } finally {
+            setStartingEventId(null);
         }
     };
 
@@ -312,8 +358,9 @@ export default function EventHandling() {
     const filteredEvents = events
         .filter(e => e.status === view)
         .filter(e =>
-            e.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            e.location.toLowerCase().includes(searchTerm.toLowerCase())
+            (e.title && e.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (e.name && e.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (e.location && e.location.toLowerCase().includes(searchTerm.toLowerCase()))
         );
 
     const LoadingSkeleton = () => (
@@ -342,9 +389,10 @@ export default function EventHandling() {
             </header>
 
             {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
                     { label: "Upcoming Events", value: stats.upcoming, icon: Calendar, color: "bg-pink-500", lightColor: "bg-pink-50 text-pink-600" },
+                    { label: "Happening Now", value: stats.happening, icon: Radio, color: "bg-amber-500", lightColor: "bg-amber-50 text-amber-600" },
                     { label: "Completed Projects", value: stats.completed, icon: CheckCircle, color: "bg-green-500", lightColor: "bg-green-50 text-green-600" },
                     { label: "Total Activities", value: stats.total, icon: Users, color: "bg-blue-500", lightColor: "bg-blue-50 text-blue-600" },
                 ].map((stat, idx) => (
@@ -375,6 +423,14 @@ export default function EventHandling() {
                     >
                         Upcoming
                         {view === "upcoming" && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-pink-600" />}
+                    </button>
+                    <button
+                        onClick={() => setView("happening now")}
+                        className={`pb-4 px-2 font-bold text-sm uppercase tracking-wide transition-colors relative flex items-center gap-2 ${view === "happening now" ? "text-amber-600" : "text-gray-400 hover:text-gray-600"}`}
+                    >
+                        <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                        Happening Now
+                        {view === "happening now" && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-600" />}
                     </button>
                     <button
                         onClick={() => setView("completed")}
@@ -431,10 +487,14 @@ export default function EventHandling() {
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                                     <div className="absolute top-4 right-4 flex gap-2">
-                                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm backdrop-blur-md ${event.status === 'upcoming'
-                                            ? 'bg-pink-500/90 text-white'
-                                            : 'bg-green-500/90 text-white'
+                                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm backdrop-blur-md ${
+                                            event.status === 'upcoming'
+                                                ? 'bg-pink-500/90 text-white'
+                                                : event.status === 'happening now'
+                                                ? 'bg-amber-500/95 text-white flex items-center gap-1.5 ring-2 ring-amber-300/50'
+                                                : 'bg-green-500/90 text-white'
                                             }`}>
+                                            {event.status === 'happening now' && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />}
                                             {event.status}
                                         </span>
                                     </div>
@@ -465,12 +525,44 @@ export default function EventHandling() {
 
                                     <div className="flex gap-2 pt-4 border-t border-gray-100 mt-auto">
                                         {view === 'upcoming' && (
-                                            <button
-                                                onClick={() => openMarkDoneModal(event)}
-                                                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 font-bold text-xs transition-colors"
-                                            >
-                                                <CheckCircle size={14} /> Mark Done
-                                            </button>
+                                            <>
+                                                <button
+                                                    onClick={() => handleStartEvent(event)}
+                                                    disabled={startingEventId === event.id}
+                                                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-amber-50 text-amber-700 hover:bg-amber-100 font-bold text-xs rounded-lg transition-colors disabled:opacity-50"
+                                                    title="Start project and go live"
+                                                >
+                                                    {startingEventId === event.id ? (
+                                                        <Loader2 size={14} className="animate-spin text-amber-600" />
+                                                    ) : (
+                                                        <PlayCircle size={14} className="text-amber-600" />
+                                                    )}
+                                                    {startingEventId === event.id ? "Starting..." : "Start Event"}
+                                                </button>
+                                                <button
+                                                    onClick={() => openMarkDoneModal(event)}
+                                                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 font-bold text-xs transition-colors"
+                                                >
+                                                    <CheckCircle size={14} /> Mark Done
+                                                </button>
+                                            </>
+                                        )}
+                                        {view === 'happening now' && (
+                                            <>
+                                                <button
+                                                    onClick={() => openEditModal(event)}
+                                                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-amber-500 text-white hover:bg-amber-600 font-bold text-xs rounded-lg transition-colors shadow-sm"
+                                                    title="Update all project details while live"
+                                                >
+                                                    <Edit size={14} /> Update Project Data
+                                                </button>
+                                                <button
+                                                    onClick={() => openMarkDoneModal(event)}
+                                                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 font-bold text-xs transition-colors"
+                                                >
+                                                    <CheckCircle size={14} /> Mark Done
+                                                </button>
+                                            </>
                                         )}
                                         <button
                                             onClick={() => openEditModal(event)}
@@ -481,10 +573,15 @@ export default function EventHandling() {
                                         </button>
                                         <button
                                             onClick={() => handleDelete(event.id)}
-                                            className="p-2.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 hover:text-red-800 transition-colors"
+                                            disabled={deletingEventId === event.id}
+                                            className="p-2.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 hover:text-red-800 transition-colors disabled:opacity-50"
                                             title="Delete"
                                         >
-                                            <Trash size={16} />
+                                            {deletingEventId === event.id ? (
+                                                <Loader2 size={16} className="animate-spin text-red-600" />
+                                            ) : (
+                                                <Trash size={16} />
+                                            )}
                                         </button>
                                     </div>
                                 </div>
@@ -541,6 +638,22 @@ export default function EventHandling() {
                                                     className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                                                 />
                                             </div>
+
+                                            {isEditing && (
+                                                <div className="col-span-2">
+                                                    <label className="block text-sm font-bold text-gray-700 mb-2">Event Status</label>
+                                                    <select
+                                                        name="status"
+                                                        value={formData.status || "upcoming"}
+                                                        onChange={handleInputChange}
+                                                        className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all bg-white font-medium text-gray-800"
+                                                    >
+                                                        <option value="upcoming">Upcoming</option>
+                                                        <option value="happening now">Happening Now (Live)</option>
+                                                        <option value="completed">Completed</option>
+                                                    </select>
+                                                </div>
+                                            )}
 
                                             <div>
                                                 <label className="block text-sm font-bold text-gray-700 mb-2">Location</label>
@@ -716,28 +829,40 @@ export default function EventHandling() {
                                     </form>
                                 </div>
 
-                                <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsModalOpen(false)}
-                                        className="px-5 py-2.5 text-gray-600 font-bold hover:bg-gray-200 rounded-xl transition-colors text-sm"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        form="eventForm"
-                                        disabled={loading || uploading}
-                                        className={`px-6 py-2.5 text-white font-bold rounded-xl transition-all shadow-lg text-sm flex items-center gap-2
-                                            ${isMarkingAsDone
-                                                ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:to-emerald-700 shadow-green-900/10'
-                                                : 'bg-gray-900 hover:bg-gray-800 shadow-gray-900/10'
-                                            }
-                                        `}
-                                    >
-                                        {uploading ? <Loader2 className="animate-spin" size={16} /> : <ArrowRight size={16} />}
-                                        {uploading ? "Uploading..." : isMarkingAsDone ? "Complete Project" : isEditing ? "Save Changes" : "Create Project"}
-                                    </button>
+                                <div className="p-6 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
+                                    <div>
+                                        {(uploading || loading) && (
+                                            <div className="flex items-center gap-2 text-xs font-semibold text-blue-700 bg-blue-50 py-1.5 px-3 rounded-lg border border-blue-100 animate-pulse">
+                                                <Loader2 size={13} className="animate-spin" />
+                                                <span>{uploadMessage || (isMarkingAsDone ? "Saving & completing..." : isEditing ? "Saving changes..." : "Creating project...")}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsModalOpen(false)}
+                                            className="px-5 py-2.5 text-gray-600 font-bold hover:bg-gray-200 rounded-xl transition-colors text-sm"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            form="eventForm"
+                                            disabled={loading || uploading}
+                                            className={`px-6 py-2.5 text-white font-bold rounded-xl transition-all shadow-lg text-sm flex items-center gap-2 disabled:opacity-50
+                                                ${isMarkingAsDone
+                                                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:to-emerald-700 shadow-green-900/10'
+                                                    : 'bg-gray-900 hover:bg-gray-800 shadow-gray-900/10'
+                                                }
+                                            `}
+                                        >
+                                            {(uploading || loading) ? <Loader2 className="animate-spin" size={16} /> : <ArrowRight size={16} />}
+                                            {(uploading || loading) 
+                                                ? (uploadMessage || (isMarkingAsDone ? "Completing..." : isEditing ? "Saving..." : "Creating...")) 
+                                                : isMarkingAsDone ? "Complete Project" : isEditing ? "Save Changes" : "Create Project"}
+                                        </button>
+                                    </div>
                                 </div>
                             </motion.div>
                         </motion.div>
