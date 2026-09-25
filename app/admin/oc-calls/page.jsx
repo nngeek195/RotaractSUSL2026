@@ -7,7 +7,7 @@ import { useAuth } from "@/app/contexts/AuthContext";
 import { 
     Loader2, Users, CheckCircle, Trash2, Eye, Share2, 
     X, Search, Mail, Phone, User, Undo2, Copy, Check,
-    UploadCloud, Globe, Sparkles, Edit3
+    UploadCloud, Globe, Sparkles, Edit3, ArrowLeft
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
@@ -546,9 +546,17 @@ export default function ManageOCCalls() {
             
             {/* Page Header */}
             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <div>
+                <div className="space-y-1.5">
+                    <div>
+                        <Link
+                            href={isAdmin ? "/admin" : "/profile"}
+                            className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-600 hover:text-pink-600 bg-gray-100 hover:bg-pink-50 px-3 py-1.5 rounded-lg transition"
+                        >
+                            <ArrowLeft size={14} /> Back to {isAdmin ? "Admin" : "Profile"}
+                        </Link>
+                    </div>
                     <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Manage OC Calls</h1>
-                    <p className="text-gray-500 text-sm mt-0.5">
+                    <p className="text-gray-500 text-sm">
                         Publish calls, review applications with applicant profiles, collaborate with committee members, and select your team.
                     </p>
                 </div>
@@ -1229,13 +1237,22 @@ export default function ManageOCCalls() {
                             >
                                 {/* Modal Header */}
                                 <div className="p-6 bg-gradient-to-r from-pink-600 to-rose-600 text-white relative">
-                                    <button
-                                        onClick={() => setViewingApplicant(null)}
-                                        className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-full text-white transition hover:rotate-90"
-                                        title="Close"
-                                    >
-                                        <X size={18} />
-                                    </button>
+                                    <div className="absolute top-4 right-4 flex items-center gap-2">
+                                        <button
+                                            onClick={() => setViewingApplicant(null)}
+                                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-xl text-white text-xs font-bold transition"
+                                            title="Back to Applicants"
+                                        >
+                                            <ArrowLeft size={14} /> Back
+                                        </button>
+                                        <button
+                                            onClick={() => setViewingApplicant(null)}
+                                            className="p-2 bg-white/20 hover:bg-white/30 rounded-full text-white transition hover:rotate-90"
+                                            title="Close"
+                                        >
+                                            <X size={18} />
+                                        </button>
+                                    </div>
 
                                     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
                                         {viewingApplicant.imageUrl ? (
@@ -1447,9 +1464,9 @@ export default function ManageOCCalls() {
                                 <div className="p-4 bg-gray-50 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3">
                                     <button
                                         onClick={() => setViewingApplicant(null)}
-                                        className="px-4 py-2 border border-gray-200 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-100 transition"
+                                        className="px-4 py-2 border border-gray-200 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-100 transition flex items-center gap-1.5"
                                     >
-                                        Close
+                                        <ArrowLeft size={14} /> Back to Applicants
                                     </button>
 
                                     <div className="flex items-center gap-2">
@@ -1503,12 +1520,20 @@ export default function ManageOCCalls() {
                                 className="bg-white rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh] my-auto"
                             >
                                 <div className="p-6 bg-gradient-to-r from-pink-600 to-rose-600 text-white relative">
-                                    <button
-                                        onClick={() => setPublishModalOpen(false)}
-                                        className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-full text-white transition hover:rotate-90"
-                                    >
-                                        <X size={18} />
-                                    </button>
+                                    <div className="absolute top-4 right-4 flex items-center gap-2">
+                                        <button
+                                            onClick={() => setPublishModalOpen(false)}
+                                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-xl text-white text-xs font-bold transition"
+                                        >
+                                            <ArrowLeft size={14} /> Back
+                                        </button>
+                                        <button
+                                            onClick={() => setPublishModalOpen(false)}
+                                            className="p-2 bg-white/20 hover:bg-white/30 rounded-full text-white transition hover:rotate-90"
+                                        >
+                                            <X size={18} />
+                                        </button>
+                                    </div>
                                     <div className="flex items-center gap-2 mb-1">
                                         <Sparkles size={20} className="text-pink-200" />
                                         <h2 className="text-xl font-bold">Publish Call as Member Post</h2>
@@ -1587,9 +1612,9 @@ export default function ManageOCCalls() {
                                         <button
                                             type="button"
                                             onClick={() => setPublishModalOpen(false)}
-                                            className="px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition"
+                                            className="px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition flex items-center gap-1.5"
                                         >
-                                            Cancel
+                                            <ArrowLeft size={14} /> Back
                                         </button>
                                         <button
                                             type="submit"

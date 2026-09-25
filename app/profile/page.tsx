@@ -16,7 +16,7 @@ import {
     Calendar, QrCode as QrIcon, PlayCircle, MapPin, 
     ArrowLeft, StopCircle, Heart, Camera,
     Megaphone, Sparkles, ArrowRight, UserCheck, CheckCircle,
-    ChevronRight, Check, X
+    ChevronRight, Check, X, AlertCircle
 } from 'lucide-react';
 import { images } from '../../assets/images';
 import NavBar from '../components/Navbar';
@@ -141,7 +141,8 @@ function ProfileContent() {
     const [applyModalOpen, setApplyModalOpen] = useState<boolean>(false);
     const [selectedCallToApply, setSelectedCallToApply] = useState<OcCall | null>(null);
     const [selectedPosition, setSelectedPosition] = useState<string>("");
-    const [teamRoleNote, setTeamRoleNote] = useState<string>("");
+    const [applyAsLead, setApplyAsLead] = useState<boolean>(false);
+    const [applyAsMember, setApplyAsMember] = useState<boolean>(true);
     const [customAnswers, setCustomAnswers] = useState<Record<string, string>>({});
     const [submittingApp, setSubmittingApp] = useState<boolean>(false);
 
@@ -317,8 +318,10 @@ function ProfileContent() {
     // --- APPLICATION MODAL HANDLERS ---
     const handleOpenApplyModal = (call: OcCall) => {
         setSelectedCallToApply(call);
-        setSelectedPosition(call.positions?.[0]?.title || "");
-        setTeamRoleNote("");
+        const firstPos = call.positions?.[0];
+        setSelectedPosition(firstPos?.title || "");
+        setApplyAsLead(false);
+        setApplyAsMember(true);
         setCustomAnswers({});
         setApplyModalOpen(true);
     };
@@ -336,6 +339,24 @@ function ProfileContent() {
             return;
         }
 
+        let finalTeamRole = "Member";
+        const currentPosObj = selectedCallToApply.positions?.find(p => p.title === selectedPosition);
+        if (currentPosObj?.maintainTeam && currentPosObj?.teamStructure === 'needs_lead') {
+            if (!applyAsLead && !applyAsMember) {
+                toast.error("Please select whether you are applying as a Team Lead, Member, or Both.");
+                return;
+            }
+            if (applyAsLead && applyAsMember) {
+                finalTeamRole = "Both (Team Lead & Member)";
+            } else if (applyAsLead) {
+                finalTeamRole = "Team Lead";
+            } else {
+                finalTeamRole = "Team Member";
+            }
+        } else if (currentPosObj?.maintainTeam) {
+            finalTeamRole = "General Team Member";
+        }
+
         setSubmittingApp(true);
         try {
             const appPayload: OcApplication = {
@@ -349,7 +370,7 @@ function ProfileContent() {
                 department: profile.department || "N/A",
                 contactNumber: profile.whatsapp || "",
                 position: selectedPosition,
-                teamRole: teamRoleNote.trim(),
+                teamRole: finalTeamRole,
                 customAnswers: customAnswers,
                 status: "pending",
                 appliedAt: new Date()
@@ -362,7 +383,8 @@ function ProfileContent() {
             setApplyModalOpen(false);
             setSelectedCallToApply(null);
             setSelectedPosition("");
-            setTeamRoleNote("");
+            setApplyAsLead(false);
+            setApplyAsMember(true);
             setCustomAnswers({});
         } catch (err) {
             console.error("Error submitting application:", err);
@@ -567,6 +589,15 @@ function ProfileContent() {
             
             <main className="flex-1 px-4 py-8">
                 <div className="max-w-[1440px] mx-auto">
+                    <div className="mb-6">
+                        <Link 
+                            href="/"
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-pink-600 transition bg-gray-50 hover:bg-pink-50 px-3.5 py-1.5 rounded-full border border-gray-200/80 shadow-2xs"
+                        >
+                            <ArrowLeft size={14} /> Back to Home
+                        </Link>
+                    </div>
+
                     <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-8 lg:gap-16">
 
                         {/* --- LEFT COLUMN: My Profile --- */}
@@ -963,12 +994,22 @@ function ProfileContent() {
                                             Your existing profile details will be linked automatically.
                                         </p>
                                     </div>
-                                    <button 
-                                        onClick={() => setApplyModalOpen(false)}
-                                        className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition"
-                                    >
-                                        <X size={24} />
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <button 
+                                            type="button"
+                                            onClick={() => setApplyModalOpen(false)}
+                                            className="inline-flex items-center gap-1.5 text-xs font-bold text-white/90 hover:text-white bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-xl transition"
+                                        >
+                                            <ArrowLeft size={14} /> Back
+                                        </button>
+                                        <button 
+                                            type="button"
+                                            onClick={() => setApplyModalOpen(false)}
+                                            className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition"
+                                        >
+                                            <X size={24} />
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <form onSubmit={handleApplySubmit} className="p-6 sm:p-8 space-y-6 max-h-[80vh] overflow-y-auto">
@@ -1018,38 +1059,86 @@ function ProfileContent() {
                                         </label>
                                         <select
                                             value={selectedPosition}
-                                            onChange={(e) => setSelectedPosition(e.target.value)}
+                                            onChange={(e) => {
+                                                setSelectedPosition(e.target.value);
+                                                setApplyAsLead(false);
+                                                setApplyAsMember(true);
+                                            }}
                                             required
                                             className="w-full p-3.5 bg-white border-2 border-gray-200 rounded-xl focus:border-pink-600 outline-none font-poppins text-sm text-gray-900 font-medium transition"
                                         >
                                             <option value="">-- Choose Position --</option>
                                             {selectedCallToApply.positions?.map((pos, idx) => (
                                                 <option key={pos.id || idx} value={pos.title}>
-                                                    {pos.title} {pos.maintainTeam ? "(Team Lead)" : ""}
+                                                    {pos.title} {pos.maintainTeam && pos.teamStructure === 'needs_lead' ? "(Team Lead / Member)" : pos.maintainTeam ? "(Team Members)" : ""}
                                                 </option>
                                             ))}
                                         </select>
                                     </div>
 
-                                    {/* Team Role / Sub-team note if position has maintainTeam */}
+                                    {/* Role Preference Checkboxes for positions that need a team lead */}
                                     {(() => {
                                         const currentPosObj = selectedCallToApply.positions?.find(p => p.title === selectedPosition);
-                                        if (currentPosObj && currentPosObj.maintainTeam) {
+                                        if (currentPosObj?.maintainTeam && currentPosObj?.teamStructure === 'needs_lead') {
                                             return (
-                                                <div className="bg-pink-50 border border-pink-200 rounded-2xl p-4 space-y-2">
-                                                    <label className="block text-xs font-bold text-pink-700 uppercase tracking-wider font-poppins">
-                                                        Team Structure / Proposed Sub-team Members (Optional)
-                                                    </label>
-                                                    <p className="text-xs text-pink-600">
-                                                        This position involves coordinating a team. You can propose team roles or mention members you would like to work with.
-                                                    </p>
-                                                    <input 
-                                                        type="text"
-                                                        value={teamRoleNote}
-                                                        onChange={(e) => setTeamRoleNote(e.target.value)}
-                                                        placeholder="e.g. Lead Coordinator, or proposed co-directors..."
-                                                        className="w-full p-3 bg-white border border-pink-300 rounded-xl focus:border-pink-600 outline-none text-xs font-poppins text-gray-900"
-                                                    />
+                                                <div className="bg-pink-50/70 border border-pink-200 rounded-2xl p-4 sm:p-5 space-y-3">
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <div>
+                                                            <label className="block text-xs font-bold text-pink-700 uppercase tracking-wider font-poppins">
+                                                                Are you applying as a Team Lead or Member? <span className="text-pink-600">*</span>
+                                                            </label>
+                                                            <p className="text-xs text-pink-600/90 mt-0.5">
+                                                                This position has both Lead and Member roles. You can select either one or both.
+                                                            </p>
+                                                        </div>
+                                                        {(applyAsLead && applyAsMember) && (
+                                                            <span className="bg-pink-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">
+                                                                Both Selected
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                                                        <label className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition ${
+                                                            applyAsLead 
+                                                                ? 'bg-white border-pink-600 shadow-sm text-pink-700 font-bold' 
+                                                                : 'bg-white/70 border-gray-200 text-gray-700 hover:border-pink-300'
+                                                        }`}>
+                                                            <input 
+                                                                type="checkbox"
+                                                                checked={applyAsLead}
+                                                                onChange={(e) => setApplyAsLead(e.target.checked)}
+                                                                className="w-4 h-4 accent-pink-600 cursor-pointer"
+                                                            />
+                                                            <div className="text-xs">
+                                                                <p className="font-bold">Team Lead</p>
+                                                                <p className="text-[11px] text-gray-500 font-normal">Apply for Team Lead role</p>
+                                                            </div>
+                                                        </label>
+
+                                                        <label className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition ${
+                                                            applyAsMember 
+                                                                ? 'bg-white border-pink-600 shadow-sm text-pink-700 font-bold' 
+                                                                : 'bg-white/70 border-gray-200 text-gray-700 hover:border-pink-300'
+                                                        }`}>
+                                                            <input 
+                                                                type="checkbox"
+                                                                checked={applyAsMember}
+                                                                onChange={(e) => setApplyAsMember(e.target.checked)}
+                                                                className="w-4 h-4 accent-pink-600 cursor-pointer"
+                                                            />
+                                                            <div className="text-xs">
+                                                                <p className="font-bold">Team Member</p>
+                                                                <p className="text-[11px] text-gray-500 font-normal">Apply for Member role</p>
+                                                            </div>
+                                                        </label>
+                                                    </div>
+
+                                                    {!applyAsLead && !applyAsMember && (
+                                                        <p className="text-[11px] text-red-500 font-semibold flex items-center gap-1">
+                                                            <AlertCircle size={12} /> Please select at least one role (Team Lead, Team Member, or Both).
+                                                        </p>
+                                                    )}
                                                 </div>
                                             );
                                         }
@@ -1089,9 +1178,9 @@ function ProfileContent() {
                                         <button
                                             type="button"
                                             onClick={() => setApplyModalOpen(false)}
-                                            className="px-5 py-2.5 text-xs font-bold text-gray-600 hover:text-gray-900 transition font-poppins"
+                                            className="inline-flex items-center gap-1.5 px-5 py-2.5 text-xs font-bold text-gray-600 hover:text-gray-900 transition font-poppins"
                                         >
-                                            Cancel
+                                            <ArrowLeft size={14} /> Back
                                         </button>
                                         <button
                                             type="submit"
@@ -1123,15 +1212,24 @@ function ProfileContent() {
                         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 overflow-y-auto">
                             <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden my-8 animate-in fade-in duration-200">
                                 <div className="bg-gray-900 p-6 text-white flex items-center justify-between">
-                                    <div>
-                                        <h3 className="text-xl font-playfair font-bold">
-                                            {selectedAppToView.applicationName || "Application Details"}
-                                        </h3>
-                                        <p className="text-xs text-gray-400 mt-0.5">Submitted Application Review</p>
+                                    <div className="flex items-center gap-3">
+                                        <button 
+                                            type="button"
+                                            onClick={() => setViewAppModalOpen(false)}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-gray-200 text-xs font-poppins font-medium transition"
+                                        >
+                                            <ArrowLeft size={14} /> Back
+                                        </button>
+                                        <div>
+                                            <h3 className="text-xl font-playfair font-bold">
+                                                {selectedAppToView.applicationName || "Application Details"}
+                                            </h3>
+                                            <p className="text-xs text-gray-400 mt-0.5">Submitted Application Review</p>
+                                        </div>
                                     </div>
                                     <button 
                                         onClick={() => setViewAppModalOpen(false)}
-                                        className="text-gray-400 hover:text-white transition"
+                                        className="text-gray-400 hover:text-white transition p-1"
                                     >
                                         <X size={20} />
                                     </button>
@@ -1158,7 +1256,7 @@ function ProfileContent() {
 
                                         {selectedAppToView.teamRole && (
                                             <div className="border-b pb-2">
-                                                <span className="text-gray-400 block mb-0.5">Team Role / Structure Note</span>
+                                                <span className="text-gray-400 block mb-0.5">Applied Role</span>
                                                 <span className="font-medium text-gray-800">{selectedAppToView.teamRole}</span>
                                             </div>
                                         )}
@@ -1181,9 +1279,9 @@ function ProfileContent() {
                                     <div className="pt-2">
                                         <button
                                             onClick={() => setViewAppModalOpen(false)}
-                                            className="w-full bg-gray-900 hover:bg-gray-800 text-white font-poppins font-bold text-xs py-3 rounded-xl transition"
+                                            className="w-full inline-flex items-center justify-center gap-1.5 bg-gray-900 hover:bg-gray-800 text-white font-poppins font-bold text-xs py-3 rounded-xl transition"
                                         >
-                                            Close
+                                            <ArrowLeft size={14} /> Back
                                         </button>
                                     </div>
                                 </div>
@@ -1199,11 +1297,19 @@ function ProfileContent() {
                             <div className="bg-white rounded-[30px] shadow-2xl max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh]">
                                 {/* Modal Header */}
                                 <div className="bg-pink-600 p-6 flex items-center justify-between">
-                                    <h3 className="text-xl font-playfair font-bold text-white flex items-center gap-2">
-                                        {modalView === 'list' ? 'Event Dashboard' : 'Mark Attendance'}
-                                    </h3>
-                                    <button onClick={closeModal} className="text-white/80 hover:text-white transition font-poppins text-sm font-medium">
-                                        Close
+                                    <div className="flex items-center gap-3">
+                                        <button 
+                                            onClick={closeModal} 
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-poppins font-medium transition"
+                                        >
+                                            <ArrowLeft size={14} /> Back
+                                        </button>
+                                        <h3 className="text-xl font-playfair font-bold text-white flex items-center gap-2">
+                                            {modalView === 'list' ? 'Event Dashboard' : 'Mark Attendance'}
+                                        </h3>
+                                    </div>
+                                    <button onClick={closeModal} className="text-white/80 hover:text-white transition p-1">
+                                        <X size={20} />
                                     </button>
                                 </div>
 

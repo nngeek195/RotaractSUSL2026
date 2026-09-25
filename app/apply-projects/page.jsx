@@ -9,7 +9,7 @@ import { useAuth } from "../contexts/AuthContext";
 import NavBar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { 
-    Megaphone, Sparkles, ArrowRight, Briefcase, 
+    Megaphone, Sparkles, ArrowRight, ArrowLeft, Briefcase, 
     Clock, ChevronRight, UserCheck
 } from 'lucide-react';
 
@@ -94,17 +94,27 @@ export default function ApplyProjectsPage() {
                     <div className="absolute -top-24 -right-24 w-96 h-96 bg-pink-600/20 rounded-full blur-3xl pointer-events-none"></div>
                     <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
 
-                    <div className="relative max-w-5xl mx-auto text-center">
-                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-pink-500/10 border border-pink-500/30 text-pink-400 text-xs md:text-sm font-semibold tracking-wide uppercase mb-6 backdrop-blur-md">
-                            <Sparkles size={14} className="text-pink-400" />
-                            Rotaract Club of SUSL • Organizing Committees
+                    <div className="relative max-w-5xl mx-auto">
+                        <div className="mb-6 flex justify-start">
+                            <Link 
+                                href="/" 
+                                className="inline-flex items-center gap-2 text-slate-300 hover:text-white text-xs font-semibold bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full transition backdrop-blur-md"
+                            >
+                                <ArrowLeft size={14} /> Back to Home
+                            </Link>
                         </div>
-                        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-playfair font-extrabold tracking-tight text-white mb-6 leading-tight">
-                            Apply for <span className="bg-gradient-to-r from-pink-400 via-rose-300 to-amber-200 bg-clip-text text-transparent">Project Committees</span>
-                        </h1>
-                        <p className="text-slate-300 text-base sm:text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
-                            Step up, sharpen your leadership abilities, and co-create impactful initiatives with passionate fellow Rotaractors. Choose your desired position and submit your application online.
-                        </p>
+                        <div className="text-center">
+                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-pink-500/10 border border-pink-500/30 text-pink-400 text-xs md:text-sm font-semibold tracking-wide uppercase mb-6 backdrop-blur-md">
+                                <Sparkles size={14} className="text-pink-400" />
+                                Rotaract Club of SUSL • Organizing Committees
+                            </div>
+                            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-playfair font-extrabold tracking-tight text-white mb-6 leading-tight">
+                                Apply for <span className="bg-gradient-to-r from-pink-400 via-rose-300 to-amber-200 bg-clip-text text-transparent">Project Committees</span>
+                            </h1>
+                            <p className="text-slate-300 text-base sm:text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
+                                Step up, sharpen your leadership abilities, and co-create impactful initiatives with passionate fellow Rotaractors. Choose your desired position and submit your application online.
+                            </p>
+                        </div>
                     </div>
                 </section>
 
@@ -251,9 +261,14 @@ export default function ApplyProjectsPage() {
                                                                     >
                                                                         <span className="w-1.5 h-1.5 rounded-full bg-pink-500"></span>
                                                                         <span>{pos.title}</span>
-                                                                        {pos.maintainTeam && (
+                                                                        {pos.maintainTeam && pos.teamStructure === 'needs_lead' && (
                                                                             <span className="bg-pink-50 text-pink-600 text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ml-1">
-                                                                                Team Lead
+                                                                                Lead / Member
+                                                                            </span>
+                                                                        )}
+                                                                        {pos.maintainTeam && pos.teamStructure === 'all_members' && (
+                                                                            <span className="bg-slate-100 text-slate-600 text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ml-1">
+                                                                                Members
                                                                             </span>
                                                                         )}
                                                                     </div>

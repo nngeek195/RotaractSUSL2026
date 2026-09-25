@@ -96,8 +96,12 @@ export default function CreateOCCall() {
     const updatePosition = (id, key, value) => {
         setPositions(prev => prev.map(p => {
             if (p.id === id) {
-                if (key === 'maintainTeam' && !value) {
-                    return { ...p, [key]: value, teamStructure: null };
+                if (key === 'maintainTeam') {
+                    if (!value) {
+                        return { ...p, maintainTeam: false, teamStructure: null };
+                    } else {
+                        return { ...p, maintainTeam: true, teamStructure: p.teamStructure || 'needs_lead' };
+                    }
                 }
                 return { ...p, [key]: value };
             }
@@ -313,7 +317,8 @@ export default function CreateOCCall() {
                                             </label>
 
                                             {pos.maintainTeam && (
-                                                <div className="pl-6 space-y-2">
+                                                <div className="pl-6 space-y-2.5 bg-pink-50/50 p-3 rounded-xl border border-pink-100">
+                                                    <p className="text-xs font-semibold text-pink-700">Team Leadership Structure:</p>
                                                     <label className="flex items-center gap-2 cursor-pointer">
                                                         <input 
                                                             type="radio"
@@ -323,7 +328,7 @@ export default function CreateOCCall() {
                                                             checked={pos.teamStructure === 'all_members'}
                                                             onChange={() => updatePosition(pos.id, 'teamStructure', 'all_members')}
                                                         />
-                                                        <span className="font-poppins text-sm text-gray-600">All as general members</span>
+                                                        <span className="font-poppins text-xs sm:text-sm text-gray-700">All as general members</span>
                                                     </label>
                                                     <label className="flex items-center gap-2 cursor-pointer">
                                                         <input 
@@ -334,7 +339,9 @@ export default function CreateOCCall() {
                                                             checked={pos.teamStructure === 'needs_lead'}
                                                             onChange={() => updatePosition(pos.id, 'teamStructure', 'needs_lead')}
                                                         />
-                                                        <span className="font-poppins text-sm text-gray-600">Needs a Team Lead</span>
+                                                        <span className="font-poppins text-xs sm:text-sm text-gray-800 font-semibold">
+                                                            Needs a Team Lead <span className="text-[11px] font-normal text-gray-500">(Applicants can apply as Team Lead, Member, or Both)</span>
+                                                        </span>
                                                     </label>
                                                 </div>
                                             )}
@@ -489,12 +496,20 @@ export default function CreateOCCall() {
                         />
                     </div>
 
-                    <button 
-                        type="submit" disabled={loading}
-                        className="w-full bg-gray-900 text-white font-poppins font-bold py-4 rounded-xl hover:bg-gray-800 transition flex items-center justify-center gap-2 shadow-lg"
-                    >
-                        {loading ? <Loader2 className="animate-spin" /> : <><PlusCircle size={20} /> {publishNow ? "Publish OC Call as Post" : "Save OC Call as Draft"}</>}
-                    </button>
+                    <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+                        <Link 
+                            href="/admin/oc-calls"
+                            className="w-full sm:w-auto px-6 py-4 border-2 border-gray-200 text-gray-700 hover:bg-gray-100 rounded-xl font-poppins font-bold text-sm transition flex items-center justify-center gap-2"
+                        >
+                            <ArrowLeft size={16} /> Back to Calls
+                        </Link>
+                        <button 
+                            type="submit" disabled={loading}
+                            className="flex-1 w-full bg-gray-900 text-white font-poppins font-bold py-4 rounded-xl hover:bg-gray-800 transition flex items-center justify-center gap-2 shadow-lg"
+                        >
+                            {loading ? <Loader2 className="animate-spin" /> : <><PlusCircle size={20} /> {publishNow ? "Publish OC Call as Post" : "Save OC Call as Draft"}</>}
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
